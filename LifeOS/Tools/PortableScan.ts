@@ -304,14 +304,6 @@ export const ALLOWLIST: AllowEntry[] = [
     reason: "Retained upstream user scaffolder; HALOS does not create or deploy that private source-system tree.",
   },
 
-
-  {
-    file: "README.md",
-    rule: "claude-runtime",
-    reason:
-      "The upstream install section, kept beneath the fork banner that scopes it to Claude Code.",
-  },
-
   {
     file: "LifeOS/Tools/DeployComponents.ts",
     rule: "claude-runtime",
