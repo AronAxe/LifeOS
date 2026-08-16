@@ -6,10 +6,16 @@ effort: high
 context: fork
 ---
 
-## Customization
+## Runtime boundaries
 
-Before executing, check for user customizations at:
-`~/.claude/LIFEOS/USER/CUSTOMIZATIONS/SKILLS/Ideate/`
+- Store each run beneath `LIFEOS_IDEATE_WORKSPACE`, or
+  `<PROJECT_ROOT>/.lifeos-ideate` when it is unset.
+- If `<IDEATE_WORKSPACE>/PREFERENCES.md` exists, read it as a project-scoped
+  override. Never assume a global principal-data tree.
+- Persist every generated randomness seed and every loop decision so the run can
+  be inspected and replayed. Do not write into the installed skill directory.
+- Parallel phases use Hermes `delegate_task` within configured concurrency;
+  delegation is an execution aid, not an implicit background service.
 
 # Ideate — The Cognitive Progress Engine
 
@@ -113,7 +119,9 @@ LLM "temperature" is soft probability redistribution biased toward the training 
   7. Remove the most complex component
   8. Add an adversarial requirement
 
-Implementation: `crypto.getRandomValues()` with seed = cycle number + problem hash.
+Generate seed material with `crypto.getRandomValues()` and persist it with the
+cycle number and problem hash. The stored seed and sampled order are the replay
+record; do not claim deterministic seeding from `getRandomValues()` alone.
 
 ## External Validation Hooks (TEST extension)
 
@@ -143,7 +151,7 @@ Loop Controller decides actual cycle count adaptively, not a fixed count.
 
 ## State Persistence
 
-Each run persists to `~/.claude/LIFEOS/MEMORY/WORK/{slug}/ideate/`:
+Each run persists to `<IDEATE_WORKSPACE>/<slug>/`:
 
 ```
 ideate/
@@ -247,12 +255,15 @@ ideate/
 | IterativeDepth | CONTEMPLATE | 4-lens analysis (Literal, Failure, Analogical, Constraint Inversion) |
 | FirstPrinciples | CONTEMPLATE | Decompose to axioms, challenge assumptions |
 | RedTeam | TEST | Adversarial attack on candidates to find fatal flaws |
-| Custom agents | ALL | Inline briefs (name + role + stance) for unique cognitive personalities per phase, launched with `general-purpose` |
+| Delegated agents | ALL | Self-contained briefs (role + stance + required output) launched through Hermes `delegate_task` within configured concurrency |
 | Council | MATE (optional) | Debate between ideas before breeding |
 
 ## Algorithm Integration
 
-When the LifeOS Algorithm sets `mode: ideate` (via `LIFEOS/ALGORITHM/ideate-loop.md`), it loads this skill and routes to `Workflows/FullCycle.md` by default. Tunable parameters from the algorithm's `parameter-schema.md` map to the configuration above. The Meta-Learner may adjust parameters within bounds; user-explicit overrides are auto-locked.
+When the installed Algorithm process selects ideation mode, route manually to
+`Workflows/FullCycle.md`. The Meta-Learner may adjust parameters within declared
+bounds; principal-explicit overrides remain locked. Hermes installs no automatic
+mode hook or separate algorithm parameter service.
 
 ## Examples
 
@@ -274,10 +285,8 @@ When the LifeOS Algorithm sets `mode: ideate` (via `LIFEOS/ALGORITHM/ideate-loop
 - The Lamarckian advantage framing (Phase 9 META-LEARN) borrows from research on auto-research loops and meta-learning in agent systems (cf. Karpathy auto-research pattern).
 - Structural randomness as a defeat for LLM-bias is empirical — see internal experiments comparing LLM-picked pairings vs Fisher-Yates pairings on diversity metrics.
 
-## Execution Log
+## Evidence
 
-After completing any workflow, append a single JSONL entry:
-
-```bash
-echo '{"ts":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","skill":"Ideate","workflow":"WORKFLOW_USED","input":"8_WORD_SUMMARY","status":"ok|error","duration_s":SECONDS}' >> ~/.claude/LIFEOS/MEMORY/SKILLS/execution.jsonl
-```
+The run directory is the reproducibility record. Retain a durable summary through
+the configured Hermes memory provider only when the principal explicitly asks;
+do not append to a parallel global execution ledger.

@@ -17,7 +17,7 @@
 ## Environment paths
 
 - Canonical secrets: `<e.g. $HERMES_HOME/.env>`
-- TELOS source: `E:/Dropbox/ARON BIJL MSC/TELOS/`
+- TELOS source: `<principal-supplied configured path>`
 - `<other load-bearing path>`: `<value>`
 
 ## Tool preferences

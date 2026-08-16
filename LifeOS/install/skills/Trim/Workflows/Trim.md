@@ -1,65 +1,92 @@
 # Trim Workflow
 
-**Goal:** get one always-on context file back under its byte budget without dropping a single directive. Safest cuts first; the human approves every judgment call.
+**Goal:** bring one selected context/doctrine file beneath its declared byte cap
+without dropping a directive. Deterministic reductions come first; every semantic
+judgment requires principal approval.
 
-## Step 0 — Resolve the target
+## Step 0 — Resolve target and budget
 
-- Arg given (`/trim OPERATIONAL_RULES`): match it against `path` basenames in `LIFEOS/TOOLS/context-budgets.json`.
-- No arg: `bun LIFEOS/TOOLS/BudgetCheck.ts --json` → pick the row with the highest `pct` (or the first `over`).
-- Confirm the resolved absolute path before touching anything.
+1. Resolve the target inside the active project or from an explicit absolute path.
+2. Resolve `cap_bytes` from the request or a documented project budget.
+3. If either remains ambiguous, stop and ask. Hermes has no installed global
+   budget registry to infer from.
+4. Confirm the absolute target and cap before any mutation.
 
-## Step 1 — Show the state (grounding, not a claim)
+## Step 1 — Ground the current state
 
-```bash
-bun LIFEOS/TOOLS/BudgetCheck.ts --json | jq '.rows[] | select(.path|test("<NAME>"))'
+Read the complete file. Measure bytes from the actual encoded content, not a line
+or character estimate. Report:
+
+```text
+<target> — <before_bytes>/<cap_bytes> bytes (<percent>% FULL)
 ```
 
-Report: `<file> — <bytes>/<cap> (<pct>% FULL)`. State how many bytes must come out to clear the cap (with a little headroom, e.g. target ≤85%). That number is the goal for this run.
+Set a target with modest headroom when the principal permits it; otherwise the
+hard completion condition is simply `after_bytes <= cap_bytes`.
 
-## Step 2 — Deterministic wins first (zero-risk, run before any judgment call)
+## Step 2 — Deterministic reductions
 
-```bash
-bun LIFEOS/TOOLS/ProposalGC.ts            # dry-run — shows superseded / exact-dup / absorbed
+Identify, without changing the file:
+
+- exact duplicate entries;
+- entries explicitly marked `[SUPERSEDED]` with a surviving replacement;
+- proposal fragments explicitly marked absorbed into the body whose complete
+  directive is verifiably present there.
+
+Show exact source ranges and expected bytes saved. Apply only after approval unless
+the request already granted this precise scope. Re-read and remeasure; stop if the
+cap is now satisfied.
+
+## Step 3 — Rank semantic proposals
+
+Build a ranked list, each with exact target text, replacement/destination, expected
+bytes saved, and risk:
+
+1. **RELOCATE** — move rarely needed mechanism detail or examples into a
+   project-approved on-demand reference; leave a one-line pointer.
+2. **TIGHTEN** — compress verbose prose while preserving the same force and
+   conditions.
+3. **MERGE** — combine overlapping rules while preserving every distinct
+   directive.
+
+The principal selects proposals. Apply them one at a time.
+
+## Step 4 — Coverage gate before every semantic write
+
+For the original text, enumerate every:
+
+- proper noun and named component;
+- file path, command, tool, and environment variable;
+- threshold, exception, precondition, and prohibition;
+- imperative verb and required verification.
+
+Confirm each survives in the replacement or in relocated content. A missing item
+means the edit is invalid. For relocation, first write and verify the destination,
+then verify the source pointer, and only then remove the original detail.
+
+## Step 5 — Rollback, write, and verify
+
+Before the first mutation, capture a reversible repository diff or a timestamped
+copy beside an approved backup root. Apply only the approved edit. Then:
+
+1. read the complete target back;
+2. check structure/syntax appropriate to the file type;
+3. measure encoded bytes again;
+4. inspect the narrow diff for directive loss and unrelated changes;
+5. verify any relocated reference exists and is reachable from the pointer.
+
+Do not commit, push, or publish automatically. If the principal later authorizes
+a commit, use the repository that actually owns the target and stage only the
+trimmed file plus approved relocation files.
+
+## Output
+
+Lead with:
+
+```text
+<name>: <before_bytes> → <after_bytes> bytes; cap <cap_bytes>; <PASS|STILL OVER>
 ```
 
-If it finds removals, show them, then on approval:
-
-```bash
-bun LIFEOS/TOOLS/ProposalGC.ts --apply
-```
-
-These are provably-redundant (self-marked `[SUPERSEDED]`, exact duplicates, entries already absorbed into the file body) — safe to remove without judgment. Re-check BudgetCheck. Often this alone clears enough that Step 3 is unnecessary — stop here if the file is back under cap.
-
-## Step 3 — Semantic reductions (human-gated; the judgment part)
-
-Read the file. Build a RANKED list of candidate trims — each with the exact target text and estimated bytes saved. Three moves, in decreasing safety:
-
-- **RELOCATE** (safest): rarely-referenced detail (long mechanism explanations, enumerations, examples) → an on-demand reference doc under `LIFEOS/DOCUMENTATION/…`, leaving a one-line stub + pointer. Pattern already used for ISA hierarchy → `LIFEOS/DOCUMENTATION/Isa/IsaHierarchy.md`. Nothing is lost; it just stops loading every turn.
-- **TIGHTEN**: a verbose multi-sentence rule → one plain-language sentence carrying the same directive. Kill throat-clearing, dated war-story prose, and intensifier-only restatements — never the instruction itself.
-- **MERGE**: two or more rules that say overlapping things in different words → one rule that carries every distinct directive from all of them.
-
-Rank by `bytes_saved × safety` (relocate/tighten above merge). Present the list; the human picks which to apply (or "all safe ones"). Apply one at a time.
-
-## Step 4 — Safety gate (runs before every semantic write — non-negotiable)
-
-A trim edits live doctrine. Before writing any merge/tighten:
-
-1. **Coverage check** — enumerate every proper noun, file path, tool/command name, env-var name, and imperative verb in the ORIGINAL text. Confirm each survives in the replacement. A missing one = the edit drops a directive → **abort this edit, keep the original.**
-2. **Re-read** the replacement as the file's reader: does it still compel the same behavior? If weaker, it's a bad trim.
-3. Relocate edits: confirm the moved content landed verbatim in the reference AND the stub points to it before deleting from the source.
-
-Deterministic GC (Step 2) skips this gate — it only removes provably-redundant entries. Only Step-3 semantic edits need it.
-
-## Step 5 — Commit (correct repo) and re-verify
-
-- **USER files** (`LIFEOS/USER/**`: OPERATIONAL_RULES, PROJECTS, PRINCIPAL_IDENTITY, DA_IDENTITY) commit to the USER_DATA repo:
-  ```bash
-  git -C ~/.config/LIFEOS/USER add <relpath> && git -C ~/.config/LIFEOS/USER commit -q -m "trim: <file> <oldpct>%→<newpct>% (<what>)"
-  ```
-  Stage ONLY the trimmed file — the USER_DATA repo carries unrelated live memory-loop changes; never sweep them in.
-- **System files** (system prompt, CLAUDE.md, ALGORITHM, skills) commit to `~/.claude` (`git -C ~/.claude …`), directly to `main`.
-- Re-run `bun LIFEOS/TOOLS/BudgetCheck.ts` and report the new `NN% FULL`. If still over cap, name how much remains and offer to continue.
-
-## Output shape
-
-Lead with the before→after: `OPERATIONAL_RULES 99% → 87% (−7.1K)`. Then a short list of what was removed/merged/relocated, and the commit SHA. If any candidate was declined by the safety gate, say which and why. Never claim the file was trimmed without the re-run BudgetCheck number as evidence.
+Then list applied changes, rollback evidence, verification performed, and any
+proposal rejected by the coverage gate. If still over cap, state the remaining
+byte reduction required rather than declaring completion.

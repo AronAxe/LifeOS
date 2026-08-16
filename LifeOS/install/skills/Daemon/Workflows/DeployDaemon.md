@@ -1,45 +1,30 @@
 # DeployDaemon Workflow
 
-**Purpose:** Deploy the daemon website and sync data to MCP KV store. Does NOT aggregate or modify content — use UpdateDaemon for that.
+**Purpose:** Publish an already reviewed daemon artifact through an explicitly configured external adapter. This workflow does not aggregate or alter content.
 
-## Trigger Phrases
+## Preconditions
 
-- "deploy daemon"
-- "push daemon"
-- "ship daemon"
+- The input file exists and has been read back after generation.
+- `LIFEOS_DAEMON_PUBLISH_ADAPTER` is an absolute executable path.
+- Optional fixed arguments are a JSON array in `LIFEOS_DAEMON_PUBLISH_ADAPTER_ARGS`.
+- The user has approved the adapter, destination, input file, and expected external side effects.
 
 ## Process
 
-### Step 1: Push Website to GitHub
+1. Exercise the adapter's dry-run contract when supported:
 
 ```bash
-cd ~/Projects/daemon && git add -A && git commit -m "Deploy daemon $(date +%Y-%m-%d)" && git push
+bun $HERMES_HOME/skills/daemon/Tools/PublishAdapter.ts --input <approved-daemon.md> --dry-run
 ```
 
-Pre-commit hook runs automatically and blocks sensitive data. Cloudflare Pages auto-deploys on push.
-
-### Step 2: Sync Data to MCP KV Store
+2. Show the resolved adapter, input, destination reported by the adapter, and planned side effects.
+3. Obtain explicit publication approval.
+4. Publish:
 
 ```bash
-cd ${LIFEOS_SKILL_DIR}/Mcp && bun install && bun update-daemon
+bun $HERMES_HOME/skills/daemon/Tools/PublishAdapter.ts --input <approved-daemon.md>
 ```
 
-This runs the existing pipeline: sync integrations, aggregate daemon.md + integrations, validate with Zod, upload to Cloudflare KV.
+5. Treat exit code zero as adapter completion, not destination verification. Verify the returned URL, artifact ID, repository revision, or remote checksum using the appropriate external tool.
 
-### Step 3: Verify Deployment
-
-```bash
-curl -s -o /dev/null -w "%{http_code}" https://daemon.example.com
-```
-
-```bash
-curl -s https://mcp.daemon.example.com \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"get_about","arguments":{}},"id":1}' | head -c 200
-```
-
-## Notes
-
-- If only website UI changed (no content): Step 1 is sufficient
-- If daemon.md content changed: Both steps needed
-- Run **UpdateDaemon** workflow FIRST if you want to aggregate fresh LifeOS data
+If no adapter is configured, publication is unavailable. Do not substitute `git push`, create hosting, or invent an endpoint.

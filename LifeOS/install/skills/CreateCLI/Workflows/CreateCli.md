@@ -202,31 +202,19 @@ const DEFAULTS = {
  * Load configuration from environment
  */
 function loadConfig(): Config {
-  const envPath = process.env.LIFEOS_CONFIG_DIR ? join(process.env.LIFEOS_CONFIG_DIR, '.env') : join(homedir(), '.claude', 'LifeOS', '.env');
+  const apiKey = process.env.{{ENV_VAR_NAME}}?.trim();
 
-  try {
-    const envContent = readFileSync(envPath, 'utf-8');
-    const apiKey = envContent
-      .split('\n')
-      .find(line => line.startsWith('{{ENV_VAR_NAME}}='))
-      ?.split('=')[1]
-      ?.trim();
-
-    if (!apiKey) {
-      console.error('Error: {{ENV_VAR_NAME}} not found in ${LIFEOS_CONFIG_DIR}/.env');
-      process.exit(1);
-    }
-
-    return {
-      apiKey,
-      baseUrl: DEFAULTS.baseUrl,
-      {{ADDITIONAL_CONFIG}}
-    };
-  } catch (error) {
-    console.error(`Error: Cannot read ${LIFEOS_CONFIG_DIR}/.env file`);
-    console.error('Make sure {{ENV_VAR_NAME}} is set in ${LIFEOS_CONFIG_DIR}/.env');
+  if (!apiKey) {
+    console.error('Error: {{ENV_VAR_NAME}} is not set');
+    console.error('Set it in the process environment or the approved runtime secret store.');
     process.exit(1);
   }
+
+  return {
+    apiKey,
+    baseUrl: process.env.API_BASE_URL || DEFAULTS.baseUrl,
+    {{ADDITIONAL_CONFIG}}
+  };
 }
 ```
 
@@ -276,7 +264,7 @@ const format = formatIdx !== -1 ? args[formatIdx + 1] : 'json';
 4. **Value flags**: `--flag <value>` for choices
 5. **Composable**: Flags should combine logically
 
-**Reference:** `~/.claude/LIFEOS/DOCUMENTATION/Tools/CliFirstArchitecture.md` (Configuration Flags section)
+**Reference:** the Configuration Flags section in this skill's `Patterns.md`.
 
 ---
 
@@ -371,7 +359,7 @@ PHILOSOPHY:
   - Documented: Full help and examples
   - Testable: Predictable behavior
 
-For more information, see ~/.claude/LIFEOS/TOOLS/{{CLI_NAME}}/README.md
+For more information, see <PROJECT_DIR>/{{CLI_NAME}}/README.md
 
 Version: 1.0.0
 `);
@@ -537,7 +525,7 @@ main().catch((error) => {
 
 ## Full Documentation
 
-See: ~/.claude/LIFEOS/TOOLS/{{CLI_NAME}}/README.md
+See: <PROJECT_DIR>/{{CLI_NAME}}/README.md
 ```
 
 ---
@@ -603,7 +591,7 @@ See: ~/.claude/LIFEOS/TOOLS/{{CLI_NAME}}/README.md
 
 **Validation Commands:**
 ```bash
-cd ~/.claude/LIFEOS/TOOLS/{{CLI_NAME}}/
+cd <PROJECT_DIR>/{{CLI_NAME}}/
 chmod +x {{CLI_NAME}}.ts
 ./{{CLI_NAME}}.ts --help
 ./{{CLI_NAME}}.ts --version
@@ -611,7 +599,7 @@ chmod +x {{CLI_NAME}}.ts
 
 **Report to user:**
 ```
-✅ CLI Created: ~/.claude/LIFEOS/TOOLS/{{CLI_NAME}}/
+✅ CLI Created: <PROJECT_DIR>/{{CLI_NAME}}/
 
 Files generated:
 - {{CLI_NAME}}.ts ({{LINE_COUNT}} lines)
@@ -626,7 +614,7 @@ Next steps:
 2. Test: ./{{CLI_NAME}}.ts --help
 3. Use: ./{{CLI_NAME}}.ts {{EXAMPLE_COMMAND}}
 
-Documentation: ~/.claude/LIFEOS/TOOLS/{{CLI_NAME}}/README.md
+Documentation: <PROJECT_DIR>/{{CLI_NAME}}/README.md
 ```
 
 ---
@@ -638,7 +626,7 @@ Documentation: ~/.claude/LIFEOS/TOOLS/{{CLI_NAME}}/README.md
 
 **Generated Output:**
 ```
-✅ CLI Created: ~/.claude/LIFEOS/TOOLS/notioncli/
+✅ CLI Created: <PROJECT_DIR>/notioncli/
 
 Files generated:
 - notioncli.ts (342 lines)
@@ -657,7 +645,7 @@ Commands available:
 Next steps:
 1. Add NOTION_API_KEY=your_key to ${LIFEOS_CONFIG_DIR}/.env
 2. Test: notioncli databases
-3. Read: ~/.claude/LIFEOS/TOOLS/notioncli/README.md
+3. Read: <PROJECT_DIR>/notioncli/README.md
 
 The CLI follows llcli pattern with type safety, error handling,
 and comprehensive documentation.
@@ -751,7 +739,7 @@ Show real usage examples, not just flag descriptions.
 Run `--help` and version command before reporting success.
 
 ### 8. **Follow llcli Pattern**
-Use proven structure from ~/.claude/LIFEOS/TOOLS/llcli/ as reference.
+Use proven structure from <PROJECT_DIR>/llcli/ as reference.
 
 ---
 

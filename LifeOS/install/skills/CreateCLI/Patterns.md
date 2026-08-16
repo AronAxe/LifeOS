@@ -23,38 +23,25 @@ const DEFAULTS = {
 } as const;
 
 function loadConfig(): Config {
-  const envPath = join(homedir(), '.claude', '.env');
+  const apiKey = process.env.API_KEY?.trim();
 
-  try {
-    const envContent = readFileSync(envPath, 'utf-8');
-    const apiKey = envContent
-      .split('\n')
-      .find(line => line.startsWith('API_KEY='))
-      ?.split('=')[1]
-      ?.trim();
-
-    if (!apiKey) {
-      console.error('Error: API_KEY not found in ${LIFEOS_DIR}/.env');
-      console.error('Add: API_KEY=your_key_here');
-      process.exit(1);
-    }
-
-    return {
-      apiKey,
-      baseUrl: process.env.API_BASE_URL || DEFAULTS.baseUrl,
-    };
-  } catch (error) {
-    console.error('Error: Cannot read ${LIFEOS_DIR}/.env');
-    console.error('Create file: touch ${LIFEOS_DIR}/.env');
+  if (!apiKey) {
+    console.error('Error: API_KEY is not set');
+    console.error('Set it in the process environment or in the runtime-specific secret store.');
     process.exit(1);
   }
+
+  return {
+    apiKey,
+    baseUrl: process.env.API_BASE_URL || DEFAULTS.baseUrl,
+  };
 }
 ```
 
 **Key principles:**
-- Load from ${LIFEOS_DIR}/.env (LifeOS standard)
+- Read secrets from the process environment or an explicitly supplied config path; never infer a global home-directory file
 - Clear error messages with resolution steps
-- Defaults for optional config
+- Defaults for optional, non-secret config
 - Type-safe Config interface
 
 ---
@@ -249,7 +236,7 @@ PHILOSOPHY:
   - Documented: This help + README
   - Testable: Predictable behavior
 
-For full documentation: ~/.claude/LIFEOS/TOOLS/${CLI_NAME}/README.md
+For full documentation: <PROJECT_DIR>/${CLI_NAME}/README.md
 Version: ${VERSION}
 `);
 }

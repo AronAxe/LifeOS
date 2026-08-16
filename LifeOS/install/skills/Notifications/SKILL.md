@@ -1,5 +1,6 @@
 ---
 name: notifications
+description: Route LifeOS notifications through Hermes-native channels.
 trigger: Use when managing voice notifications, push notifications, smart routing, or mapping LifeOS notification channels to Hermes-native equivalents.
 ---
 
@@ -54,7 +55,7 @@ Hermes replaces the curl→/notify→VoiceServer chain with the `text_to_speech`
 |---|---|
 | `{DA_IDENTITY.VOICEID}` (default DA voice) | Hermes TTS plugin configured voice |
 | `21m00Tcm4TlvDq8ikWAM` (Priya, artist) | Not ported. Single voice configuration. |
-| `~/.claude/settings.json → daidentity.voices.main.voiceId` | `config.yaml → tts` configuration |
+| Historical Claude voice setting | `config.yaml → tts` configuration |
 
 ## Smart Routing → Hermes Notification Strategy
 

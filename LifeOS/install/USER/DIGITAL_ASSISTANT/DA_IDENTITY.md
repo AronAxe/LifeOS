@@ -7,9 +7,9 @@ convention: pai-freshness-v1
 
 # DA Identity — LifeOS
 
-> Bootstrap default — functional before interview. Run `/interview` to name your DA, pick a voice, and define personality.
+> Upstream bootstrap scaffold retained for reference; HALOS does not deploy or auto-load this identity.
 >
-> ⚠ INTERVIEW REQUIRED — run `/interview` to populate this file with your real identity content. The DA loads it at every session start; without your content, the model operates on placeholders.
+> On Hermes, principal-approved DA identity belongs in the selected profile's `SOUL.md`. HALOS onboarding does not write it automatically.
 
 - **Name:** LifeOS | **Full Name:** LifeOS Assistant | **Display:** LifeOS
 - **Color:** #3B82F6 | **Role:** primary

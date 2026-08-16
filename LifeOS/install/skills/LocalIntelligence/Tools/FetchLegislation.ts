@@ -12,10 +12,11 @@
 
 import type { FetchResult, Hometown } from "./Types.ts"
 import { unavailable } from "./Types.ts"
+import { fetchFromExternalAdapter } from "./ExternalAdapter.ts"
 
 export async function fetchLegislation(home: Hometown): Promise<FetchResult> {
-  return unavailable(
-    `legislation fetcher not yet implemented — TODO: OpenStates + Granicus discovery for ${home.city}, ${home.state}`
+  return fetchFromExternalAdapter("legislation", home) ?? unavailable(
+    "legislation requires LIFEOS_LOCAL_INTELLIGENCE_ADAPTER; no bundled API credential or council endpoint is assumed",
   )
 }
 

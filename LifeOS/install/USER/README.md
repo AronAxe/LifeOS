@@ -4,19 +4,16 @@ provenance: template
 
 # USER/ — Your Identity Layer
 
-This directory holds everything LifeOS knows about you: identity, voice,
-goals, projects, work context. Files here are loaded by `CLAUDE.md`
-@-imports at every session start, so the DA boots aware of who you
-are and what you're working on.
+This directory is retained **upstream LifeOS scaffolding** for capability reference. The HALOS Hermes importer does not copy it into a profile, populate it, or load it at session start. A principal's real identity belongs in approved Hermes-native destinations such as `SOUL.md`, configured TELOS, and a separately configured memory provider.
 
 ## Layout
 
 ```
 LIFEOS/USER/
-├── PRINCIPAL_IDENTITY.md   # Concise identity (loaded at startup)
-├── DA_IDENTITY.md          # Your DA's name, voice, personality (loaded at startup)
-├── PROJECTS/PROJECTS.md    # Project registry + routing aliases (loaded at startup)
-├── TELOS/PRINCIPAL_TELOS.md # Goals, missions, strategies (loaded at startup)
+├── PRINCIPAL_IDENTITY.md   # Upstream identity scaffold; not loaded by HALOS
+├── DA_IDENTITY.md          # Upstream DA scaffold; not loaded by HALOS
+├── PROJECTS/PROJECTS.md    # Upstream project registry scaffold
+├── TELOS/PRINCIPAL_TELOS.md # Upstream generated TELOS summary scaffold
 ├── Config/LIFEOS_CONFIG.yaml  # Credentials and config keys
 ├── RESUME.md               # Career detail
 ├── CONTACTS.md             # People you work with
@@ -34,8 +31,7 @@ LIFEOS/USER/
 
 ## Bootstrap
 
-Files arrive as scaffolds. Run `/interview` to populate them with your
-real answers. The interview is incremental — you can stop and resume.
+These files document the upstream scaffold shape. HALOS onboarding must not populate this tree or treat it as canonical. Its interview workflow may help draft a principal-owned setup plan, but each destination and write requires explicit consent.
 
 ## Privacy
 

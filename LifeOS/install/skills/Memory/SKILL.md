@@ -1,5 +1,6 @@
 ---
 name: memory
+description: Map LifeOS memory responsibilities to Hermes Hindsight.
 trigger: Use when managing durable memory, curation boundaries, or mapping LifeOS memory concepts to Hermes Hindsight.
 ---
 
@@ -7,7 +8,7 @@ trigger: Use when managing durable memory, curation boundaries, or mapping LifeO
 
 ## Purpose
 
-This skill replaces the LifeOS file-system-based memory runtime (`~/.claude/LIFEOS/MEMORY/`, `MutationTier.ts`, `MemoryReviewer`, `MemoryGraph.ts`, and all TypeScript memory tooling) with **Hindsight** as the canonical associative-memory layer. There is no file-tree memory in Hermes. Hindsight provides `recall`, `retain`, and `reflect` operations that map directly to the LifeOS memory responsibilities. The TypeScript tools are not ported as runtime code; their *responsibilities* are mapped to Hermes-native equivalents.
+This skill replaces the retired LifeOS file-system memory runtime (`MutationTier.ts`, `MemoryReviewer`, `MemoryGraph.ts`, and related TypeScript tooling) with **Hindsight** as the canonical associative-memory layer. There is no file-tree memory in Hermes. Hindsight provides `recall`, `retain`, and `reflect` operations that map directly to the LifeOS memory responsibilities. The TypeScript tools are not ported as runtime code; their *responsibilities* are mapped to Hermes-native equivalents.
 
 ## Mutation Tier Mapping
 
@@ -31,9 +32,9 @@ The LifeOS four-tier mutation system maps to Hermes layer boundaries:
 | `KNOWLEDGE/` | Hindsight `cat:knowledge` | Learning event | On change |
 | `IDEAS/` | Hindsight `cat:knowledge` + Amber routing | Amber capture | On capture |
 | `LEARNING/` | Hindsight `cat:learning` | Session completion, failure | On completion |
-| `WISDOM/` | Hindsight `cat:wisdom` | `hindsight_reflect` synthesis | Cron `lifeos-wisdom-synthesis` every 6h |
+| `WISDOM/` | Hindsight `cat:wisdom` | Explicit `hindsight_reflect` synthesis | On request, or through a separately approved cron template |
 | `RELATIONSHIP/` | Hindsight `cat:identity` | Relationship context update | On change |
-| TELOS summary | Hindsight `cat:telos` with `source:configured_telos` | TELOS file change | On TELOS refresh |
+| TELOS summary | Hindsight `cat:telos` with `source:configured_telos` | Principal-approved projection from the configured source | Explicit refresh |
 | ISA sync | Workspace/ISA files (NOT Hindsight) | Phase transition | Per-ISA |
 | Security | Hermes security logs (NOT Hindsight) | Event-driven | Continuous |
 | Observability | Hermes LCM + session logs (NOT Hindsight) | Built-in | Continuous |
@@ -41,18 +42,18 @@ The LifeOS four-tier mutation system maps to Hermes layer boundaries:
 | Credentials | Never touched | — | — |
 | Code | Git repository | — | — |
 
-## Memory Lifecycle
+## Memory Operations
 
-The LifeOS MemoryReviewer cadence (8 turns / 30 min / 2 idle → reviewer subprocess) is replaced by the Hermes turn lifecycle:
+The upstream MemoryReviewer cadence (8 turns / 30 min / 2 idle → reviewer subprocess) is **not** installed. Hermes may have its own configured memory provider, but the HALOS plugin registers no recall, retain, review, health, or synthesis lifecycle hooks.
 
 | Phase | LifeOS | Hermes | Mechanism |
 |---|---|---|---|
-| **Turn start** | `LoadMemory` + `MemoryDeltaSurface` | Recall relevant context | `MemoryManager.prefetch_all()` → `hindsight_recall` → inject into system prompt |
-| **Turn end** | `MemoryReviewFire` | Retain durable facts from the turn | `MemoryManager.sync_all()` → `hindsight_retain` with rich conversation content |
-| **Background** | `MemoryReviewer` subprocess | Synthesize patterns asynchronously | `hindsight_reflect` via cron `lifeos-wisdom-synthesis` (every 6h) |
-| **Session switch** | Manual flush | Flush old buffer, mint fresh document_id | Hindsight plugin session-switch hook (`/reset`, `/new`, `/resume`) |
+| **Recall** | `LoadMemory` + `MemoryDeltaSurface` | Retrieve relevant durable context | Invoke `hindsight_recall` when the configured provider is available and the task warrants it |
+| **Retain** | `MemoryReviewFire` | Promote durable facts from the turn | Invoke `hindsight_retain` deliberately under the mutation/consent rules below |
+| **Reflect** | `MemoryReviewer` subprocess | Synthesize patterns | Invoke `hindsight_reflect` explicitly; any recurring job requires separate principal approval |
+| **Session switch** | Manual flush | Transcript/session continuity | Hermes/LCM handles its own session state; HALOS performs no Hindsight flush hook |
 
-Key difference: the cadence is built into Hermes' turn lifecycle, not a separate subprocess. The `🧠 MEMORY` delta surface is replaced by Hermes per-turn context injection (already handled by LCM + Hindsight plugin).
+Key difference: HALOS supplies routing doctrine and stable identifiers, not an invisible cadence. LCM session context and Hindsight durable memory remain distinct; neither proves that Hindsight facts were injected into a turn.
 
 **Critical:** Pass the richest useful conversation content to `retain`. Do not pre-summarize or pre-distill sessions before retaining. Hindsight extracts facts itself; raw content is not stored verbatim as memory.
 
@@ -78,7 +79,7 @@ LifeOS proposal subtypes map to Hermes cognitive-graph and Hindsight destination
 | `KNOWLEDGE/` | Hindsight `cat:knowledge` | Distilled ideas, research, architectural decisions |
 | `WORK/` | Hermes workspace / ISA files (NOT memory) | Active work state and evidence |
 | `LEARNING/` | Hindsight `cat:learning` | Session learnings, failure postmortems, fixes |
-| `WISDOM/` | Hindsight `cat:wisdom` + cron `lifeos-wisdom-synthesis` | Domain frames, cross-cutting principles, mental models |
+| `WISDOM/` | Hindsight `cat:wisdom` + optional approved synthesis job | Domain frames, cross-cutting principles, mental models |
 | `RELATIONSHIP/` | Hindsight `cat:identity` | Relationship context and history |
 | `OBSERVABILITY/` | Hermes LCM + session logs (NOT Hindsight) | Context receipts, compression, transcript continuity |
 | `SECURITY/` | Hermes security logs (NOT Hindsight) | Security event logs |
@@ -97,7 +98,7 @@ These belong in Hermes session, workspace, or logging layers — **never** in Hi
 
 ## Cross-references
 
-- **`HERMES_CONSTITUTION.md` §5** — Memory boundaries (canonical statement)
+- **`LifeOS/install/LIFEOS/HERMES_CONSTITUTION.md` §5** — shipped memory-boundary doctrine (reference; not automatically loaded)
 - **`PORT_SCHEMAS/hindsight_memory_schema.md`** — Full Hindsight bank layout, tag taxonomy, document_id strategy, operation triggers
 - **`PORT_SCHEMAS/hook_mapping.md`** — MemoryTurnStart, MemoryReviewFire, MemoryHealthGate, WorkCompletionLearning hook mappings
 - **Freshness skill** — A-F staleness grading for TELOS and identity files
@@ -106,6 +107,6 @@ These belong in Hermes session, workspace, or logging layers — **never** in Hi
 
 ## Configuration Notes
 
-- `memory_enabled: false` in `config.yaml` is **intentional**. Enabling it activates Hermes' built-in bolt-on memory system, which is NOT used. Hindsight runs independently via its own plugin + `hindsight_recall`/`retain`/`reflect` tools + the cron job.
-- TELOS is loaded from the configured TELOS source in `LifeOS/install/HERMES.md` and retained with `document_id: "user:{id}:telos"`, tags `["cat:telos", "cat:identity", "durability:core", "source:configured_telos"]`.
-- Cron `lifeos-wisdom-synthesis` (every 6h, `deliver: local`): calls `hindsight_reflect` to synthesize patterns, optionally retains output with `cat:wisdom` and `document_id: "user:{id}:wisdom:synthesized"`.
+- The importer does not select or configure a memory provider. Inspect the chosen Hermes profile and verify Hindsight health before depending on recall or retain.
+- With principal approval, configured TELOS may be projected to Hindsight as `document_id: "user:{id}:telos"`, tags `["cat:telos", "cat:identity", "durability:core", "source:configured_telos"]`. The source files remain canonical; no automatic loader or file watcher is installed.
+- A `lifeos-wisdom-synthesis` cron is an optional design, not an installed job. If separately approved and created, it may call `hindsight_reflect` and optionally retain reviewed output as `cat:wisdom` with `document_id: "user:{id}:wisdom:synthesized"`.

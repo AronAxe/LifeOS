@@ -164,7 +164,7 @@ bun run ~/.claude/skills/Prompting/Tools/RenderTemplate.ts \
 If anything breaks, rollback to v2.5.0:
 
 ```bash
-cd ~/.claude
+cd <PROJECT_DIR>
 git checkout v2.5.0
 # Or to just undo templating:
 rm -rf Templates/
@@ -304,7 +304,6 @@ This system is based on research from:
 
 ## Related Documentation
 
-- `~/.claude/LIFEOS/Prompting.md` (Templating section)
-- `~/.claude/History/research/2025-12/2025-12-09-templating-system-research.md`
-- `~/.claude/History/learnings/2025-12/2025-12-09-021700_LEARNING_complete-templating-system-and-evals-integration.md`
-- `~/.claude/skills/Evals/SKILL.md`
+- This skill's portable prompting and templating documentation
+- The current task's verified research/evaluation artifacts
+- The installed Evals skill documentation

@@ -1,91 +1,49 @@
 # RunEval Workflow
 
-Run evaluations for a specific use case.
-
-## Voice Notification
-
-```bash
-curl -s -X POST http://localhost:31337/notify \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Running the RunEval workflow in the Evals skill to execute evaluation"}' \
-  > /dev/null 2>&1 &
-```
-
-Running the **RunEval** workflow in the **Evals** skill to execute evaluation...
-
----
+Run an evaluation suite from the configured workspace through the Evals tools.
 
 ## Prerequisites
 
-- Use case must exist in `UseCases/<name>/`
-- Test cases defined in use case
-- Config.yaml with scoring criteria
+- Resolve the installed skill directory as `<EVALS_SKILL_DIR>`.
+- Resolve mutable state as `LIFEOS_EVALS_WORKSPACE`, or `<PROJECT_DIR>/.lifeos-evals` when unset.
+- Confirm the use case exists beneath `<EVAL_WORKSPACE>/use-cases/<name>/` and contains valid test cases and grader configuration.
+- Obtain explicit approval before any model-based grader call. Code-based graders do not require model spending.
 
 ## Execution
 
-### Step 1: Validate Use Case
+1. Inspect the use-case configuration with Hermes file tools. If it is absent or invalid, route to `CreateUseCase`.
+2. Run the suite through the canonical bridge:
 
-```bash
-# Check use case exists
-ls ~/.claude/skills/Evals/UseCases/<use-case>/config.yaml
-```
+   ```bash
+   bun run <EVALS_SKILL_DIR>/Tools/AlgorithmBridge.ts -s <use-case>
+   ```
 
-If missing, redirect to `CreateUseCase.md` workflow.
+3. For an explicitly approved Algorithm ISC update:
 
-### Step 2: Run Evaluation
+   ```bash
+   bun run <EVALS_SKILL_DIR>/Tools/AlgorithmBridge.ts -s <use-case> -r <isc-row> -u
+   ```
 
-```bash
-# Run an eval suite via AlgorithmBridge (the canonical entry point)
-bun run ~/.claude/skills/Evals/Tools/AlgorithmBridge.ts -s <use-case>
+   Do not use `-u` without confirming the target artifact and write scope.
 
-# With ISC row binding (auto-updates the Algorithm ISC row with result):
-bun run ~/.claude/skills/Evals/Tools/AlgorithmBridge.ts -s <use-case> -r <isc-row> -u
+4. To include suite saturation status:
 
-# To see saturation status alongside the run:
-bun run ~/.claude/skills/Evals/Tools/AlgorithmBridge.ts -s <use-case> --show-saturation
-```
+   ```bash
+   bun run <EVALS_SKILL_DIR>/Tools/AlgorithmBridge.ts -s <use-case> --show-saturation
+   ```
 
-### Step 3: Collect Results
+5. Read the generated result from:
+   - `<EVAL_WORKSPACE>/results/<use-case>/<run-id>/results.json`
+   - `<EVAL_WORKSPACE>/results/<use-case>/<run-id>/transcripts/` when transcripts were captured.
 
-Results are stored in:
-- `LIFEOS/MEMORY/STATE/Evals-Results/<use-case>/<run-id>/results.json` (per-run output)
-- Use case directory: `UseCases/<use-case>/` (source of truth)
+## Report
 
-### Step 5: Report Summary
+Report the run ID, trial count, pass rate, mean score, failed tests, grader errors, model/provider used for approved model-based graders, and the exact result path. Distinguish a failed evaluation from an infrastructure or inference error.
 
-Use structured response format:
+## Failure handling
 
-```markdown
-📋 SUMMARY: Evaluation completed for <use-case>
-
-📊 STATUS:
-| Metric | Value |
-|--------|-------|
-| Pass Rate | X% |
-| Mean Score | X.XX |
-| Failed Tests | X |
-
-📖 STORY EXPLANATION:
-1. Ran evaluation against <N> test cases
-2. Deterministic scorers completed first
-3. AI judges evaluated accuracy and style
-4. Calculated weighted scores
-5. Compared against pass threshold
-6. <Key finding 1>
-7. <Key finding 2>
-8. <Recommendation>
-
-🎯 COMPLETED: Evaluation finished with X% pass rate.
-```
-
-## Error Handling
-
-**If eval fails:**
-1. Check model API key is configured
-2. Verify test cases have valid inputs
-3. Check scorer configurations in config.yaml
-4. Review error logs in terminal
-
-## Done
-
-Evaluation complete. Results available in UI and files.
+- Missing use case: route to `CreateUseCase`.
+- Invalid configuration: identify the exact file and field; do not guess defaults silently.
+- Unapproved model spending: stop before inference and request approval.
+- Provider/runtime failure: preserve the error in the run artifact and report that no valid judge result was obtained.
+- Failed tests: retain the transcripts and grader evidence needed to reproduce the failure.

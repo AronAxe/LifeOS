@@ -1,5 +1,6 @@
 ---
 name: schema
+description: Map LifeOS personal-data schema to Hermes destinations.
 trigger: Use when organizing personal information, mapping LifeOS USER/ files to Hermes destinations, or understanding the schema-to-Hermes mapping.
 ---
 

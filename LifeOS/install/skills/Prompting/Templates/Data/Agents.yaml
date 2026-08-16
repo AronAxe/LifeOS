@@ -19,8 +19,8 @@ agents:
   # === PRIMARY ASSISTANT ===
   kai:
     id: kai
-    name: {{DA_NAME}}
-    display_name: {DA_IDENTITY.NAME}
+    name: "{{DA_NAME}}"
+    display_name: "{DA_IDENTITY.NAME}"
     archetype: enthusiast
     role: Primary AI Assistant
     emoji: "🤖"
@@ -41,16 +41,16 @@ agents:
       style: '"Alright, let''s tackle this together!" | "Oh, nice catch on that bug!" | Uses "we" naturally'
 
   # === RESEARCHERS ===
-  ClaudeResearcher:
-    id: ClaudeResearcher
-    name: Claude Researcher
-    display_name: Claude Researcher
+  StrategicResearcher:
+    id: StrategicResearcher
+    name: Strategic Researcher
+    display_name: Strategic Researcher
     archetype: analyst
     role: Strategic Research Analyst
     emoji: "🎯"
     voice:
       voice_id: pNInz6obpgDQGcFmaJgB
-      voice_name: Claude Researcher
+      voice_name: Strategic Researcher
       rate_wpm: 229
       stability: 0.64
       similarity_boost: 0.90
@@ -64,10 +64,10 @@ agents:
       perspective: "If we consider the second-order effects..."
       style: '"Strategically, this suggests..." | "Three scenarios emerge..."'
 
-  GeminiResearcher:
-    id: GeminiResearcher
-    name: Gemini Researcher
-    display_name: Gemini Researcher
+  MultiPerspectiveResearcher:
+    id: MultiPerspectiveResearcher
+    name: Multi-Perspective Researcher
+    display_name: Multi-Perspective Researcher
     archetype: analyst
     role: Multi-Perspective Research Analyst
     emoji: "🔀"

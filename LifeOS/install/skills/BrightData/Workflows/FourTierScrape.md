@@ -1,93 +1,54 @@
-# Four-Tier URL Content Scraping
+# Four-Tier Public-Page Retrieval
 
-## Voice Notification
+**Deliverable:** readable content from the requested public URL, with the successful route and any access limitation recorded. Begin with the least invasive route and escalate only after a concrete failure.
 
-```bash
-curl -s -X POST http://localhost:31337/notify \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Running the FourTierScrape workflow in the BrightData skill to scrape URL content"}' \
-  > /dev/null 2>&1 &
-```
+This workflow retrieves known URLs. For discovery, use Research first: `web_search`, Exa via Agent Reach, or the configured Tavily/Brave adapter. Bright Data is not a search engine.
 
-Running **FourTierScrape** in **BrightData**...
+## Tier 1 — Hermes direct extraction
 
----
-
-**Deliverable:** the URL's content in clean markdown, labeled with which tier retrieved it. Start cheap, escalate only on failure — the tier that succeeds first is the answer. Tier table (tool + cost) is in `SKILL.md`.
-
-## Pre-check: Cloudflare markdown negotiation
-
-Before the tier chain, probe for server-side markdown via Cloudflare's [Markdown for Agents](https://blog.cloudflare.com/markdown-for-agents/). Non-Cloudflare sites ignore the header and return HTML — zero downside.
+Use `web_extract` for the URL. For a server that advertises Markdown for Agents, a bounded pre-check is also acceptable:
 
 ```bash
-curl -sL -H "Accept: text/markdown" "[URL]" | head -5
+curl -sSL -H "Accept: text/markdown" "<url>"
 ```
 
-**Markdown detected (any of these) → use the body directly, skip the tiers:**
-1. `Content-Type` header contains `text/markdown`
-2. `x-markdown-tokens` header present (capture it as token-count metadata)
-3. Body starts with YAML frontmatter (`---`) or a markdown heading (`# `) instead of `<!DOCTYPE`/`<html` — Cloudflare's CDN sometimes reports `content-type: text/html` even when the body is markdown
+Accept the result only if it contains the requested page rather than a block page, error shell, or unrelated redirect.
 
-~80% fewer tokens than HTML-to-markdown conversion, ~1-3s, free. HTML or error → proceed to Tier 1.
+## Tier 2 — Existing retrieval channels
 
-## Tier 1 — WebFetch
+For a known public URL, use one healthy route:
 
-WebFetch the URL with prompt "Extract all content from this page and convert to markdown". Success → Output. Blocked/timeout → Tier 2.
+- Exa via Agent Reach: `mcporter call exa.web_fetch_exa --args '{"urls":["<url>"]}' --output json`
+- Jina Reader: retrieve `https://r.jina.ai/http://...` or `https://r.jina.ai/https://...` for the exact target URL.
 
-## Tier 2 — curl with Chrome headers
+Do not send authenticated, private, or sensitive URLs through third-party retrieval providers without explicit context-egress approval.
 
-The `Sec-Fetch-*` headers are the load-bearing part for bypassing basic detection; `--compressed` handles gzip/br like a real browser.
+## Tier 3 — Browser rendering
 
-```bash
-curl -L -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
-  -H "Accept: text/markdown, text/html;q=0.9, application/xhtml+xml;q=0.8, */*;q=0.7" \
-  -H "Accept-Language: en-US,en;q=0.9" \
-  -H "Accept-Encoding: gzip, deflate, br" \
-  -H "DNT: 1" \
-  -H "Connection: keep-alive" \
-  -H "Upgrade-Insecure-Requests: 1" \
-  -H "Sec-Fetch-Dest: document" \
-  -H "Sec-Fetch-Mode: navigate" \
-  -H "Sec-Fetch-Site: none" \
-  -H "Sec-Fetch-User: ?1" \
-  -H "Cache-Control: max-age=0" \
-  --compressed \
-  "[URL]"
+Use `browser_exec` for a public page that requires JavaScript, pagination, or bounded interaction. Stop at login, payment, permission, or CAPTCHA boundaries. Preserve the final URL and verify that the extracted text matches the requested page.
+
+## Tier 4 — Optional Bright Data adapter
+
+Use this tier only after prior routes fail or when the principal explicitly requests Bright Data and approves provider usage.
+
+Discover a compatible runtime tool rather than assuming its name:
+
+1. `tool_search(query="Bright Data scrape page markdown")`
+2. `tool_describe(name="<returned-tool-name>")`
+3. `tool_call(name="<returned-tool-name>", arguments={...})`
+
+If no compatible deferred tool is installed, a configured Crawl API dataset can retrieve one URL with `Tools/BrightDataCrawl.ts` at depth `0` after approval. Otherwise return `unavailable`; do not fabricate a provider integration.
+
+## Verification and output
+
+Verify the title/topic, major sections, source URL, and absence of block/error content. Return:
+
+```text
+URL: <final-url>
+Route: web_extract | Exa | Jina | browser_exec | Bright Data
+Status: complete | partial | unavailable
+Limitations: <none or exact limitation>
+Artifact: <content or saved path>
 ```
 
-HTML returned → convert to markdown → Output. Empty/blocked/JS-required → Tier 3.
-
-## Tier 3 — Interceptor (real Chrome)
-
-Renders JavaScript, handles cookies/sessions, real browser fingerprint. Playwright is banned across LifeOS.
-
-```bash
-interceptor open "<url>"        # renders JS, returns tree + flat text
-interceptor read --text-only    # extract rendered text
-```
-
-Rendered text → convert to markdown → Output. CAPTCHA / advanced bot detection → Tier 4.
-
-## Tier 4 — Bright Data MCP
-
-Residential proxies, automatic CAPTCHA solving, headless render. Last resort — has usage costs.
-
-```
-mcp__Brightdata__scrape_as_markdown  with URL: [user-provided URL]
-```
-
-Success → Output. Failure here is rare and means the site is down, login-gated, paywalled, or geo-restricted — report that to the user with the URL to double-check.
-
-## Output
-
-Present the markdown content, prefixed with which tier succeeded (and, for Tier 3/4, a one-line note on why escalation was needed). Verify the content is readable, matches the URL, and has no major missing sections.
-
-```markdown
-Successfully retrieved content from [URL] using Tier [1/2/3/4]
-
-[Content in markdown format...]
-```
-
-## Related
-
-- `Crawl.md` — multi-page site crawling (calls this workflow for its starting URL and as fallback).
+A provider's success response is not proof that the requested page was retrieved correctly.

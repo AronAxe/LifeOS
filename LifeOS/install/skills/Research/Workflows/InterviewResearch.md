@@ -1,112 +1,88 @@
-# Perform Interview Research
+# Interview Research Workflow
 
-You are preparing research for a sponsored interview at an information security or tech startup. Your goal is to generate Tyler Cowen-style questions based on Claude Shannon's concept of surprise - questions and answers should maximize information content and never be boring.
+Use to prepare a high-information interview about a company, project, technical leader, researcher, or public figure. The goal is not a generic biography; it is a verified briefing and questions that reveal otherwise unavailable judgment, trade-offs, and stories.
 
-## Research Protocol
+## Inputs
 
-Use the /conduct-research command to investigate the following about **{company_name}**:
+Confirm:
 
-1. **Recent Activity & Announcements** (last 6 months)
-   - Product launches and updates
-   - Funding rounds or business milestones
-   - Press releases and media coverage
-   - Conference talks or presentations
+- interview subject and organization;
+- audience and publication context;
+- interview date and research freshness window;
+- sensitive or excluded areas;
+- desired question count and tone;
+- whether the interview is sponsored or carries a conflict requiring disclosure.
 
-2. **Technical Innovation**
-   - Core technology and approach
-   - Patents or research papers
-   - Technical blog posts
-   - Open source contributions
+## 1. Build the evidence map
 
-3. **Social Media & Thought Leadership**
-   - CEO/founder social media activity
-   - Company blog posts
-   - Podcast appearances
-   - Industry commentary and opinions
+Research, as relevant:
 
-4. **Competitive Landscape**
-   - Direct competitors and alternatives
-   - Market positioning
-   - Unique differentiators
-   - Industry trends they're responding to
+1. recent announcements, launches, funding, milestones, and public appearances;
+2. core technology, architecture, patents, papers, open-source work, and technical trade-offs;
+3. founder or executive statements, interviews, talks, and recurring beliefs;
+4. customers, market position, alternatives, and competitive differentiation;
+5. hiring, partnerships, roadmap signals, unresolved risks, and future direction;
+6. contradictions between claims, observed behavior, and independent evidence.
 
-5. **Future Direction**
-   - Roadmap hints or statements
-   - Job postings (what roles they're hiring)
-   - Strategic partnerships
-   - Market expansion signals
+Use `StandardResearch.md` or `ExtensiveResearch.md` according to scope. Open primary sources and record URLs, dates, quotations, and locators.
 
-## Output Format
+## 2. Produce a subject brief
 
-After research, provide:
+Write:
 
-### COMPANY SUMMARY (2-3 paragraphs)
-- What they're building and why it matters
-- Recent momentum and achievements
-- What they seem most excited about
-- Key differentiators from competition
+- what the subject is building or arguing and why it matters;
+- recent momentum and material setbacks;
+- differentiators and credible alternatives;
+- beliefs or decisions that appear distinctive;
+- disputed, weakly supported, or inaccessible claims;
+- themes that an ordinary interview would miss.
 
-### INTERVIEW QUESTIONS (10 total)
+Separate verified fact from inference. A job posting or product change may be a signal, not proof of strategy.
 
-Generate 10 questions that:
-- Maximize surprise and information content (Shannon principle)
-- Use Tyler Cowen's style: unexpected angles, implicit assumptions challenged, "production function" thinking
-- Avoid obvious or boring questions
-- Elicit stories, not just facts
-- Reveal mental models and decision-making processes
+## 3. Generate high-information questions
 
-**Required question themes** (reframed in novel ways):
-1. Problem definition and origin story
-2. Competitive differentiation and strategy
-3. Future vision and industry evolution
+Create the requested number of questions—ten by default. Maximize information gain by avoiding prompts with predictable press-release answers. Use these lenses:
 
-**Additional themes to explore**:
-- Counter-intuitive insights they've discovered
-- Failed experiments and pivots
-- Hiring philosophy and team building
-- Customer surprises or unexpected use cases
-- Technical trade-offs and architecture decisions
-- Market timing and "why now"
-- Contrarian beliefs about their industry
+- origin-story revision: what problem did they first think they were solving?
+- production function: what scarce inputs create the output?
+- marginal bottleneck: what constrains the next step?
+- status-quo challenge: what does the field systematically misunderstand?
+- architecture trade-off: where does the approach fail or become uneconomic?
+- failed experiment or pivot: what changed their model?
+- customer surprise: what use or resistance was unexpected?
+- market timing: why now, and what would make now wrong?
+- second-order effect: what changes if they succeed?
+- counterfactual failure: from a future failure, what looks obvious in retrospect?
+- taste and judgment: what do they consider elegant, ugly, or non-negotiable?
 
-### Question Format:
-For each question, provide:
-- **Q[number]:** The actual question
-- **Why:** Brief explanation of what surprising insight this might reveal
-- **Follow-up angle:** One potential follow-up based on likely answers
+For each question include:
 
-## Tyler Cowen Question Principles
+```markdown
+**Qn. [question]**
+- Evidence basis: [verified source or observed tension]
+- Why it matters: [the hidden judgment or story it may reveal]
+- Follow-up: [conditional branch based on a plausible answer]
+```
 
-Apply these techniques:
-- **Oblique approach**: Ask about adjacent topics to reveal core insights
-- **Production function**: "What inputs create your outputs?"
-- **Marginal thinking**: "What's the next bottleneck?"
-- **Status quo challenge**: "What does everyone else get wrong?"
-- **Personal history**: "What experience shaped this decision?"
-- **Taste and aesthetics**: "What do you find beautiful about your solution?"
-- **Edge cases**: "When does your approach fail?"
-- **Second-order effects**: "What happens when you succeed?"
+## 4. Quality gate
 
-## Shannon Surprise Principle
+Reject or revise questions that:
 
-Maximize information entropy by:
-- Avoiding questions with predictable answers
-- Seeking insights that contradict conventional wisdom
-- Finding the "least likely but most important" aspects
-- Revealing hidden complexity in apparently simple systems
-- Exposing assumptions that aren't being questioned
+- can be answered from the public source already cited;
+- merely invite marketing copy;
+- contain an unverified accusation or false premise;
+- ask two unrelated questions at once;
+- expose private or sensitive information without justification;
+- are surprising only because they are theatrical.
 
-## Example Question Transformations
+The strongest question is both unexpected and fair.
 
-❌ **Boring**: "What problem are you solving?"
-✅ **Interesting**: "What problem did you initially *think* you were solving, and when did you realize you were actually solving something completely different?"
+## Deliverable
 
-❌ **Boring**: "How are you different from competitors?"
-✅ **Interesting**: "If your top competitor called you for advice on what they should build next, what would you tell them - and what would you deliberately leave out?"
+Return:
 
-❌ **Boring**: "What's your vision for the future?"
-✅ **Interesting**: "If you woke up in 2030 and your company had failed, what would be the most likely reason - and what could make that failure look obvious in retrospect?"
-
-## Research Command
-
-Now execute: `/conduct-research {company_name} - focus on: recent announcements, technical innovation, competitive positioning, founder/executive social media, future direction signals, and any contrarian or surprising aspects of their approach`
+1. concise subject/company summary;
+2. source-backed tensions and opportunity areas;
+3. ordered interview questions with evidence basis, rationale, and follow-up;
+4. facts to verify immediately before the interview;
+5. source ledger and conflicts/disclosures.

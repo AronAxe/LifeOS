@@ -1,11 +1,11 @@
 # Analyze.ts
 
-LLM-powered edit classification using Claude. Reads a word-level transcript and classifies segments for cutting.
+Hermes-native edit classification. Reads a word-level transcript and uses one bounded, tool-free Hermes inference turn to classify candidate cuts.
 
 ## Usage
 
 ```bash
-bun ~/.claude/skills/AudioEditor/Tools/Analyze.ts <transcript.json> [--output <path>] [--aggressive]
+bun $HERMES_HOME/skills/audio-editor/Tools/Analyze.ts <transcript.json> [--output <path>] [--aggressive]
 ```
 
 ## Options
@@ -13,7 +13,7 @@ bun ~/.claude/skills/AudioEditor/Tools/Analyze.ts <transcript.json> [--output <p
 | Flag | Description |
 |------|-------------|
 | `--output <path>` | Specify output JSON path (default: `<filename>.edits.json`) |
-| `--aggressive` | Tighter thresholds: cuts single filler words, 1.5s pauses, more word repetition |
+| `--aggressive` | Tighter thresholds: cuts single filler words, 1.5s pauses, and more word repetition |
 
 ## Classification Types
 
@@ -41,6 +41,8 @@ bun ~/.claude/skills/AudioEditor/Tools/Analyze.ts <transcript.json> [--output <p
 ]
 ```
 
-## Requirements
+## Requirements and consent
 
-- `ANTHROPIC_API_KEY` environment variable
+- The `hermes` CLI must be available, or `HERMES_INFERENCE_COMMAND_JSON` must contain a nonempty JSON string array naming an approved compatible command.
+- Inference is fail-closed. Set `LIFEOS_INFERENCE_APPROVED=1` only for an explicitly approved run that may incur model cost.
+- Model/provider overrides are optional and remain under the active Hermes configuration; this tool has no direct provider SDK or provider-specific credential contract.

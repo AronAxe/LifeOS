@@ -12,9 +12,9 @@ This is the Hermes-native port of the Fabric skill. The pattern-execution model 
 | LifeOS / Claude | Hermes-native |
 |-----------------|---------------|
 | `~/.claude/skills/Fabric/Patterns/` | `$HERMES_HOME/skills/Fabric/Patterns/` (repo source: `LifeOS/install/skills/Fabric/Patterns/`) |
-| Voice-notify via `curl localhost:31337/notify` | Hermes TTS plugin (no in-skill curl block) |
+| Retired upstream voice-notification curl | Hermes TTS plugin (no in-skill curl block) |
 | `fabric -U` pattern update | `git pull` on the LifeOS repo — patterns ship with the repo (see UpdatePatterns) |
-| Execution-log append to `~/.claude/LIFEOS/MEMORY/` | Not ported — Hermes uses Hindsight + native telemetry |
+| Historical execution-ledger append | Not ported — Hermes uses Hindsight + native telemetry |
 | `_HARVEST` auto-harvest side-effect | Route to the **Amber** skill's capture contract (Hindsight-backed) |
 
 The `fabric` CLI is still optional, used only for YouTube transcript (`-y`) and URL fallback (`-u`) when native fetch fails.

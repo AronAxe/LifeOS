@@ -2,15 +2,14 @@
 /**
  * Transcribe.ts — Word-level transcription via Whisper
  *
- * Uses insanely-fast-whisper (MPS accelerated) for word-level timestamps.
- * Falls back to standard whisper CLI if unavailable.
+ * Uses insanely-fast-whisper with MPS on macOS when available.
+ * Falls back to the cross-platform standard Whisper CLI.
  *
  * Usage: bun Transcribe.ts <audio-file> [--output <path>]
  * Output: JSON file with word-level timestamps at <audio-file>.transcript.json
  */
 
-import { $ } from "bun";
-import { existsSync } from "fs";
+import { existsSync, mkdirSync, rmSync } from "fs";
 import { basename, dirname, join } from "path";
 
 const args = process.argv.slice(2);
@@ -35,45 +34,58 @@ const outFile =
 console.log(`Transcribing: ${inputFile}`);
 console.log(`Output: ${outFile}`);
 
-// Check which whisper variant is available
-const hasFastWhisper =
-  (await $`which insanely-fast-whisper 2>/dev/null`.quiet().nothrow()).exitCode === 0;
-const hasWhisper =
-  (await $`which whisper 2>/dev/null`.quiet().nothrow()).exitCode === 0;
+async function run(command: string[]): Promise<number> {
+  const child = Bun.spawn({ cmd: command, stdout: "inherit", stderr: "inherit" });
+  return await child.exited;
+}
 
-if (hasFastWhisper) {
+// MPS is Apple-only. Other platforms use the standard Whisper CLI.
+const fastWhisper = process.platform === "darwin" ? Bun.which("insanely-fast-whisper") : null;
+const whisper = Bun.which("whisper");
+
+if (fastWhisper) {
   console.log("Using insanely-fast-whisper (MPS accelerated)...");
-  const result = await $`insanely-fast-whisper \
-    --file-name ${inputFile} \
-    --transcript-path ${outFile} \
-    --device-id mps \
-    --timestamp word \
-    --model-name openai/whisper-large-v3 \
-    --batch-size 4 2>&1`.quiet().nothrow();
+  const exitCode = await run([
+    fastWhisper,
+    "--file-name", inputFile,
+    "--transcript-path", outFile,
+    "--device-id", "mps",
+    "--timestamp", "word",
+    "--model-name", "openai/whisper-large-v3",
+    "--batch-size", "4",
+  ]);
 
-  if (result.exitCode !== 0) {
+  if (exitCode !== 0) {
     console.error("insanely-fast-whisper failed, trying standard whisper...");
   } else {
     console.log("Transcription complete.");
   }
 }
 
-if (!hasFastWhisper || !existsSync(outFile)) {
-  if (!hasWhisper) {
+if (!fastWhisper || !existsSync(outFile)) {
+  if (!whisper) {
     console.error("No whisper variant found. Install: pip install openai-whisper");
     process.exit(1);
   }
 
   console.log("Using standard whisper...");
   const tmpDir = join(dirname(outFile), ".whisper-tmp");
-  await $`mkdir -p ${tmpDir}`;
+  mkdirSync(tmpDir, { recursive: true });
 
-  await $`whisper ${inputFile} \
-    --model medium \
-    --language en \
-    --word_timestamps True \
-    --output_format json \
-    --output_dir ${tmpDir} 2>&1`.quiet();
+  const exitCode = await run([
+    whisper,
+    inputFile,
+    "--model", "medium",
+    "--language", "en",
+    "--word_timestamps", "True",
+    "--output_format", "json",
+    "--output_dir", tmpDir,
+  ]);
+  if (exitCode !== 0) {
+    rmSync(tmpDir, { recursive: true, force: true });
+    console.error(`Whisper failed with exit code ${exitCode}`);
+    process.exit(1);
+  }
 
   // Find and move the output
   const whisperOut = join(tmpDir, basename(inputFile).replace(/\.[^.]+$/, ".json"));
@@ -93,11 +105,11 @@ if (!hasFastWhisper || !existsSync(outFile)) {
 
     const fullText = chunks.map((c) => c.text).join("");
     await Bun.write(outFile, JSON.stringify({ text: fullText, chunks }, null, 2));
-    await $`rm -rf ${tmpDir}`;
+    rmSync(tmpDir, { recursive: true, force: true });
     console.log("Transcription complete.");
   } else {
     console.error("Whisper produced no output.");
-    await $`rm -rf ${tmpDir}`;
+    rmSync(tmpDir, { recursive: true, force: true });
     process.exit(1);
   }
 }

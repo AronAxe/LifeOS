@@ -5,15 +5,18 @@
  * Universal sources:
  *  - Patch RSS at https://patch.com/<state-slug>/<city-slug>/feed
  *  - Google News topic search keyed on "<city>, <state>"
- *  - Optional regional outlet RSS via SKILLCUSTOMIZATIONS PREFERENCES.md
+ *  - Optional configured external adapter override
  *
  * v1 actually attempts Patch RSS — it's the most reliable universal source.
  */
 
 import type { FetchResult, Hometown, Item } from "./Types.ts"
 import { unavailable, EMPTY_RESULT } from "./Types.ts"
+import { fetchFromExternalAdapter } from "./ExternalAdapter.ts"
 
 export async function fetchNews(home: Hometown): Promise<FetchResult> {
+  const adapted = fetchFromExternalAdapter("news", home)
+  if (adapted) return adapted
   const patchUrl = `https://patch.com/${home.stateSlug}/${home.citySlug}/feed`
   try {
     const res = await fetch(patchUrl, { signal: AbortSignal.timeout(8000) })

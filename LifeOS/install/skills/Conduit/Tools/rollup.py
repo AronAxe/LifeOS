@@ -5,20 +5,72 @@ events -> record, no model, no network in the compute path. Idempotent (running
 twice on the same day produces the same files). The single external write is the
 Hindsight retain at the end. Invoked by the `conduit-rollup` cron daily.
 
+Configuration:
+    LIFEOS_PRINCIPAL_ID   required. Short, stable, lowercase identifier for the
+                          principal. It is the `{id}` segment of every durable
+                          Hindsight `document_id` this tool writes
+                          (`user:{id}:conduit:daily:{date}`). No default: an
+                          implicit one would silently bind another person's
+                          records to this instance.
+    HERMES_HOME           Hermes home (default ~/.hermes). Conduit data lives at
+                          <HERMES_HOME>/conduit/.
+
 Usage:
-    python rollup.py [YYYY-MM-DD]   build + persist + retain the day (default: today)
+    LIFEOS_PRINCIPAL_ID=you python rollup.py [YYYY-MM-DD]
+                                    build + persist + retain the day (default: today)
     python rollup.py --today        print today's live distribution (not persisted)
+
+Exit codes: 0 ok · 2 configuration error.
 """
 from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 CONDUIT_VERSION = "1.0.0-hermes"
+
+#: A principal id is a URL-ish slug: lowercase alphanumerics, `.`, `_`, `-`.
+#: `:` is excluded because it is the document_id segment separator.
+PRINCIPAL_ID_PATTERN = re.compile(r"[a-z0-9][a-z0-9._-]*")
+
+
+class ConfigurationError(RuntimeError):
+    """Raised when required configuration is absent or malformed."""
+
+
+def resolve_principal_id(env: dict | None = None) -> str:
+    """Resolve LIFEOS_PRINCIPAL_ID, or fail loudly.
+
+    Deliberately has no fallback. Earlier revisions of this tool hardcoded one
+    person's given name into the durable document_id contract; see
+    `Conduit/SKILL.md` § "Principal identifier" for the migration note.
+    """
+    source = os.environ if env is None else env
+    raw = (source.get("LIFEOS_PRINCIPAL_ID") or "").strip()
+    if not raw:
+        raise ConfigurationError(
+            "LIFEOS_PRINCIPAL_ID is not set. Set it to a short, stable, "
+            "lowercase identifier for the principal (for example "
+            "LIFEOS_PRINCIPAL_ID=jdoe). It becomes the `{id}` segment of every "
+            "durable Conduit document_id. This tool ships no default."
+        )
+    if not PRINCIPAL_ID_PATTERN.fullmatch(raw):
+        raise ConfigurationError(
+            f"LIFEOS_PRINCIPAL_ID={raw!r} is not a valid identifier. Use "
+            "lowercase letters, digits, '.', '_' or '-', starting with a letter "
+            "or digit."
+        )
+    return raw
+
+
+def daily_document_id(principal_id: str, date: str) -> str:
+    """The stable Hindsight document_id for one Conduit daily record."""
+    return f"user:{principal_id}:conduit:daily:{date}"
 
 
 def hermes_home() -> Path:
@@ -77,8 +129,19 @@ def read_day_events(date: str) -> list[dict]:
     return events
 
 
-def build_daily_record(date: str, events: list[dict], poll_interval_sec: int) -> dict:
-    """Pure: events -> DailyRecord. One app-focus event = one poll interval of its app."""
+def build_daily_record(
+    date: str,
+    events: list[dict],
+    poll_interval_sec: int,
+    generated_at: str | None = None,
+) -> dict:
+    """Pure aggregation: events -> DailyRecord. One app-focus event = one poll
+    interval of its app.
+
+    `generated_at` is the only non-deterministic field; pass it explicitly to
+    make a run byte-reproducible (the tests do). When omitted it is stamped with
+    the current UTC time, which is what the cron path wants.
+    """
     per_app_sec: dict[str, float] = {}
     per_repo_commits: dict[str, int] = {}
     seen_sha: set[str] = set()
@@ -109,7 +172,7 @@ def build_daily_record(date: str, events: list[dict], poll_interval_sec: int) ->
     return {
         "date": date,
         "conduitVersion": CONDUIT_VERSION,
-        "generatedAt": datetime.now(timezone.utc).isoformat(),
+        "generatedAt": generated_at or datetime.now(timezone.utc).isoformat(),
         "totalMinutes": round(sum(b["minutes"] for b in blocks), 1),
         "creationMinutes": kind_sum("creation"),
         "consumptionMinutes": kind_sum("consumption"),
@@ -149,10 +212,10 @@ def write_daily_record(r: dict) -> dict:
     return {"md": str(md_path), "json": str(json_path)}
 
 
-def retain_to_hindsight(r: dict, md: str) -> None:
+def retain_to_hindsight(r: dict, md: str, principal_id: str) -> None:
     """The one external write. Shell out to the hermes CLI; on any failure, durably
     queue the request so the daily record is never lost from memory."""
-    doc_id = f"user:aron:conduit:daily:{r['date']}"
+    doc_id = daily_document_id(principal_id, r["date"])
     tags = ["cat:conduit", "source:conduit_daily"]
     try:
         res = subprocess.run(
@@ -174,12 +237,18 @@ def retain_to_hindsight(r: dict, md: str) -> None:
 if __name__ == "__main__":
     poll = int(load_config().get("pollIntervalSec", 120))
     if "--today" in sys.argv:
+        # Preview only: no persistence, no retain, so no principal id is needed.
         date = datetime.now(timezone.utc).date().isoformat()
         print(render_markdown(build_daily_record(date, read_day_events(date), poll)))
     else:
+        try:
+            principal = resolve_principal_id()
+        except ConfigurationError as err:
+            print(f"conduit rollup: {err}", file=sys.stderr)
+            raise SystemExit(2)
         date = next((a for a in sys.argv[1:] if not a.startswith("--")),
                     datetime.now(timezone.utc).date().isoformat())
         record = build_daily_record(date, read_day_events(date), poll)
         paths = write_daily_record(record)
-        retain_to_hindsight(record, paths["md"])
+        retain_to_hindsight(record, paths["md"], principal)
         print(f"Rolled up {date} → {paths['md']}")

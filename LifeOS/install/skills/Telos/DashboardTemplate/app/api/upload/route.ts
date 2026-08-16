@@ -1,87 +1,70 @@
-import { NextResponse } from "next/server"
+import { NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
-import os from 'os'
+import { getConfiguredTelosDir, telosWritesEnabled } from '@/lib/telos-data'
 
-const TELOS_DIR = path.join(os.homedir(), '.claude/skills/Telos')
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 
 export async function POST(request: Request) {
   try {
+    if (!telosWritesEnabled()) {
+      return NextResponse.json(
+        { error: 'TELOS writes are disabled. Set TELOS_ALLOW_WRITES=true only after approving dashboard mutations.' },
+        { status: 403 },
+      )
+    }
+    const root = getConfiguredTelosDir()
+    if (!root || !fs.existsSync(root)) {
+      return NextResponse.json({ error: 'TELOS_DIR must name an existing directory' }, { status: 503 })
+    }
+    const rootStats = fs.lstatSync(root)
+    if (!rootStats.isDirectory() || rootStats.isSymbolicLink()) {
+      return NextResponse.json({ error: 'TELOS_DIR must name a regular directory, not a symlink' }, { status: 503 })
+    }
+
     const formData = await request.formData()
-    const file = formData.get('file') as File
-
-    if (!file) {
-      return NextResponse.json(
-        { error: "No file provided" },
-        { status: 400 }
-      )
+    const file = formData.get('file')
+    if (!(file instanceof File)) {
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
 
-    // Validate file type
     const fileName = file.name
-    const isMarkdown = fileName.endsWith('.md')
-    const isCSV = fileName.endsWith('.csv')
-
-    if (!isMarkdown && !isCSV) {
-      return NextResponse.json(
-        { error: "Only .md and .csv files are allowed" },
-        { status: 400 }
-      )
+    if (path.basename(fileName) !== fileName || fileName.startsWith('.') || !/\.(?:md|csv)$/i.test(fileName)) {
+      return NextResponse.json({ error: 'Only simple .md and .csv filenames are allowed' }, { status: 400 })
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      return NextResponse.json({ error: 'File exceeds the 5 MiB dashboard limit' }, { status: 413 })
     }
 
-    // Read file content
-    const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-
-    // Ensure TELOS directory exists
-    if (!fs.existsSync(TELOS_DIR)) {
-      fs.mkdirSync(TELOS_DIR, { recursive: true })
+    const isCSV = fileName.toLowerCase().endsWith('.csv')
+    const destinationDir = isCSV ? path.join(root, 'data') : root
+    if (!fs.existsSync(destinationDir)) fs.mkdirSync(destinationDir)
+    const destinationStats = fs.lstatSync(destinationDir)
+    if (!destinationStats.isDirectory() || destinationStats.isSymbolicLink()) {
+      return NextResponse.json({ error: 'Destination is not a regular directory' }, { status: 400 })
     }
 
-    // Determine save path
-    let savePath: string
-    if (isCSV) {
-      // CSV files go in data subdirectory
-      const csvDir = path.join(TELOS_DIR, 'data')
-      if (!fs.existsSync(csvDir)) {
-        fs.mkdirSync(csvDir, { recursive: true })
-      }
-      savePath = path.join(csvDir, fileName)
-    } else {
-      // MD files go in root TELOS directory
-      savePath = path.join(TELOS_DIR, fileName)
-    }
-
-    // Check if file already exists
+    const savePath = path.join(destinationDir, fileName)
     if (fs.existsSync(savePath)) {
-      return NextResponse.json(
-        { error: `File ${fileName} already exists. Please delete the existing file first or rename your file.` },
-        { status: 409 }
-      )
+      return NextResponse.json({ error: `File ${fileName} already exists; rename it or use the editor.` }, { status: 409 })
     }
+    fs.writeFileSync(savePath, Buffer.from(await file.arrayBuffer()), { flag: 'wx' })
 
-    // Save file
-    fs.writeFileSync(savePath, buffer)
-
-    // Log the upload
-    const timestamp = new Date().toISOString()
-    const logMessage = `\n## ${timestamp}\n\n- **Action:** File uploaded via dashboard\n- **File:** ${fileName}\n- **Type:** ${isCSV ? 'CSV' : 'Markdown'}\n- **Path:** ${savePath}\n`
-
-    const updatesPath = path.join(TELOS_DIR, 'updates.md')
+    const relativeName = isCSV ? `data/${fileName}` : fileName
+    const updatesPath = path.join(root, 'updates.md')
     if (fs.existsSync(updatesPath)) {
-      fs.appendFileSync(updatesPath, logMessage)
+      const updatesStats = fs.lstatSync(updatesPath)
+      if (updatesStats.isFile() && !updatesStats.isSymbolicLink()) {
+        fs.appendFileSync(
+          updatesPath,
+          `\n## ${new Date().toISOString()}\n\n- **Action:** File uploaded via dashboard\n- **File:** ${relativeName}\n`,
+        )
+      }
     }
 
-    return NextResponse.json({
-      success: true,
-      message: `${fileName} uploaded successfully to ${isCSV ? 'data/' : ''}`,
-      path: savePath,
-    })
+    return NextResponse.json({ success: true, message: `${relativeName} uploaded`, filename: relativeName })
   } catch (error) {
-    console.error("Error in upload API:", error)
-    return NextResponse.json(
-      { error: "Failed to upload file" },
-      { status: 500 }
-    )
+    console.error('Error in TELOS upload API:', error)
+    return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 })
   }
 }

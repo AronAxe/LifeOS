@@ -51,11 +51,15 @@ Running the **WorkflowName** workflow in the **Aphorisms** skill to ACTION...
 | ResearchThinker | Research thinker, find quotes from, what did X say, thinker quotes on | `Workflows/ResearchThinker.md` |
 | SearchAphorisms | Search aphorisms, find quotes on, quotes about, quotes matching, what aphorisms | `Workflows/SearchAphorisms.md` |
 
-## Database
+## Library contract
 
-**Location:** `~/.claude/skills/Aphorisms/Database/aphorisms.md`
+- **Mutable principal library:** set `APHORISMS_LIBRARY` to an absolute file outside the installed skill tree, normally `<LIFEOS_WORKSPACE>/skills/aphorisms/aphorisms.md`.
+- **Packaged seed/reference:** `Database/aphorisms.md`, loaded with `skill_view(name="aphorisms", file_path="Database/aphorisms.md")`. It is read-only.
+- Read workflows use the mutable library when configured; otherwise they may search the packaged seed without modifying it.
+- Add, usage-history, and research-write workflows fail closed until `APHORISMS_LIBRARY` is configured. They must never patch `$HERMES_HOME/skills/aphorisms`.
+- On first setup, propose copying the packaged seed to the approved external library and obtain consent before creating it.
 
-Organized by author, theme, context, and usage history. Per-aphorism metadata: full quote text, author attribution, theme tags, context/background, source reference. Sections: Initial Collection, per-thinker sections, Theme Index, Newsletter Usage History.
+The library is organized by author, theme, context, and usage history. Per-aphorism metadata includes full quote text, author attribution, theme tags, context/background, and source reference. Sections include Initial Collection, per-thinker sections, Theme Index, and Newsletter Usage History.
 
 ## Taxonomy (curated state)
 

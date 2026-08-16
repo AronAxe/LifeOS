@@ -1,5 +1,6 @@
 ---
 name: pulse
+description: Map the LifeOS Pulse dashboard to Hermes-native surfaces.
 trigger: Use when reasoning about the Pulse dashboard system, DA subsystem architecture, terminal tab state, metadata surfaces, or mapping Pulse modules to Hermes-native equivalents.
 ---
 
@@ -11,7 +12,7 @@ Pulse is the Life Dashboard — the visible surface of LifeOS. In Hermes, there 
 
 ## Pulse Daemon → Hermes Runtime
 
-The unified Pulse daemon (`~/.claude/LIFEOS/PULSE/`, port 31337, `com.lifeos.pulse`) was a single always-on macOS process. In Hermes, its responsibilities are distributed across the native runtime:
+The historical unified Pulse daemon (port 31337, `com.lifeos.pulse`) was a single always-on macOS process. In Hermes, its responsibilities are distributed across the native runtime:
 
 | Pulse Module | LifeOS Function | Hermes Equivalent | Notes |
 |---|---|---|---|
@@ -94,7 +95,7 @@ Pulse tooltips taught the dashboard's meaning through hover-context. In Hermes, 
 
 ## Observatory Dashboard → Hermes Terminal + LCM
 
-The Observatory was a Next.js static export served by Pulse on `localhost:31337`. In Hermes:
+The Observatory was a Next.js static export served by the retired local Pulse daemon. In Hermes:
 
 | Observatory Page | Hermes Equivalent |
 |---|---|
@@ -102,7 +103,7 @@ The Observatory was a Next.js static export served by Pulse on `localhost:31337`
 | `/knowledge` (knowledge browser) | `hindsight_recall` with `cat:knowledge` |
 | `/security` (security management) | Hermes tool approval + safety middleware (no separate UI) |
 | `/freshness` | `python LifeOS/install/skills/Freshness/Tools/check.py` |
-| `/growth` | Hindsight `cat:identity` recall + cron `lifeos-wisdom-synthesis` |
+| `/growth` | Hindsight `cat:identity` recall + explicit reflection; any `lifeos-wisdom-synthesis` cron requires separate approval and setup |
 | `/life` (USER/ browser) | `hindsight_recall` with category-specific tags |
 
 ## Session State Tracking → Hermes Session + LCM

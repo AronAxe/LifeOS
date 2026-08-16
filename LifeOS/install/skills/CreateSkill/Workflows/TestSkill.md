@@ -1,136 +1,55 @@
-# TestSkill Workflow
+# Test Skill Workflow
 
-Test a skill's effectiveness by running it against real prompts and comparing with a no-skill baseline.
+Test the skill's stated contract, not merely its Markdown syntax.
 
-Inspired by Anthropic's skill-creator methodology: the only way to know if a skill works is to run it on real prompts and compare outputs with and without the skill.
+## 1. Inventory the contract
 
-## Voice Notification
+Read the installed/repository skill and linked resources. Enumerate:
 
-```bash
-curl -s -X POST http://localhost:31337/notify \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Running the TestSkill workflow in the CreateSkill skill to test skill effectiveness"}' \
-  > /dev/null 2>&1 &
+- trigger and negative-trigger boundary;
+- workflows and expected outcomes;
+- required tools, commands, inputs, and optional dependencies;
+- writes, external calls, approvals, and refusal behavior;
+- artifacts and decisive completion evidence.
+
+## 2. Build representative cases
+
+Include at minimum:
+
+1. one normal happy path;
+2. one edge case;
+3. one missing-prerequisite or malformed-input case;
+4. one prohibited/approval-gated action;
+5. one routing near-miss when the skill has a confusable neighbor.
+
+For artifact-producing skills, define a rubric before execution: correctness, completeness, provenance, portability, safety, and recoverability.
+
+## 3. Execute in isolation
+
+Use temporary inputs, a scratch target, or a dry-run mode whenever possible. Exercise linked scripts with their documented commands and capture exit status, stdout/stderr, and created paths. Never test publication, deletion, financial actions, live credentials, or another profile without explicit authorization.
+
+When meaningful and feasible, compare:
+
+- **with skill:** the documented workflow and resources;
+- **baseline:** the same bounded task without relying on the skill's specialized procedure.
+
+Use the same input and rubric. A baseline comparison is optional when it would be unsafe, costly, or impossible to isolate.
+
+## 4. Verify outputs
+
+Read generated files, query destinations, inspect representative records, and confirm counts/checksums where material. Verify optional dependencies fail with actionable guidance. A successful process exit is not sufficient when the destination can be checked.
+
+## 5. Report and iterate
+
+For each case record:
+
+```text
+Case: <id and intent>
+Expected: <observable result>
+Observed: <tool-backed result>
+Evidence: <command, path, URL, or ID>
+Verdict: pass | fail | partial | untested
+Gap: <cause and smallest repair>
 ```
 
-Running the **TestSkill** workflow in the **CreateSkill** skill to test skill effectiveness...
-
----
-
-## Step 1: Identify the Skill Under Test
-
-Read the target skill's SKILL.md:
-
-```
-~/.claude/skills/[path]/SKILL.md
-```
-
-Note the skill's:
-- Name and description
-- Key workflows and what they do
-- Expected behavior changes
-
----
-
-## Step 2: Create Test Prompts
-
-Generate 2-4 realistic test prompts — the kind of thing a real user would actually say that should invoke this skill. Share them with the user for review before running.
-
-Good test prompts are:
-- **Realistic** — something a user would actually type, not an abstract request
-- **Substantive** — complex enough that a skill would actually help (simple one-liners may not trigger skill usage)
-- **Diverse** — cover different aspects of the skill's functionality
-- **Specific** — include concrete details (file paths, names, context) like real requests do
-
-Bad: `"Format this data"`
-Good: `"I have a CSV in ~/Downloads/q4-sales.csv with revenue in column C and costs in column D — add a profit margin percentage column and highlight any margins below 15%"`
-
----
-
-## Step 3: Run Test Prompts (With-Skill + Baseline)
-
-**Workspace:** `MEMORY/WORK/skill-test-[skillname]/iteration-[N]/`
-
-For each test prompt, spawn TWO Agent subagents **in the same turn** so they run in parallel:
-
-### With-Skill Agent
-
-```
-You are testing a skill. Read the following skill file FIRST, then use its instructions to accomplish the task.
-
-Skill file: [absolute path to SKILL.md]
-
-Task: [test prompt]
-
-Save your final output to: [workspace]/test-[N]/with-skill/output.md
-
-After completing the task, also save a brief transcript of your approach to: [workspace]/test-[N]/with-skill/transcript.md
-Include: what steps you took, what tools you used, any decisions you made.
-```
-
-### Baseline Agent (No Skill)
-
-```
-Accomplish this task using your general capabilities. Do NOT read any skill files.
-
-Task: [test prompt]
-
-Save your final output to: [workspace]/test-[N]/baseline/output.md
-
-After completing the task, also save a brief transcript of your approach to: [workspace]/test-[N]/baseline/transcript.md
-Include: what steps you took, what tools you used, any decisions you made.
-```
-
-Use `run_in_background: true` for all agents. Launch all with-skill + baseline pairs at once.
-
----
-
-## Step 4: Compare Results
-
-Once all agents complete, for each test prompt:
-
-1. **Read both outputs** (with-skill and baseline)
-2. **Read both transcripts** to understand approach differences
-3. **Assess the delta** — did the skill actually help?
-
-Present a comparison to the user for each test:
-
-```
-### Test [N]: "[prompt summary]"
-
-**With Skill:**
-- Approach: [how it handled the task]
-- Quality: [assessment]
-
-**Baseline (No Skill):**
-- Approach: [how it handled the task]
-- Quality: [assessment]
-
-**Verdict:** [Skill helped significantly / Skill helped marginally / No meaningful difference / Baseline was better]
-**Why:** [specific reasons]
-```
-
----
-
-## Step 5: Collect Feedback
-
-Ask the user:
-1. Which outputs did you prefer and why?
-2. What did the skill get wrong?
-3. What should the skill do differently?
-
-Empty feedback on a test = the user thought it was fine.
-
----
-
-## Step 6: Iterate or Complete
-
-Based on feedback:
-
-- **If improvements needed:** Invoke the `Workflows/ImproveSkill.md` workflow with the feedback, then rerun tests into a new `iteration-[N+1]/` directory. Compare against the previous iteration.
-- **If skill looks good:** Report the results and suggest running `Workflows/OptimizeDescription.md` to ensure the skill triggers reliably.
-- **If skill shows no improvement over baseline:** The skill may not be needed for this use case, or needs fundamental rethinking. Discuss with the user.
-
----
-
-**Writing philosophy:** When improving skills based on test results, see `Workflows/ImproveSkill.md` Step 3 for the full guidance (explain the why, keep lean, generalize, bundle repeated work).
+Separate implementation failures from documentation failures and environment limitations. Repair through the Update/Canonicalize workflow, rerun the failed cases, then run the repository's full gate where applicable. Report remaining untested surfaces explicitly.

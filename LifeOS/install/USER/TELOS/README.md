@@ -4,12 +4,11 @@ provenance: template
 
 # TELOS — Your Life Operating Goals
 
-> 🎯 SAMPLE TEMPLATES — Every `.md` file in this directory ships as a SAMPLE with placeholder entries marked `(sample)`. They show the SHAPE of populated TELOS data so you can see what to aim for. Run `/interview` (or talk to your DA) to replace the samples with your real mission, goals, beliefs, etc. Pulse will display populated entries here once you run the interview.
+> 🎯 UPSTREAM SAMPLE TEMPLATES — These files document the source-system TELOS shape. HALOS does not deploy, populate, watch, or display them. The principal supplies a separate canonical TELOS source during consent-gated setup.
 
 TELOS is your personal "why." These files describe what you're trying to do
 with your life, what's getting in the way, and how you plan to handle it.
-LifeOS reads them at every session start so the DA understands the context
-behind any work you ask for.
+Upstream LifeOS read these files at session start. HALOS does not; a workflow reads configured TELOS only when required and consent permits it.
 
 ## Files
 
@@ -24,7 +23,7 @@ behind any work you ask for.
 | `BELIEFS.md` | The opinions and frames you operate from. The DA uses these to read drafts in your voice. |
 | `WISDOM.md` | Lessons you've extracted from experience and want to keep applying. |
 | `BOOKS.md` | Books that shaped you. Useful when the DA picks recommendations or framings. |
-| `PRINCIPAL_TELOS.md` | **Auto-generated summary** of all the above. Loaded into every session via CLAUDE.md. |
+| `PRINCIPAL_TELOS.md` | Upstream generated summary; not generated or loaded by HALOS. |
 
 ## Subdirectories
 

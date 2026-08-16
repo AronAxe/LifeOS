@@ -3,7 +3,7 @@
 
 Port of LifeOS ISARender.ts to Python stdlib.
 Zero tokens, zero API calls, zero dependencies. The template HTML and CSS
-are loaded from LifeOS/install/LIFEOS/TOOLS/ISARender/ and reused as-is.
+are packaged as skill-relative resources so the renderer works after import.
 
 Usage:
     python render.py <path-to-ISA.md>          # write ISA.html alongside
@@ -20,11 +20,11 @@ from datetime import datetime
 from pathlib import Path
 
 # ── Paths ──
-# render.py is at LifeOS/install/skills/ISA/Tools/render.py
-# Templates live at LifeOS/install/LIFEOS/TOOLS/ISARender/
-# parents: [Tools, ISA, skills, install, LifeOS] → parents[3] = install
-SKILL_ROOT = Path(__file__).resolve().parents[3]  # LifeOS/install
-TEMPLATE_DIR = SKILL_ROOT / "LIFEOS" / "TOOLS" / "ISARender"
+# render.py is at <ISA_SKILL_DIR>/Tools/render.py.
+# Collision-safe imports can rename the skill directory, so resolve resources
+# relative to this file rather than assuming a global or source-tree path.
+SKILL_ROOT = Path(__file__).resolve().parents[1]
+TEMPLATE_DIR = SKILL_ROOT / "Resources" / "ISARender"
 TEMPLATE_HTML = TEMPLATE_DIR / "template.html"
 TEMPLATE_CSS = TEMPLATE_DIR / "template.css"
 
@@ -256,9 +256,13 @@ def render(isa_path: Path) -> str:
     sections = parse_sections(body)
     iscs = parse_iscs(sections.get("Criteria", ""))
 
-    # Load templates
-    css = TEMPLATE_CSS.read_text(encoding="utf-8") if TEMPLATE_CSS.exists() else ""
-    template = TEMPLATE_HTML.read_text(encoding="utf-8") if TEMPLATE_HTML.exists() else "<html><body>{{SECTIONS}}</body></html>"
+    # Packaging failures must be visible; silently rendering an unstyled fallback
+    # would make a broken imported skill look successful.
+    missing = [str(path) for path in (TEMPLATE_HTML, TEMPLATE_CSS) if not path.is_file()]
+    if missing:
+        raise FileNotFoundError("ISA renderer resource missing: " + ", ".join(missing))
+    css = TEMPLATE_CSS.read_text(encoding="utf-8")
+    template = TEMPLATE_HTML.read_text(encoding="utf-8")
 
     now = datetime.now().strftime("%Y-%m-%d %H:%M UTC")
 
@@ -315,7 +319,7 @@ def render(isa_path: Path) -> str:
     html = template
     html = html.replace("{{TITLE}}", task)
     html = html.replace("{{TASK}}", task)
-    html = html.replace("{{CSS}}", f"<style>{css}</style>")
+    html = html.replace("{{CSS}}", css)
     html = html.replace("{{BRAND_LOGO_B64}}", "")
     html = html.replace("{{EFFORT_DISPLAY}}", effort)
     html = html.replace("{{SLUG}}", slug_val)

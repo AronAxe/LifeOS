@@ -1,22 +1,19 @@
 #!/usr/bin/env bun
 /**
- * FetchCrime — delegates to the _CRIMESTATS skill.
+ * FetchCrime — delegates to the configured LocalIntelligence adapter.
  *
- * Per ISA constraint ISC-12: this fetcher MUST NOT call CitizenRIMS, FBI UCR,
- * AreaVibes, or any crime-data source directly. All crime data routes through
- * _CRIMESTATS.
- *
- * v1: returns source_status="unavailable" with a TODO marker pointing at the
- * delegation contract. The real implementation will spawn _CRIMESTATS via the
- * Skill mechanism (or its CLI tool when one is added) and shape the output.
+ * The bundled skill does not scrape people-search or jurisdiction-specific crime
+ * sources. A principal-configured executable owns source selection and emits the
+ * common FetchResult envelope.
  */
 
 import type { FetchResult, Hometown } from "./Types.ts"
 import { unavailable } from "./Types.ts"
+import { fetchFromExternalAdapter } from "./ExternalAdapter.ts"
 
 export async function fetchCrime(home: Hometown): Promise<FetchResult> {
-  return unavailable(
-    `crime fetcher not yet implemented — TODO: delegate to _CRIMESTATS QuickStats for ${home.city}, ${home.state}; never call CitizenRIMS/FBI/AreaVibes from here`
+  return fetchFromExternalAdapter("crime", home) ?? unavailable(
+    "crime requires LIFEOS_LOCAL_INTELLIGENCE_ADAPTER; no private crime skill or source is bundled",
   )
 }
 

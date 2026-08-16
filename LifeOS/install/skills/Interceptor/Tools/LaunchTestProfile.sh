@@ -23,8 +23,9 @@ set -euo pipefail
 # resolves from the single canonical home (preferences.env), not a guessed
 # default. The preflight sources this too; this script must not rely on the
 # preflight having run first.
-USER_PREFS="${HOME}/.claude/LIFEOS/USER/CUSTOMIZATIONS/SKILLS/Interceptor/preferences.env"
-if [ -f "$USER_PREFS" ]; then
+LIFEOS_WORKSPACE="${LIFEOS_WORKSPACE:-}"
+USER_PREFS="${LIFEOS_WORKSPACE:+${LIFEOS_WORKSPACE}/skills/interceptor/preferences.env}"
+if [ -n "$USER_PREFS" ] && [ -f "$USER_PREFS" ]; then
     # shellcheck disable=SC1090
     . "$USER_PREFS"
 fi
@@ -43,7 +44,8 @@ if [ -z "$CHROME_PROFILE" ]; then
 LaunchTestProfile.sh: FAIL — no test profile configured.
 
   INTERCEPTOR_TEST_CHROME_PROFILE is unset/empty. Set it in
-    ~/.claude/LIFEOS/USER/CUSTOMIZATIONS/SKILLS/Interceptor/preferences.env
+    \$LIFEOS_WORKSPACE/skills/interceptor/preferences.env
+  after explicitly setting LIFEOS_WORKSPACE to a writable external directory,
   to the dedicated Interceptor test profile's on-disk directory name (e.g.
   "Profile N" — map directory -> friendly name via
   ~/Library/Application Support/Google/Chrome/Local State, profile.info_cache).

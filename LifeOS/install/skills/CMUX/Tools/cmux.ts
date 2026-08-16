@@ -48,7 +48,6 @@ const LAUNCH_TIMEOUT_MS = 5_000;
 const PING_WAIT_MS = 15_000;
 const PING_INTERVAL_MS = 750;
 const MONITOR_TAIL_LINES = 40;
-const VOICE_URL = "http://localhost:31337/notify";
 
 function usageText(): string {
   return `cmux.ts - JSON CLI wrapper for the cmux GUI terminal multiplexer
@@ -64,14 +63,17 @@ SUBCOMMANDS:
   race --feature <f> --agents N             Boot N race agents for a feature
   fleet --name <n> --grid 2x2               Boot a named grid of local surfaces
   mini-fleet [--hosts <csv>]                Boot SSH panes from --hosts or fleet.json
-  monitor [--workspace <ref>] [--once]      Poll surfaces and voice key transitions
+  monitor [--workspace <ref>] [--once]      Poll surfaces and notify on key transitions when configured
   list [--workspace <ref>]                  Return cmux tree topology
   tree [--workspace <ref>]                  Return cmux tree topology
   flash --workspace <ref> [--surface <ref>] Trigger cmux visual flash
-  voice "<msg>"                             Send a short Pulse voice notification
+  voice "<msg>"                             Send through the configured notification adapter
 
 GLOBAL:
   --help, -h                                Show this help text
+
+OPTIONAL ADAPTER:
+  CMUX_NOTIFY_ENDPOINT                     Explicit HTTP(S) endpoint accepting {message, voice_enabled}
 
 OUTPUT:
   Subcommands print one JSON object to stdout. monitor without --once streams one JSON object per poll pass.
@@ -657,11 +659,18 @@ function isHostConfig(value: unknown): value is HostConfig {
 }
 
 function loadFleetConfig(): HostConfig[] | JsonObject {
-  const configPath = join(homedir(), ".claude/LIFEOS/USER/CUSTOMIZATIONS/SKILLS/CMUX/fleet.json");
+  const configuredPath = process.env.CMUX_FLEET_CONFIG?.trim();
+  if (!configuredPath) {
+    return {
+      ok: false,
+      error: "No hosts configured. Pass --hosts name=ssh,name2=ssh2 or set CMUX_FLEET_CONFIG to a fleet.json file.",
+    };
+  }
+  const configPath = expandHome(configuredPath);
   if (!existsSync(configPath)) {
     return {
       ok: false,
-      error: "No hosts configured. Pass --hosts name=ssh,name2=ssh2 or create ~/.claude/LIFEOS/USER/CUSTOMIZATIONS/SKILLS/CMUX/fleet.json with {\"hosts\":[{\"name\":\"...\",\"ssh\":\"...\"}]}",
+      error: `CMUX_FLEET_CONFIG does not exist: ${configPath}`,
     };
   }
 
@@ -798,21 +807,48 @@ async function readMonitorStates(workspace: string | undefined): Promise<{ state
   return { states };
 }
 
-async function notifyVoice(message: string): Promise<boolean> {
+type NotificationResult = {
+  notified: boolean;
+  error?: string;
+};
+
+function notificationEndpoint(): string | undefined {
+  const configured = process.env.CMUX_NOTIFY_ENDPOINT?.trim();
+  if (!configured) {
+    return undefined;
+  }
   try {
-    const response = await fetch(VOICE_URL, {
+    const parsed = new URL(configured);
+    return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.toString() : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function notifyVoice(message: string): Promise<NotificationResult> {
+  const endpoint = notificationEndpoint();
+  if (!endpoint) {
+    return {
+      notified: false,
+      error: "CMUX_NOTIFY_ENDPOINT must be set to an explicit HTTP(S) notification adapter",
+    };
+  }
+  try {
+    const response = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message, voice_enabled: true }),
       signal: AbortSignal.timeout(5_000),
     });
-    return response.ok;
-  } catch (error) {
-    const messageText = error instanceof Error ? error.message : String(error);
-    if (messageText.length === 0) {
-      return false;
+    if (!response.ok) {
+      return { notified: false, error: `Notification adapter returned HTTP ${response.status}` };
     }
-    return false;
+    return { notified: true };
+  } catch (error) {
+    return {
+      notified: false,
+      error: `Notification adapter failed: ${error instanceof Error ? error.message : String(error)}`,
+    };
   }
 }
 
@@ -821,8 +857,10 @@ async function commandVoice(args: ParsedArgs): Promise<JsonObject> {
   if (message.trim() === "") {
     return { ok: false, error: "Missing voice message positional" };
   }
-  const notified = await notifyVoice(message);
-  return { ok: true, notified };
+  const result = await notifyVoice(message);
+  return result.notified
+    ? { ok: true, notified: true }
+    : { ok: false, notified: false, error: result.error ?? "Notification adapter failed" };
 }
 
 async function commandMonitor(args: ParsedArgs): Promise<number> {
@@ -851,16 +889,18 @@ async function commandMonitor(args: ParsedArgs): Promise<number> {
     }
 
     const states = pass.states ?? [];
+    const notifications: JsonObject[] = [];
     for (const state of states) {
       const oldState = previous.get(state.ref);
       if (oldState !== state.state && (state.state === "done" || state.state === "awaiting-input")) {
         const label = state.state === "done" ? "done" : "awaiting input";
-        await notifyVoice(`cmux surface ${state.ref} is ${label}`);
+        const notification = await notifyVoice(`cmux surface ${state.ref} is ${label}`);
+        notifications.push({ ref: state.ref, state: state.state, ...notification });
       }
       previous.set(state.ref, state.state);
     }
 
-    console.log(JSON.stringify({ ok: true, states }));
+    console.log(JSON.stringify({ ok: true, states, notifications }));
     if (once) {
       return 0;
     }

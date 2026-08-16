@@ -5,7 +5,7 @@
 
 import { BaseGrader, registerGrader, type GraderContext } from '../Base.ts';
 import type { GraderConfig, GraderResult, LLMRubricParams } from '../../Types/index.ts';
-import { inference, type InferenceLevel } from '../../../../LIFEOS/TOOLS/Inference.ts';
+import { inference } from '../../Tools/HermesInference.ts';
 import { readFileSync, existsSync } from 'fs';
 
 export class LLMRubricGrader extends BaseGrader {
@@ -23,17 +23,7 @@ export class LLMRubricGrader extends BaseGrader {
     }
 
     const scale = params.scale ?? '1-5';
-    // Map model preference to inference level (default to medium/Sonnet)
-    const levelMap: Record<string, InferenceLevel> = {
-      'claude-haiku-4-5-20251001': 'low',
-      'claude-sonnet-4-6': 'medium',
-      'claude-opus-4-8': 'high',
-      'claude-opus-4-6': 'high',
-      'claude-sonnet-4-20250514': 'medium',
-      'claude-opus-4-20250514': 'high',
-      'claude-fable-5': 'max',
-    };
-    const level: InferenceLevel = levelMap[params.judge_model ?? ''] ?? 'medium';
+    const level = 'medium' as const;
 
     // Build prompt
     const systemPrompt = this.buildSystemPrompt(scale, params.reasoning_first ?? true);
@@ -44,6 +34,7 @@ export class LLMRubricGrader extends BaseGrader {
         systemPrompt,
         userPrompt,
         level,
+        model: params.judge_model,
         timeout: 30000,
       });
 
@@ -61,6 +52,7 @@ export class LLMRubricGrader extends BaseGrader {
         details: {
           assertion_results,
           inference_level: level,
+          judge_model: params.judge_model ?? 'configured Hermes default',
           scale,
           raw_response: text,
         },

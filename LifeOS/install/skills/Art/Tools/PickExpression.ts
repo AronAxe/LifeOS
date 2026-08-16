@@ -18,10 +18,7 @@
  * directly in the workflow if a more specific expression fits.
  */
 import { existsSync, readdirSync } from "node:fs";
-import { homedir } from "node:os";
-import { join } from "node:path";
-
-const DIR = join(homedir(), ".claude", "LIFEOS", "USER", "CUSTOMIZATIONS", "SKILLS", "Art", "HeadshotExamples");
+import { resolve, join } from "node:path";
 
 // sentiment -> headshot filename (without .png), with topic keywords that route to it.
 const MAP: Array<{ sentiment: string; file: string; keywords: string[] }> = [
@@ -41,15 +38,22 @@ function arg(name: string): string | undefined {
   return i >= 0 && i + 1 < process.argv.length ? process.argv[i + 1] : undefined;
 }
 
-function resolveFile(base: string): { file: string; path: string; exists: boolean } {
-  const path = join(DIR, `${base}.png`);
+function resolveFile(dir: string, base: string): { file: string; path: string; exists: boolean } {
+  const path = join(dir, `${base}.png`);
   return { file: `${base}.png`, path, exists: existsSync(path) };
 }
 
 function main(): void {
+  const configuredDir = arg("dir") || process.env.LIFEOS_ART_HEADSHOTS_DIR;
+  if (!configuredDir) {
+    console.error("ERROR: pass --dir <headshot-directory> or set LIFEOS_ART_HEADSHOTS_DIR");
+    process.exit(2);
+  }
+  const dir = resolve(configuredDir);
+
   if (process.argv.includes("--list")) {
-    const onDisk = existsSync(DIR) ? readdirSync(DIR).filter((f) => f.endsWith(".png")) : [];
-    console.log(JSON.stringify({ dir: DIR, map: MAP.map((m) => ({ sentiment: m.sentiment, file: `${m.file}.png` })), onDisk }, null, 2));
+    const onDisk = existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith(".png")) : [];
+    console.log(JSON.stringify({ dir, map: MAP.map((m) => ({ sentiment: m.sentiment, file: `${m.file}.png` })), onDisk }, null, 2));
     return;
   }
 
@@ -69,7 +73,7 @@ function main(): void {
 
   const pick = chosen ?? MAP[0]!; // default: neutral / headshot-clean
 
-  const r = resolveFile(pick.file);
+  const r = resolveFile(dir, pick.file);
   const alternatives = MAP.filter((m) => m.sentiment !== pick.sentiment).map((m) => ({ sentiment: m.sentiment, file: `${m.file}.png` }));
   console.log(JSON.stringify({ sentiment: pick.sentiment, file: r.file, path: r.path, exists: r.exists, alternatives }, null, 2));
   if (!r.exists) process.exit(2);

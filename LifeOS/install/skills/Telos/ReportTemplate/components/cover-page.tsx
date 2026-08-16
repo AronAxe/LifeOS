@@ -34,7 +34,7 @@ export function CoverPage({
       <div className="cover-meta">
         <p className="cover-date">{reportDate}</p>
         <p className="text-muted-dark text-sm mt-2">
-          <ORG_NAME> Consulting
+          {"<ORG_NAME>"} Consulting
         </p>
       </div>
     </div>

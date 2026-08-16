@@ -7,20 +7,19 @@
 
 import type { FailureLog, Task, GraderConfig, EvalDomain } from '../Types/index.ts';
 import { existsSync, mkdirSync, writeFileSync, readFileSync, appendFileSync } from 'fs';
-import { join } from 'path';
+import { join, resolve } from 'path';
 import { stringify as stringifyYaml } from 'yaml';
 import { parseArgs } from 'util';
 
-const EVALS_DIR = join(import.meta.dir, '..');
-const FAILURES_LOG = join(EVALS_DIR, 'Data', 'failures.jsonl');
-const TASKS_DIR = join(EVALS_DIR, 'UseCases');
+const EVALS_WORKSPACE = resolve(process.env.LIFEOS_EVALS_WORKSPACE ?? join(process.cwd(), '.lifeos-evals'));
+const FAILURES_LOG = join(EVALS_WORKSPACE, 'failures.jsonl');
+const TASKS_DIR = join(EVALS_WORKSPACE, 'use-cases');
 
 /**
  * Ensure directories exist
  */
 function ensureDirs(): void {
-  const dataDir = join(EVALS_DIR, 'Data');
-  if (!existsSync(dataDir)) mkdirSync(dataDir, { recursive: true });
+  if (!existsSync(EVALS_WORKSPACE)) mkdirSync(EVALS_WORKSPACE, { recursive: true });
   if (!existsSync(TASKS_DIR)) mkdirSync(TASKS_DIR, { recursive: true });
 }
 

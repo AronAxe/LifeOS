@@ -1,6 +1,6 @@
-# NativeDesignSync
+# NativeDesignSync — optional external adapter
 
-First-party Claude Design ↔ Claude Code sync via the native `/design` and `/design-sync` commands. This is **Path 2** — the preferred route for any code-bound design work. It replaces the hand-rolled Interceptor handoff-bundle apparatus (Path 3).
+This workflow documents interoperability with a separately managed Claude Design/Claude Code installation. It is not a HALOS runtime path, is never selected by default, and must not be invoked unless the user explicitly requests it and confirms its prerequisites.
 
 ## Trigger Phrases
 
@@ -15,19 +15,21 @@ Anthropic shipped both commands inside Claude Code in the June 2026 Claude Desig
 | **`/design`** | Create, edit, and sync designs from inside the Claude Code terminal — no switch to the web app or desktop sidebar. |
 | **`/design-sync`** | Bidirectional sync between the codebase and Claude Design. **Pull:** import the local codebase's real design system into Claude Design so generated designs use your actual components and tokens. **Push:** sync implemented code changes back into Claude Design so the canvas stays current. |
 
-## Why This Path Wins for Code Work
+## Why This Adapter Can Be Useful for Code Work
 
-The whole point of the old Path 3 bundle apparatus (`ExtractDesignSystem` → `CreatePrototype` → `ExportToCode` → `IntegrateIntoApp`) was to move a design system and a generated design between the browser canvas and the codebase. `/design-sync` does exactly that, natively and deterministically — no Interceptor automation, no authenticated browser profile, no ZIP parsing, no accessibility-tree heuristics that can drift. Prefer it.
+When the separately managed commands are genuinely available, they can replace much of the older Path 3 bundle apparatus (`ExtractDesignSystem` → `CreatePrototype` → `ExportToCode` → `IntegrateIntoApp`) for a deliberate canvas round-trip. That convenience does not make this the default: DirectDesign remains the Hermes-native route, and this adapter is used only after explicit selection and preflight.
 
 ## Workflow
 
 ### 1. Preflight
 
+Only after explicit user selection, verify that the independently managed adapter exists:
+
 ```bash
-claude --version    # ensure a current build; if /design* is missing, run /update inside Claude Code
+claude --version
 ```
 
-The commands appear only on a current Claude Code with a Claude Design–enabled subscription. If they don't show, run `/update`.
+HALOS does not install, authenticate, or update this command. If it is absent or the required product commands are unavailable, report the optional adapter as unavailable and return to the Hermes-native DirectDesign path only with the user's agreement.
 
 ### 2. Pull the codebase design system into Claude Design
 
@@ -43,16 +45,16 @@ After implementing in code, run `/design-sync` in the push direction to update t
 
 ### 5. Verify
 
-Native sync does not exempt you from the skill's verification standard. For any web output, verify the rendered result through the **Interceptor** skill (real Chrome) before claiming done — a deploy/"is live" claim needs two evidence classes (DOM read + screenshot). See `Tools/VerifyDesign.ts` and the Interceptor `VerifyDeploy` workflow.
+Native sync does not exempt the output from verification. Render the result with an available Hermes computer/browser capability, inspect a real capture, and run the relevant project tests before claiming completion. If the user separately approves an external verification adapter, `Tools/VerifyDesign.ts` may be used after its own prerequisites pass.
 
 ## When NOT to use this
 
 - **Pure inline/ad-hoc design with no canvas round-trip** → use Path 1 (`DirectDesign`). Faster, no subscription dependency.
-- **You specifically need the visual web canvas and accept the setup cost** → Path 3 (`CreatePrototype` et al.), after logging the `interceptor-test` profile into claude.ai.
+- **You specifically need the visual web canvas and accept the setup cost** → Path 3 (`CreatePrototype` et al.), after explicitly selecting an approved authenticated browser profile.
 
-## Gotchas
+## Adapter limits
 
-- **These are Claude Code CLI commands, not LifeOS skills or REST APIs.** There is still no public Claude Design REST API or MCP server — the CLI commands are the programmatic surface.
-- **Subscription-gated.** Free tier has no Claude Design access; the commands won't function.
-- **`/update` if missing.** The single most common "the command doesn't exist" cause is a stale Claude Code build.
-- **Sync direction is explicit.** `/design-sync` is bidirectional — be deliberate about pull (code → Claude Design) vs push (Claude Design → code) so you don't overwrite the side you meant to keep.
+- **This is a separately managed Claude Code integration, not a LifeOS skill or Hermes API.** There is no public Claude Design REST API or MCP server represented here.
+- **Subscription-gated.** Missing access makes this adapter unavailable; it does not degrade the Hermes-native DirectDesign path.
+- **No lifecycle management.** HALOS does not run external update commands or modify the external product's configuration.
+- **Sync direction is explicit.** `/design-sync` is bidirectional; confirm pull versus push before any operation that may overwrite state.

@@ -18,7 +18,7 @@ function resolveInterceptorBin(): string {
   const found = Bun.spawnSync(["which", "interceptor"]);
   const bin = found.stdout.toString().trim();
   if (found.exitCode !== 0 || bin.length === 0) {
-    console.error("interceptor CLI not found on PATH — install the Interceptor skill (see ~/.claude/skills/Interceptor/SKILL.md)");
+    console.error("interceptor CLI not found on PATH — Path 3 is an optional external adapter; configure it independently or use DirectDesign");
     process.exit(127);
   }
   return bin;

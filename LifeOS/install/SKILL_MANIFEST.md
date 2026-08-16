@@ -1,85 +1,98 @@
 # LifeOS Skill Portability Manifest for Hermes
 
-This manifest categorizes all LifeOS skills present in `LifeOS/install/skills/` based on their portability to the Hermes AI agent harness.
+This manifest is the public capability contract for `LifeOS/Tools/ImportSkills.ts`. Every public skill is installed. Direct Hermes mechanisms support the first group; the second group is backed by the deployable LifeOS Hermes plugin and explicit adapters. Upstream runtime differences are never a reason to remove user-visible capability.
 
-## Portable to Hermes
+## Public skills — direct Hermes paths
 
-These skills are fully compatible with Hermes and install into `$HERMES_HOME/skills/` as a unified skill body:
+These skills use documented Hermes tools or direct portable implementations.
 
-- **Algorithm** — 7-phase execution loop (OBSERVE→LEARN), effort tiers E1-E5, and ISC quality gates
-- **Amber** — Legacy compatibility alias for Synapse's idea preservation stage; Hindsight-backed capture and resurfacing
-- **Conduit** — Current-state sensing via deterministic Windows polling and daily rollup into Hindsight
-- **Synapse** — Weighted input router (capture → journal → grade → route → resurface), superseding Amber as the canonical router
-- **ISA** — Information Structure Architecture & workspace state manager
-- **Telos** — Life direction, core values, and mission alignment system
-- **WorldThreatModel** — 11 time-horizon macro forecast and vulnerability matrix
-- **BitterPillEngineering** — Instruction-set safety audit and adversarial robustness
-- **Council** — Multi-perspective debate and synthesis governance framework
-- **FirstPrinciples** — Fundamental reasoning and problem decomposition
-- **RedTeam** — Adversarial review, attack vector analysis, and stress testing
-- **Research** — Deep research, source evaluation, and synthesis
-- **Harvest** — Knowledge extraction and information collection
-- **Ideate** — Structured brainstorming and novelty generation
-- **Interview** — Principal state discovery and TELOS extraction
-- **ExtractWisdom** — Insight distillation from long-form content
-- **Loop** — Iterative execution and feedback governance
-- **Optimize** — Workflow and process efficiency refinement
-- **IterativeDepth** — Recursive deep-dive analysis protocol
-- **ContextSearch** — Semantic context retrieval and codebase navigation
-- **Hardening** — System robustification and edge-case defense
-- **BiasCheck** — Cognitive bias detection and calibration
-- **SystemsThinking** — Dynamic systems modeling and leverage point identification
-- **CreateSkill** — Automated skill creation and packaging engine
-- **SkillSystem** — LifeOS skill authoring doctrine mapped to Hermes skill discovery, management, customization, privacy boundaries, and ideal-state prompting
-- **Testing** — LifeOS testing doctrine mapped to Hermes evidence-first verification, ISA probes, anti-criteria, hermetic tests, and repository-native checks
-- **CreateCLI** — Command-line tool scaffold generator
-- **Config** — Hermes-native config layering (constitution → config.yaml → SOUL.md → TELOS → skills); replaces the LifeOS system/user settings merge
-- **Delegation** — Subagent task distribution and result synthesis via `delegate_task`, model-tier matching, and verified fan-out
-- **Evals** — System and output evaluation framework
-- **Prompting** — Advanced prompt engineering techniques
-- **Science** — Hypothesis testing and empirical methodology
-- **Knowledge** — Knowledge base structuring and retrieval
-- **RootCauseAnalysis** — 5-Whys and causal tree analysis
-- **Sales** — Value proposition articulation and positioning
-- **Aphorisms** — Principle compression and mental model heuristics
-- **ApertureOscillation** — Micro/macro perspective shifting
-- **BeCreative** — Divergent thinking and creative ideation
-- **Migrate** — System migration and schema transition tooling
-- **Upgrade** — Version upgrade and component migration
-- **Trim** — Context compression and boilerplate pruning
-- **Webdesign** — UI/UX design systems and layout patterns
-- **HTML** — Semantic markup structure and layout execution
-- **WriteStory** — Narrative synthesis and storytelling
-- **USMetrics** — Quantitative metric tracking and analytics
-- **LocalIntelligence** — Local model routing and edge inference
-- **LifeOS** — Core LifeOS lifecycle orchestrator
-- **PrivateInvestigator** — Forensic investigation and anomaly tracing
-- **BrightData** — Web data collection and proxy management
-- **Apify** — Web scraping and automation actor integration
-- **ArXiv** — Academic paper search and paper summary ingestion
-- **AudioEditor** — Audio processing and transcript handling
-- **Fabric** — Pattern-based text transformation engine
-- **Freshness** — Constitutional file staleness monitoring with A-F grading
-- **CliFirstArchitecture** — Deterministic executable operations before prompts; CLI-first internal capability design and MCP serving boundary
-- **CLI** — Retired Arbol/action/pipeline doctrine → Hermes terminal, execute_code, durable scripts, and native scheduling
-- **Containment** — Portable-release boundary: the OS ships; personal identity, credentials, private infrastructure, and local memory do not
-- **Tools** — LifeOS utility inventory → direct Hermes tools, scripts, Hindsight/LCM, cognitive graph, diagnostics, and skill-promotion rule
-- **Memory** — LifeOS file-memory → Hermes Hindsight mapping (mutation tiers, curation coverage, lifecycle, proposal subtypes)
-- **Schema** — LifeOS USER/ directory schema → Hermes-native destination mapping
-- **Thesis** — LifeOS Thesis operational adaptation (maturity model, core loop, Pulse mapping, Respark, 2036 heuristic)
-- **Pulse** — LifeOS Pulse daemon → Hermes-native mapping (DA subsystem, terminal tabs, metadata surfaces, Observatory dashboard)
-- **Notifications** — LifeOS notification system → Hermes TTS/phone/gateway mapping (voice, ntfy, Discord, smart routing, event log)
-- **Observability** — LifeOS observability pipeline → Hermes LCM/logging mapping (event sources, session state, dashboard)
-- **Router** — Retired LifeOS Router subsystem → Hermes config/delegation/DA judgment mapping (model selection, effort calibration, dispatch policy, cross-vendor egress)
-- **Security** — LifeOS security doctrine (4 articles) → Hermes-native mapping (data classification, egress routing, three-layer defense, supply-chain response)
-- **BackgroundServices** — LifeOS launchd service registry → Hermes cron/plugins mapping (16 services, scheduling, lifecycle)
-- **CMUX** — Multiplexer terminal context management
+- **Algorithm** — Hermes work loop: observe, classify, recommend, human decision, implement, verify, learn.
+- **Amber** — compatibility alias for Synapse capture; uses portable, principal-scoped Hindsight identifiers.
+- **BackgroundServices** — historical launchd-to-Hermes-cron mapping; cron creation remains consent-gated.
+- **CLI** — retired LifeOS CLI/pipeline doctrine mapped to Hermes terminal, scripts, and native scheduling.
+- **Config** — Hermes configuration and TELOS-source boundary mapping.
+- **Conduit** — deterministic local event rollup with explicit principal identity for optional Hindsight retain.
+- **Containment** — portable-release and system/user-boundary doctrine.
+- **Delegation** — Hermes `delegate_task` configuration and verified fan-out guidance.
+- **Freshness** — TELOS staleness checks; requires a principal-supplied `TELOS_DIR`.
+- **Memory** — LifeOS memory responsibilities mapped to Hermes built-in memory, Hindsight, and local source artifacts.
+- **Notifications** — historical notification mapping to Hermes TTS, phone, and gateway mechanisms.
+- **Observability** — historical event-pipeline mapping to Hermes LCM/session evidence.
+- **Router** — retired LifeOS routing mapped to Hermes configuration and judgment.
+- **Schema** — LifeOS user-directory schema mapped to Hermes-native destinations.
+- **Security** — security doctrine mapped to documented Hermes boundaries; it does not claim unimplemented enforcement.
+- **SkillSystem** — Hermes skill discovery, customization, and public/private release guidance.
+- **Synapse** — Hermes-native capture, classification, and resurfacing doctrine.
+- **Testing** — evidence-first verification and repository-native testing guidance.
+- **Thesis** — LifeOS operating doctrine adapted to Hermes without a separate persistence or scheduler layer.
+- **Tools** — LifeOS utility inventory mapped to Hermes tools, scripts, Hindsight/LCM, and skill promotion.
 
-## Claude/macOS-specific — not ported
+## Public skills — adapter-backed Hermes paths
 
-These skills rely on macOS-specific binaries, launchd daemons, or browser extensions and are excluded from the Hermes port:
+The following capabilities are installed with the public skill body. Their upstream implementations used Claude Code, macOS services, Bun support trees, Pulse, CMUX, or source-local paths; the Hermes port supplies the equivalent through the LifeOS plugin, supported Hermes tools/plugins, or an explicit per-capability adapter. Configuration such as vendor credentials, a browser session, a scheduled job, or a publication destination remains an operator decision—not a capability deletion.
 
-- **Interceptor** — Requires macOS Chrome extension for DOM manipulation
-- **Daemon** — Requires macOS `launchd` service architecture
-- **Art** — Shells out to macOS-specific image generation binaries and Apple Silicon graphics pipelines
-- **Remotion** — Video rendering engine dependent on macOS graphics/art pipeline dependencies
+- **ApertureOscillation**
+- **Aphorisms**
+- **Apify**
+- **ArXiv**
+- **Art**
+- **AudioEditor**
+- **BeCreative**
+- **BiasCheck**
+- **BitterPillEngineering**
+- **BrightData**
+- **CMUX**
+- **CliFirstArchitecture**
+- **ContextSearch**
+- **Council**
+- **CreateCLI**
+- **CreateSkill**
+- **Daemon**
+- **Evals**
+- **ExtractWisdom**
+- **Fabric**
+- **FirstPrinciples**
+- **Hardening**
+- **Harvest**
+- **HTML**
+- **Ideate**
+- **Interceptor**
+- **Interview**
+- **ISA**
+- **IterativeDepth**
+- **Knowledge**
+- **LifeOS**
+- **LocalIntelligence**
+- **Loop**
+- **Migrate**
+- **Optimize**
+- **PrivateInvestigator**
+- **Prompting**
+- **Pulse**
+- **RedTeam**
+- **Remotion**
+- **Research**
+- **RootCauseAnalysis**
+- **Sales**
+- **Science**
+- **SystemsThinking**
+- **Telos**
+- **Trim**
+- **Upgrade**
+- **USMetrics**
+- **Webdesign**
+- **WorldThreatModel**
+- **WriteStory**
+
+## Private boundary
+
+Directories whose names begin with `_` are principal-private by definition. `ImportSkills.ts` skips them unconditionally, whether or not this manifest is edited. Private skills, local preferences, credentials, and principal source files are never part of a portable release.
+
+## Adapter readiness rule
+
+For every adapter-backed capability, provide all of the following in the same review:
+
+1. A documented Hermes-native execution path, with no undeployed private runtime root, Pulse, or launchd dependency.
+2. Automated tests for the adapter and a portable-release scan with no new exception.
+3. A clear statement of required configuration and consent boundaries.
+4. A manifest move into **Public skills — direct Hermes paths** once it no longer needs the adapter layer.

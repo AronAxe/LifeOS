@@ -6,8 +6,8 @@
  * structured object. Every fetcher and workflow in this skill calls this —
  * there are no hardcoded city strings anywhere else.
  *
- * Identity file location is configurable via env var `LIFEOS_PRINCIPAL_IDENTITY`,
- * defaulting to `~/.claude/LIFEOS/USER/PRINCIPAL/PRINCIPAL_IDENTITY.md`.
+ * Identity file location is required through `LIFEOS_PRINCIPAL_IDENTITY` or an
+ * explicit function argument. No principal-data path is assumed.
  *
  * Expected line shape (Quick Reference bullet):
  *   - **Hometown:** <City>, <ST> (ZIP <zip>, <County> County)
@@ -17,8 +17,7 @@
  */
 
 import { readFile } from "node:fs/promises"
-import { join } from "node:path"
-import { homedir } from "node:os"
+
 
 export interface Hometown {
   city: string
@@ -34,22 +33,16 @@ export interface Hometown {
 export class NoHometownError extends Error {
   constructor(public identityPath: string) {
     super(
-      `No \`**Hometown:**\` line found in ${identityPath}. ` +
-        `Add one to the Quick Reference section, e.g.:\n` +
+      (identityPath
+        ? `No \`**Hometown:**\` line found in ${identityPath}. `
+        : `No principal identity source configured. Set LIFEOS_PRINCIPAL_IDENTITY to a readable file. `) +
+        `Add a hometown to its Quick Reference section, e.g.:\n` +
         `  - **Hometown:** Austin, TX (ZIP 78701, Travis County)`
     )
     this.name = "NoHometownError"
   }
 }
 
-const IDENTITY_DEFAULT = join(
-  homedir(),
-  ".claude",
-  "LIFEOS",
-  "USER",
-  "PRINCIPAL",
-  "PRINCIPAL_IDENTITY.md"
-)
 
 /** Strict regex for the Quick Reference bullet line. */
 const HOMETOWN_RE =
@@ -109,8 +102,9 @@ function parseParenContent(paren: string | undefined): {
 }
 
 export async function readHometown(
-  identityPath: string = process.env.LIFEOS_PRINCIPAL_IDENTITY ?? IDENTITY_DEFAULT
+  identityPath: string | undefined = process.env.LIFEOS_PRINCIPAL_IDENTITY
 ): Promise<Hometown> {
+  if (!identityPath) throw new NoHometownError("")
   const text = await readFile(identityPath, "utf8")
   const match = text.match(HOMETOWN_RE)
   if (!match || !match.groups) throw new NoHometownError(identityPath)

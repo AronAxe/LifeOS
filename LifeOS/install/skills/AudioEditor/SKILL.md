@@ -1,41 +1,24 @@
 ---
 name: AudioEditor
 version: 1.0.22
-description: "AI audio editing pipeline: Whisper word-level transcription → Claude segment classification (KEEP/CUT_FILLER/CUT_FALSE_START/CUT_STUTTER/CUT_DEAD_AIR) → ffmpeg with 40ms qsin crossfades and room-tone fill → optional Cleanvoice cloud polish. Distinguishes rhetorical from accidental pauses; breaths attenuated 50%. Modes: --preview, --aggressive, --polish. Workflow: Clean. USE WHEN clean audio, edit audio, remove filler words, clean podcast, remove ums, cut dead air, polish audio, trim recording, cut stutters. NOT FOR video composition (use Remotion)."
+description: "AI audio editing pipeline: Whisper word-level transcription → consent-gated Hermes segment classification (KEEP/CUT_FILLER/CUT_FALSE_START/CUT_STUTTER/CUT_DEAD_AIR) → ffmpeg with 40ms qsin crossfades and room-tone fill → optional Cleanvoice cloud polish. Distinguishes rhetorical from accidental pauses; breaths attenuated 50%. Modes: --preview, --aggressive, --polish. Workflow: Clean. USE WHEN clean audio, edit audio, remove filler words, clean podcast, remove ums, cut dead air, polish audio, trim recording, cut stutters. NOT FOR video composition (use Remotion)."
 effort: medium
 ---
 
 # AudioEditor
 
-## Customization
+## Runtime Boundaries
 
-**Before executing, check for user customizations at:**
-`~/.claude/LIFEOS/USER/CUSTOMIZATIONS/SKILLS/AudioEditor/`
-
-If this directory exists, load and apply any PREFERENCES.md, configurations, or resources found there. These override default behavior. If the directory does not exist, proceed with skill defaults.
-
-## Voice Notification
-
-**You MUST send this notification BEFORE doing anything else when this skill is invoked.**
-
-1. **Send voice notification**:
-   ```bash
-   curl -s -X POST http://localhost:31337/notify \
-     -H "Content-Type: application/json" \
-     -d '{"message": "Running the WORKFLOWNAME workflow in the AudioEditor skill to ACTION"}' \
-     > /dev/null 2>&1 &
-   ```
-
-2. **Output text notification**:
-   ```
-   Running the **WorkflowName** workflow in the **AudioEditor** skill to ACTION...
-   ```
-
-**This is not optional. Execute this curl command immediately upon skill invocation.**
+- Resolve the active installed skill directory as `<AUDIO_EDITOR_SKILL_DIR>`; collision-safe imports may rename the directory.
+- Treat the installed skill as read-only. Audio, transcripts, edit decisions, and rendered output remain beside the user-selected source or beneath a user-selected workspace.
+- `Transcribe.ts` requires a local `whisper` CLI. Apple MPS acceleration is optional and used only on macOS when `insanely-fast-whisper` is available.
+- `Analyze.ts` uses the configured Hermes model and refuses to run until the user approves inference cost for that run by setting `LIFEOS_INFERENCE_APPROVED=1`.
+- `Polish.ts` uploads audio to Cleanvoice. Obtain explicit content-egress and cost approval before setting `CLEANVOICE_API_KEY` or invoking `--polish`.
+- Notifications are optional and use Hermes-native messaging/TTS only when the user asks.
 
 ## What It Does
 
-Cleans recorded audio automatically — strips filler words, false starts, stutters, and dead air, attenuates breaths, and crossfades every cut. It transcribes the file at the word level, has Claude classify each segment (KEEP, CUT_FILLER, CUT_FALSE_START, CUT_STUTTER, CUT_DEAD_AIR), then executes the cuts with ffmpeg. An optional Cleanvoice pass adds final polish. Modes: --preview, --aggressive, --polish.
+Cleans recorded audio automatically — strips filler words, false starts, stutters, and dead air, attenuates breaths, and crossfades every cut. It transcribes the file at the word level, has the configured Hermes model classify each segment (KEEP, CUT_FILLER, CUT_FALSE_START, CUT_STUTTER, CUT_DEAD_AIR), then executes the cuts with ffmpeg. An optional Cleanvoice pass adds final polish. Modes: --preview, --aggressive, --polish.
 
 ## The Problem
 
@@ -43,7 +26,7 @@ Cleaning a recording by hand means scrubbing a waveform for every "um," half-sta
 
 ## How It Works
 
-Whisper produces word-level timestamps, Claude classifies each segment (distinguishing rhetorical emphasis from accidental repetition), and ffmpeg executes the cuts with 40ms qsin crossfades, room-tone gap fill, and breath attenuation at 50% volume rather than removal. An optional Cleanvoice API pass handles mouth-sound removal, residual filler, and loudness normalization.
+Whisper produces word-level timestamps, the configured Hermes model classifies each segment (distinguishing rhetorical emphasis from accidental repetition), and ffmpeg executes the cuts with 40ms qsin crossfades, room-tone gap fill, and breath attenuation at 50% volume rather than removal. An optional Cleanvoice API pass handles mouth-sound removal, residual filler, and loudness normalization.
 
 ### Pipeline
 
@@ -52,7 +35,7 @@ Audio Input
     |
 [Transcribe] Whisper word-level timestamps (insanely-fast-whisper on MPS)
     |
-[Analyze] Claude classifies each segment:
+[Analyze] The configured Hermes model classifies each segment:
     |   KEEP / CUT_FILLER / CUT_FALSE_START / CUT_EDIT_MARKER / CUT_STUTTER / CUT_DEAD_AIR
     |   Distinguishes rhetorical emphasis from accidental repetition
     |
@@ -79,17 +62,17 @@ Output: cleaned MP3/WAV
 
 | Tool | Command | Purpose |
 |------|---------|---------|
-| **Transcribe** | `bun ${LIFEOS_SKILL_DIR}/Tools/Transcribe.ts <file>` | Word-level transcription via Whisper |
-| **Analyze** | `bun ${LIFEOS_SKILL_DIR}/Tools/Analyze.ts <transcript.json>` | LLM-powered edit classification |
-| **Edit** | `bun ${LIFEOS_SKILL_DIR}/Tools/Edit.ts <file> <edits.json>` | Execute cuts with crossfades + room tone |
-| **Polish** | `bun ${LIFEOS_SKILL_DIR}/Tools/Polish.ts <file>` | Cleanvoice API cloud polish |
-| **Pipeline** | `bun ${LIFEOS_SKILL_DIR}/Tools/Pipeline.ts <file> [--polish]` | Full end-to-end pipeline |
+| **Transcribe** | `bun <AUDIO_EDITOR_SKILL_DIR>/Tools/Transcribe.ts <file>` | Word-level transcription via Whisper |
+| **Analyze** | `bun <AUDIO_EDITOR_SKILL_DIR>/Tools/Analyze.ts <transcript.json>` | Consent-gated Hermes edit classification |
+| **Edit** | `bun <AUDIO_EDITOR_SKILL_DIR>/Tools/Edit.ts <file> <edits.json>` | Execute cuts with crossfades + room tone |
+| **Polish** | `bun <AUDIO_EDITOR_SKILL_DIR>/Tools/Polish.ts <file>` | Cleanvoice API cloud polish |
+| **Pipeline** | `bun <AUDIO_EDITOR_SKILL_DIR>/Tools/Pipeline.ts <file> [--polish]` | Full end-to-end pipeline |
 
 ## API Keys Required
 
 | Service | Env Var | Where to Get |
 |---------|---------|-------------|
-| Anthropic (for analyze step) | `ANTHROPIC_API_KEY` | Already set via Claude Code |
+| Hermes inference approval | `LIFEOS_INFERENCE_APPROVED=1` | Set only for an explicitly approved run; Hermes uses its configured provider/model |
 | Cleanvoice (for polish step, optional) | `CLEANVOICE_API_KEY` | cleanvoice.ai Dashboard Settings API Key |
 
 ## Examples
@@ -123,13 +106,3 @@ User: "aggressively clean this audio and polish it"
 - **Transcription accuracy varies with audio quality.** Background noise, multiple speakers, and accents reduce accuracy.
 - **Cut detection is heuristic-based.** Always preview edits before committing — automated cuts can remove intentional pauses.
 - **Cloud polish uploads audio to external service.** Confirm the user is okay with cloud processing for sensitive content.
-
-## Execution Log
-
-After completing any workflow, append a single JSONL entry:
-
-```bash
-echo '{"ts":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","skill":"AudioEditor","workflow":"WORKFLOW_USED","input":"8_WORD_SUMMARY","status":"ok|error","duration_s":SECONDS}' >> ~/.claude/LIFEOS/MEMORY/SKILLS/execution.jsonl
-```
-
-Replace `WORKFLOW_USED` with the workflow executed, `8_WORD_SUMMARY` with a brief input description, and `SECONDS` with approximate wall-clock time. Log `status: "error"` if the workflow failed.

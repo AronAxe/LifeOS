@@ -2,7 +2,7 @@
 
 ## Verdict
 
-Switching to cmux gets us one thing Kitty never gave us: **programmatic control of the terminal itself** — send text into any pane, read the screen back, open and close surfaces, all over a socket. That turns a wall of terminals into an agent cockpit we can script. The cost is real but bounded: cmux is Mac-only, young, and has no event stream, so every "notification" is a poll loop we own. The recommended path is **replace the terminal layer only** — swap Kitty tab-state for cmux surface-state — and leave Pulse, voice, the Algorithm, and memory exactly where they are. Do it in phases, keep the Kitty hooks live until the cmux path is proven, and never rip out a working hook on a hunch.
+Switching to cmux provides **programmatic control of the terminal itself** — send text into any pane, read the screen back, and open or close surfaces over a socket. cmux is Mac-only and has no portable event stream, so `monitor` uses an explicit poll loop. The Hermes port confines itself to terminal control and classified JSON state. It does not install the upstream Pulse, voice-server, hook, Algorithm, or memory integrations.
 
 ## What cmux is
 
@@ -40,7 +40,7 @@ Every wrapper subcommand below is `bun ~/.claude/skills/CMUX/Tools/cmux.ts <subc
 | 4 | Agent-race / needle-in-haystack (first to solve wins) | N surfaces in one workspace, each running the launch cmd | `race --feature <f> --agents N` | staged |
 | 5 | Fleet boot (2x2, named 8-agent teams) | grid of panes, one cmd per cell | `fleet --name <n> --grid 2x2 --cmds "a;b;c;d"` | staged |
 | 6 | One-tap team boot (his `just fast cc`) | recipe wrapping new-workspace + splits | `boot-team` / `race` (bun recipes; no `just`) | staged |
-| 7 | Notify / idle events → orchestrator | poll `surface-health`, classify, fire on transition | `monitor` → `voice` + Pulse | staged |
+| 7 | Notify / idle events → orchestrator | poll `surface-health`, classify, report transition | `monitor` JSON + optional explicit notification adapter | staged |
 | 8 | Per-workspace color / identity / banner / flash | `themes`, `workspace-action`, `trigger-flash` | `flash`; themes via `boot-team` | staged |
 | 9 | In-app browser beside the agent | `new-pane --type browser --url <url>` | `boot-team` browser pane option | staged |
 | 10 | Reusable session files | cmux persists sessions; our recipes are the reusable boot | recipes = `boot-team`/`race`/`fleet` | staged |
@@ -51,15 +51,15 @@ His build system is `just`; we have no `just` and we are bun-always. So `just fa
 
 | Our feature | Today | Under cmux | Keep / replace / bridge |
 |-------------|-------|------------|-------------------------|
-| Pulse dashboard | SSE `/api/algorithm/stream`, work.json registry (localhost:31337) | unchanged; cmux state polled → pushed into Pulse | **keep** + bridge |
-| Voice notify | `POST localhost:31337/notify {message,voice_enabled}` → {{DA_NAME}} TTS | `monitor` calls the same endpoint via `voice` subcommand | **keep** |
-| Algorithm / ISA phase tracking | `AlgoPhase.ts` + `ISASync.hook.ts` write phase to work.json + tab | phase logic untouched; only the *tab-paint* target changes | **keep** (retarget paint) |
-| Model routing (EFFORT_MODEL) | max→fable / high→opus / medium→sonnet / low→haiku | orthogonal to the terminal; nothing changes | **keep** |
+| Upstream Pulse dashboard | SSE and work.json registry | Not installed; `monitor` emits JSON for an approved consumer | **optional adapter only** |
+| Spoken notification | Upstream local voice server | Interactive Hermes uses `text_to_speech`; unattended CLI requires `CMUX_NOTIFY_ENDPOINT` | **replace / opt in** |
+| Upstream Algorithm / ISA hooks | Claude hooks write phase to work.json + tab | Not installed; CMUX reports surface state only | **not ported** |
+| Model routing | Upstream provider-specific tiers | Launch command remains under principal control | **external** |
 | Remote Mac-mini fleet | three hosts over SSH, names in USER config | `mini-fleet` opens one SSH pane per host | **keep** + bridge |
-| Memory / learning capture | Stop-hook harvesters → MEMORY | orthogonal; fires regardless of terminal | **keep** |
-| Kitty tab-state | `SessionAnalysis` / `SetQuestionTab` hooks paint Kitty tabs | cmux surface color/flash/rename replaces the paint surface | **replace** (staged) |
+| Memory / learning capture | Upstream stop-hook harvesters | No automatic capture from CMUX | **not ported** |
+| Kitty tab-state | Upstream hooks paint Kitty tabs | Historical migration context only | **not installed** |
 
-The load-bearing insight: almost everything we built lives **above** the terminal. Pulse reads work.json, voice hits an HTTP endpoint, the Algorithm writes phase to a registry. None of that knows or cares whether the terminal is Kitty or cmux. Only one subsystem is genuinely coupled to Kitty — the tab-state painter — and that is the only thing we replace.
+The load-bearing boundary is narrower: CMUX owns terminal surfaces and emits observations. Dashboard ingestion, speech, phase tracking, and durable memory are separate capabilities. They remain separate unless a principal explicitly configures and approves an adapter.
 
 ## The replacement, precisely
 
@@ -74,13 +74,11 @@ The principal chose **replace the terminal layer only**. Here is the exact cut l
 
 These drive Kitty tab **color / icon / title** to show agent state (working / completed / awaiting / error) plus the `N` / `E1..E5` mode-token owned by `TheRouter.hook.ts`. Under cmux the same signals map to surface-level equivalents: `rename-tab` for the title+token, `trigger-flash` for attention, `workspace-action` / `themes` for color-by-state.
 
-**What stays, untouched:**
+**What remains outside this port:**
 
-- Pulse (SSE, dashboard, work.json) — cmux feeds it, never replaces it.
-- Voice (`/notify` → {{DA_NAME}} TTS).
-- Algorithm phase logic, ISA phase tracking (the *decision* of what phase we're in).
-- Model routing, memory, learning capture.
-- `TheRouter.hook.ts` as the single authority for the mode/tier token — it keeps owning the *decision*; only the paint target moves.
+- Hermes UI, LCM, Hindsight, routing, and phase doctrine are not modified by CMUX.
+- No upstream Pulse service, voice server, Claude hook, work.json bridge, or automatic memory capture is installed.
+- An interactive agent may call Hermes `text_to_speech`; the standalone wrapper only uses an explicitly supplied `CMUX_NOTIFY_ENDPOINT`.
 
 **Why the cutover must be staged.** The Kitty hooks work today and are wired through a subtle single-authority contract: `TheRouter` owns the token, `PromptProcessing` owns the description, `AlgoPhase` + `ISASync` own the phase, each preserving the other's field. Ripping that out and repointing four hooks at an immature, poll-only, Mac-only target in one move is how you get a session with no visible state and no idea which layer broke. The safe path keeps both painters alive — Kitty and cmux writing in parallel — until the cmux path is proven across working, completed, awaiting, error, and every phase transition. Then Kitty is removed. A hook that paints state is cheap to run twice and expensive to get wrong once.
 
@@ -96,15 +94,13 @@ Ships: `boot-team` and `race` used by hand for real coding-agent teams; `mini-fl
 Risk: low — cmux runs alongside Kitty; the two don't collide.
 Reversible: fully — stop invoking the recipes.
 
-**Phase 2 — cmux state → Pulse SSE bridge.**
-Ships: `monitor` poll loop classifying each surface idle/working/done/awaiting, firing `voice` on transitions and pushing surface state into Pulse (work.json / SSE) so the dashboard shows cmux agents next to native sessions.
-Risk: medium — poll cost and marker-heuristic false positives; a noisy classifier spams voice.
-Reversible: high — the bridge is read-only into Pulse; turn off the monitor and Pulse just stops seeing cmux.
+**Phase 2 — optional reviewed integration.**
+Possible future work: consume `monitor` JSON in a separately reviewed Hermes adapter, or configure `CMUX_NOTIFY_ENDPOINT` for unattended transition notifications.
+Risk: medium — polling cost, classifier false positives, and unintended data egress.
+Reversible: high — leave the endpoint unset and stop the external consumer.
 
-**Phase 3 — Kitty → cmux hook cutover.**
-Ships: the four tab-state hooks paint cmux surfaces (rename-tab / flash / theme) in parallel with Kitty; after a proof window across all states and phases, Kitty paint is removed.
-Risk: medium-high — this touches live, contract-bound hooks. Parallel-paint first is mandatory.
-Reversible: medium — keep the Kitty code behind a flag for one release so a regression is a flag flip, not a revert.
+**Phase 3 — upstream-only migration concept.**
+The original design proposed a Kitty-to-cmux hook cutover. HALOS does not install those Claude/Kitty hooks and performs no cutover. A future platform adapter would require its own implementation, tests, approval, and rollback.
 
 **Phase 4 — mini-fleet panes + browser cockpit.**
 Ships: `mini-fleet` as the standing fleet view (one SSH pane per host), plus agent+browser side-by-side panes (`new-pane --type browser`) for flows that need a live page next to the agent.
@@ -116,7 +112,7 @@ Reversible: high — these are additional panes, not replacements.
 - **Mac-only.** cmux has no Linux build. The local cockpit is Mac, fine. But the remote fleet is reached *over SSH into* cmux panes — cmux runs on the Mac, the panes hold SSH sessions to the hosts, so the hosts themselves never need cmux. Confirm we never assume cmux on the far side. Any future Linux workstation is a Kitty-or-nothing fallback, which argues for keeping the Kitty painter removable-but-recoverable.
 - **Maturity / flakiness.** cmux is young (v0.62.2) and the source video showed a stalled orchestrator. Treat every recipe as needing a health check and a manual-recovery path. Don't build anything load-bearing on top until Phase 1 has logged real uptime.
 - **Socket auth.** The socket only exists while the app runs, and auth is a password from env or Settings. The wrapper must auto-launch, poll `ping` to ~15s, and fail loud if the password is missing — never silently run unauthenticated. The password lives in env / USER config, never in the public Tools file.
-- **Poll cost of `monitor`.** No event stream means we poll `surface-health` + `read-screen` on an interval. Too tight and we burn CPU and spam voice; too loose and "done" lands late. The interval is a tuning knob (default ~3s), and the classifier needs a debounce so a one-frame flicker doesn't fire a notification.
+- **Poll cost of `monitor`.** No event stream means polling `surface-health` + `read-screen`. Too tight burns CPU and may produce noisy transitions; too loose delays detection. The interval is explicit (default ~3s).
 - **No native event stream — done-detection is heuristic.** We infer idle/done/awaiting from prompt strings and screen markers, which are brittle across shells and agent CLIs. Round-trip verification (send → read-back) is the only reliable confirm; bake it into `send --enter` and into `monitor`'s transition logic.
 - **Send-without-submit gotcha.** `send` types but often doesn't run — a `send-key Enter` is required, and the only proof it ran is `read-screen`. Every recipe that submits a prompt round-trips to confirm rather than assuming.
 
@@ -129,13 +125,13 @@ Reversible: high — these are additional panes, not replacements.
 Sharp risks the first pass under-priced. Fold into the phase work before the Kitty cutover.
 
 **Integration spine (build-on-claude-teams + session-JSON bridge):**
-- **Session JSON is a private, uncontracted interface.** cmux does not promise that schema; it drifts on updates and the Pulse bridge breaks *silently*. Mitigation: pin the cmux version in SKILL.md, add a schema guard that **fails loud** — never let a schema miss degrade quietly into the poll fallback.
+- **Session JSON is a private, uncontracted interface.** cmux does not promise that schema. The Hermes port does not ingest it. Any future adapter must pin a supported version and fail loudly on schema drift.
 - **Torn reads.** Reading `session-*.json` while cmux writes it yields partial JSON. Parse-failure → bounded retry, never crash.
 
-**Hook collision (the "voice says everything twice" bug):** during the staged window there are up to THREE hook sources on the same events — `cmux claude-teams`'s auto-injected Claude Code hooks, LifeOS's own hooks, and the still-live Kitty hooks. Without a dedup layer (keyed by event ID) or a documented precedence rule, you get duplicate Pulse entries and duplicate voice announcements. Staging *creates* this; it is not merely a cutover risk. Address before Phase 2.
+**Upstream hook collision:** the original design could produce duplicate events across cmux, Claude Code, LifeOS, and Kitty hooks. Those hooks are not installed by the Hermes port. A future event adapter must still define deduplication before activation.
 
 **Kitty→cmux cutover blind spots:**
-- **Liveness inversion.** Kitty is a terminal (up while you're logged in); cmux is a GUI app whose socket dies on quit/crash. Monitor + Pulse workflows need an explicit "socket gone" state with reconnect/auto-launch, or post-cutover LifeOS goes quietly deaf.
+- **Liveness inversion.** cmux is a GUI app whose socket dies on quit/crash. Monitoring must report socket loss explicitly rather than imply continued observation.
 - **Identity mapping.** Anything in memory/Algorithm keyed to Kitty window/session IDs needs a mapping to cmux surface IDs, or Phase 3 orphans historical state.
 - **Rehearsed rollback.** "Kitty hooks untouched" preserves the old path, but Phase 3 still needs a tested one-command rollback, not just an intact fallback.
 

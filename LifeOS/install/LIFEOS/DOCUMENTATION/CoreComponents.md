@@ -9,6 +9,8 @@ version: 1.0.4
 
 # LifeOS Core Components
 
+> **Upstream archive:** This page describes source-system behavior, not automatically installed HALOS capability. See `DOCUMENTATION/README.md` and `PORT_SCHEMAS/hook_mapping.md`.
+
 LifeOS is a Life Operating System: it moves you from where you are now to where you want to be. Every task — shipping code, writing an essay, making a decision — is the same move, from **current state to ideal state**, pursued through verifiable iteration.
 
 That one loop is built from a set of components. They fall into two tiers. The **unique features** are the parts that make LifeOS what it is — you won't find this combination anywhere else. The **supporting components** are the subsystems that make the unique ones work.

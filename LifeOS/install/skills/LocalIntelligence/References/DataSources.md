@@ -1,6 +1,9 @@
 # LocalIntelligence — Universal Data Sources
 
-Every source listed here is keyed off `{city, state}` (and occasionally `county`) — no per-city configuration. When a source is unavailable for a given city, the fetcher returns `source_status: "unavailable"` rather than failing.
+These are candidate sources for a principal-configured external adapter, keyed off
+`{city, state}` and occasionally `county`. They are not all implemented by the
+bundled skill. The bundled News fetcher uses Patch RSS; every other category
+returns `unavailable` unless the adapter supplies it.
 
 ## Construction (FetchConstruction)
 
@@ -12,7 +15,8 @@ Every source listed here is keyed off `{city, state}` (and occasionally `county`
 
 ## Crime (FetchCrime)
 
-**Delegates to `_CRIMESTATS`. No direct sources from this skill.**
+No source is bundled. The configured adapter owns source selection and must emit
+public, source-attributed records without people-search aggregation or bypasses.
 
 ## Business (FetchBusiness)
 
@@ -64,8 +68,11 @@ Public-data only. No paid people-search aggregators, no bypassing CAPTCHAs.
 |--------|---------|
 | Patch RSS | `https://patch.com/<state-slug>/<city-slug>/feed` |
 | Google News topic search | `"<city>, <state>"` |
-| Optional regional outlets | via `LIFEOS/USER/CUSTOMIZATIONS/SKILLS/LocalIntelligence/PREFERENCES.md` |
+| Optional regional outlets | via the external adapter or `<LOCAL_INTELLIGENCE_DIR>/PREFERENCES.md` |
 
 ## Optional Customization Layer
 
-Per-user source overrides go in `~/.claude/LIFEOS/USER/CUSTOMIZATIONS/SKILLS/LocalIntelligence/PREFERENCES.md`. Examples: an OpenStates API key for higher rate limits, a Google News topic ID, additional regional newspaper RSS feeds. The skill body never hardcodes any of this.
+Project-scoped source preferences may live at
+`<LOCAL_INTELLIGENCE_DIR>/PREFERENCES.md`. Credentials remain in the process
+environment or the adapter's approved configuration. The skill body and digest
+never hardcode or copy them.

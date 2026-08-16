@@ -1,6 +1,6 @@
 # ExtractDesignSystem
 
-> **Prefer Path 2 first.** `/design-sync` (pull direction) is the native, first-party way to import a codebase's real design system into Claude Design — use `Workflows/NativeDesignSync.md` when the command is available. This Interceptor-driven extraction (Path 3) is the fallback for working from the web canvas and is unproven (the `interceptor-test` profile isn't logged into claude.ai). See SKILL.md → Prerequisites.
+> **Optional external adapter.** This workflow applies only when the user explicitly selects Claude Design's web-canvas onboarding and provides an approved authenticated browser profile. DirectDesign remains the supported Hermes-native default. See `SKILL.md` → Prerequisites.
 
 Codebase / brand assets → design tokens Claude Design uses on every subsequent generation.
 
@@ -61,7 +61,7 @@ TMP="$BRAND_FOLDER"
 ### 3. Open Claude Design Onboarding
 
 ```bash
-bun ~/.claude/skills/Webdesign/Tools/DriveClaudeDesign.ts open
+bun "$HERMES_HOME/skills/webdesign/Tools/DriveClaudeDesign.ts" open
 ```
 
 Then navigate to the design system section. The skill sends a prompt like:
@@ -71,7 +71,7 @@ Then navigate to the design system section. The skill sends a prompt like:
 ### 4. Upload Files
 
 ```bash
-bun ~/.claude/skills/Webdesign/Tools/DriveClaudeDesign.ts upload "$TMP"
+bun "$HERMES_HOME/skills/webdesign/Tools/DriveClaudeDesign.ts" upload "$TMP"
 ```
 
 ### 5. Wait for System Extraction
@@ -87,7 +87,7 @@ Claude Design takes 30s-3min depending on codebase size. Output appears in the d
 
 Screenshot the extracted system:
 ```bash
-bun ~/.claude/skills/Webdesign/Tools/DriveClaudeDesign.ts screenshot "$OUT/extracted-system.png"
+bun "$HERMES_HOME/skills/webdesign/Tools/DriveClaudeDesign.ts" screenshot "$OUT/extracted-system.png"
 ```
 
 If Claude Design flagged conflicts (e.g., "three different button styles in codebase — pick canonical"), resolve in the conversational UI. The adjustment-knob UX lets you tweak tokens live.
@@ -97,7 +97,7 @@ If Claude Design flagged conflicts (e.g., "three different button styles in code
 Claude Design persists the system server-side on your account. It will be auto-applied to every subsequent prototype generated in this workspace. You can also export the tokens as JSON:
 
 ```bash
-bun ~/.claude/skills/Webdesign/Tools/DriveClaudeDesign.ts export tokens "$OUT/tokens.json"
+bun "$HERMES_HOME/skills/webdesign/Tools/DriveClaudeDesign.ts" export tokens "$OUT/tokens.json"
 ```
 
 ## Output

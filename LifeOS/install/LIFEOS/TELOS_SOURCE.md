@@ -1,2 +1,2 @@
-TELOS canonical source: principal-supplied path (e.g. E:/Dropbox/ARON BIJL MSC/TELOS/)
-This file is replaced during Hermes setup with the actual path.
+TELOS canonical source: configured path (principal supplies during setup)
+This file is replaced during Hermes setup with the confirmed, existing directory.

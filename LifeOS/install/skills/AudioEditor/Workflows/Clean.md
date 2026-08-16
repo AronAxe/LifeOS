@@ -2,23 +2,12 @@
 
 Clean, edit, and polish audio files by removing filler words, stutters, false starts, dead air, and edit markers.
 
-## Voice Notification
-
-```bash
-curl -s -X POST http://localhost:31337/notify \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Running the Clean workflow in the AudioEditor skill to clean audio"}' \
-  > /dev/null 2>&1 &
-```
-
-Running the **Clean** workflow in the **AudioEditor** skill to clean audio...
-
 ## Step 1: Locate the Audio File
 
 Identify the audio file from the user's request. Check common locations:
 - Explicit path provided by user
 - `~/Downloads/` for recently downloaded files
-- Use `fd` to search if needed: `fd -e mp3 -e wav -e m4a -e flac '<keyword>' ~/Downloads`
+- Use `search_files(target='files')` to locate matching `.mp3`, `.wav`, `.m4a`, or `.flac` files when needed.
 
 If multiple matches exist, ask the user which file to use.
 
@@ -36,7 +25,7 @@ Map the user's request to Pipeline.ts flags:
 ## Step 3: Run the Pipeline
 
 ```bash
-bun ~/.claude/skills/AudioEditor/Tools/Pipeline.ts \
+LIFEOS_INFERENCE_APPROVED=1 bun <AUDIO_EDITOR_SKILL_DIR>/Tools/Pipeline.ts \
   "<audio-file-path>" \
   [FLAGS_FROM_INTENT_MAPPING] \
   --output "<output-path>"
@@ -44,7 +33,9 @@ bun ~/.claude/skills/AudioEditor/Tools/Pipeline.ts \
 
 **Output naming convention:** `<original-name>_edited.<ext>` in the same directory as the input file.
 
-**Timeout:** Set a 10-minute timeout. Transcription of long files can take several minutes on MPS.
+**Approval:** Set `LIFEOS_INFERENCE_APPROVED=1` only after the user approves the model calls. `--polish` separately requires content-egress and Cleanvoice cost approval.
+
+**Timeout:** Set a 10-minute timeout. Local transcription of long files can take several minutes.
 
 ## Step 4: Report Results
 
@@ -63,14 +54,14 @@ For debugging or partial workflows, individual tools can be run standalone:
 
 ```bash
 # Transcription only
-bun ~/.claude/skills/AudioEditor/Tools/Transcribe.ts <file>
+bun <AUDIO_EDITOR_SKILL_DIR>/Tools/Transcribe.ts <file>
 
 # Analysis only (requires transcript)
-bun ~/.claude/skills/AudioEditor/Tools/Analyze.ts <transcript.json>
+LIFEOS_INFERENCE_APPROVED=1 bun <AUDIO_EDITOR_SKILL_DIR>/Tools/Analyze.ts <transcript.json>
 
 # Edit only (requires audio + edits)
-bun ~/.claude/skills/AudioEditor/Tools/Edit.ts <file> <edits.json>
+bun <AUDIO_EDITOR_SKILL_DIR>/Tools/Edit.ts <file> <edits.json>
 
 # Polish only (requires CLEANVOICE_API_KEY)
-bun ~/.claude/skills/AudioEditor/Tools/Polish.ts <file>
+bun <AUDIO_EDITOR_SKILL_DIR>/Tools/Polish.ts <file>
 ```

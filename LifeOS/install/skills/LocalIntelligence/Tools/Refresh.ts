@@ -4,12 +4,11 @@
  *
  * Runs all eight fetchers via Promise.allSettled (one dead source never blanks
  * the digest), writes the dated JSON file plus the latest.json copy that the
- * Pulse module serves.
+ * other approved consumers may read.
  */
 
 import { mkdir, writeFile } from "node:fs/promises"
-import { join } from "node:path"
-import { homedir } from "node:os"
+import { join, resolve } from "node:path"
 
 import { readHometown, NoHometownError } from "./Hometown.ts"
 import type { Digest, FetchResult, Fetcher, Hometown, SectionKey } from "./Types.ts"
@@ -22,7 +21,10 @@ import { fetchArrests } from "./FetchArrests.ts"
 import { fetchNews } from "./FetchNews.ts"
 import { fetchCrime } from "./FetchCrime.ts"
 
-const DATA_DIR = join(homedir(), ".claude", "LIFEOS", "MEMORY", "DATA", "LocalIntelligence")
+export const DATA_DIR = resolve(
+  process.env.LIFEOS_LOCAL_INTELLIGENCE_DIR ??
+    join(process.cwd(), ".lifeos-local-intelligence"),
+)
 
 const fetchers: Record<SectionKey, Fetcher> = {
   construction: fetchConstruction,
@@ -100,13 +102,16 @@ export async function refresh(home: Hometown): Promise<Digest> {
   return digest
 }
 
-async function persist(digest: Digest): Promise<{ datedPath: string; latestPath: string }> {
-  await mkdir(DATA_DIR, { recursive: true })
+export async function persist(
+  digest: Digest,
+  dataDir: string = DATA_DIR,
+): Promise<{ datedPath: string; latestPath: string }> {
+  await mkdir(dataDir, { recursive: true })
   const dateStr = todayDateString()
   const citySlug = digest.meta.city.toLowerCase().replace(/\s+/g, "-")
   const stateSlug = digest.meta.state.toLowerCase()
-  const datedPath = join(DATA_DIR, `${dateStr}_${citySlug}_${stateSlug}_digest.json`)
-  const latestPath = join(DATA_DIR, "latest.json")
+  const datedPath = join(dataDir, `${dateStr}_${citySlug}_${stateSlug}_digest.json`)
+  const latestPath = join(dataDir, "latest.json")
   const json = JSON.stringify(digest, null, 2)
   await writeFile(datedPath, json, "utf8")
   await writeFile(latestPath, json, "utf8")

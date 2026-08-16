@@ -27,7 +27,7 @@ logsource:
   product: windows
 detection:
   selection:
-    Image: 'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe'
+    Image: '%WINDIR%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe'
     CommandLine|contains|all:
       - '-nop'
       - '-w hidden'

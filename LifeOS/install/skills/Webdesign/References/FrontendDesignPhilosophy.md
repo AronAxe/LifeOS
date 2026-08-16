@@ -208,15 +208,15 @@ Before writing code, name the deliverable shape so the consumer knows what they 
 
 The deliverable shape is chosen *before* coding, not after. Mismatch between deliverable and consumer breaks integration silently.
 
-### Verification — Interceptor screenshot
+### Verification — rendered output
 
-Web output gets verified via the **Interceptor skill** before declaring done. This is non-negotiable: real Chrome catches the rendering issues that "code looks right" misses. `Skill("Interceptor")` → screenshot the rendered output → confirm visual fidelity.
+Web output must be rendered and inspected before declaring completion. Use the configured Hermes computer/browser capability to capture the actual page, then confirm visual fidelity and run the project's relevant tests. Do not assume Interceptor or any external Claude product for DirectDesign.
 
 ### Customization layer
 
-LifeOS users may set personal aesthetic defaults at `~/.claude/LIFEOS/USER/CUSTOMIZATIONS/SKILLS/Webdesign/PREFERENCES.md`. If that file exists and DirectDesign is invoked, Step 1's aesthetic-tone choice is biased toward (not bound to) the user's stated preference. Without preferences, choose freshly each time and rotate registers across sessions.
+Users may set personal aesthetic defaults at `<LIFEOS_WORKSPACE>/skills/webdesign/PREFERENCES.md`. If that approved workspace file exists and DirectDesign is invoked, Step 1's aesthetic-tone choice is biased toward—not bound to—the user's stated preference. Without preferences, choose freshly each time and rotate registers across sessions.
 
-### When to choose DirectDesign vs ClaudeDesign
+### DirectDesign versus an optional external adapter
 
 | Choose **DirectDesign** when… | Choose **ClaudeDesign** when… |
 |------------------------------|-------------------------------|
@@ -227,4 +227,4 @@ LifeOS users may set personal aesthetic defaults at `~/.claude/LIFEOS/USER/CUSTO
 | You want one fast pass with clear aesthetic intent | You want iterative refinement against a visual surface |
 | Result will be reviewed in code | Result will be reviewed visually first |
 
-Both paths share this file's aesthetic doctrine. They differ in *who renders the design* — DirectDesign is {{DA_NAME}} writing code with this doctrine loaded; ClaudeDesign is Anthropic's claude.ai/design surface, which we drive live at whatever version is current.
+DirectDesign and the optional external adapters may share this file's aesthetic doctrine, but only DirectDesign is Hermes-native. The external adapters are used only after explicit user selection and prerequisite checks.

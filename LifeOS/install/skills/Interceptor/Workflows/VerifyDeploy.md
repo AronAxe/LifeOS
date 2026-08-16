@@ -113,6 +113,6 @@ Full verification = ALL FOUR probes captured and clean (with the noise rules abo
 ## Notes
 
 - For authenticated pages, Interceptor uses your real Chrome login sessions. No profile setup needed.
-- For public pages where speed matters and auth isn't needed, WebFetch (or the BrightData ladder) is fine.
+- For public pages where speed matters and auth is not needed, Hermes `web_extract` (or the Bright Data ladder) is appropriate.
 - Always use `http://localhost:PORT` instead of `localhost:PORT` for local dev URLs.
 - If Chrome is not running, start it first. Interceptor requires an active Chrome instance with the extension loaded.

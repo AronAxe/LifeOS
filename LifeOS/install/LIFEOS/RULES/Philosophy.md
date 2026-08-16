@@ -4,6 +4,8 @@ version: 1.1.2
 
 # LifeOS Philosophy & Epistemology (on-demand)
 
+> **Upstream doctrine archive:** Runtime and loading statements below describe source LifeOS. HALOS treats this file as reference material and does not inject it at session start.
+
 > Relocated verbatim from LIFEOS_SYSTEM_PROMPT.md on 2026-07-09 (7.0.0 BPE). Load when explaining the system, writing docs/releases about LifeOS, or reasoning about why the Algorithm/ISA work the way they do.
 
 ## What This System Is — the Life Operating System

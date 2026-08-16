@@ -1,51 +1,29 @@
 # PreviewDaemon Workflow
 
-**Purpose:** Show what an UpdateDaemon would change without writing or deploying anything.
-
-## Trigger Phrases
-
-- "preview daemon"
-- "preview daemon update"
-- "what would daemon update look like"
-- "daemon diff"
+**Purpose:** Produce and review the exact candidate public-profile update without writing or publishing anything.
 
 ## Process
 
-### Step 1: Run Aggregator in Preview Mode
+1. Confirm `LIFEOS_DIR` and the explicit public mission, goal, project, and section selections.
+2. Inventory source availability:
 
 ```bash
-bun ${LIFEOS_SKILL_DIR}/Tools/DaemonAggregator.ts --diff ${LIFEOS_USER_DIR}/Daemon/daemon.md --verbose
+bun $HERMES_HOME/skills/daemon/Tools/DaemonAggregator.ts --sources
 ```
 
-### Step 2: Show Section-by-Section Summary
+3. If a current artifact exists, compare against it:
 
-Present changes grouped by section:
-- Which sections have new content
-- Which sections are unchanged
-- How many security redactions would be applied
-- Source data freshness per section
-
-### Step 3: Highlight Risks
-
-Flag any sections where:
-- Content is older than 30 days
-- Security filter made redactions (show what was caught)
-- LifeOS source file is missing
-
-## Output Format
-
+```bash
+bun $HERMES_HOME/skills/daemon/Tools/DaemonAggregator.ts --diff <current-daemon.md>
 ```
-Daemon Preview — what would change:
 
-  [ABOUT]: unchanged
-  [MISSION]: 2 goals updated from TELOS
-  [FAVORITE_BOOKS]: +2 new (from TELOS/BOOKS.md)
-  [RECENT_IDEAS]: 10 new ideas (title + thesis)
-  [CURRENTLY_WORKING_ON]: 6 themes from last 14 days
-  [WISDOM]: 5 quotes added
+Otherwise render a read-only preview:
 
-  Security: 0 redactions needed
-  Sources: all present and fresh
-
-  To apply: run "update daemon"
+```bash
+bun $HERMES_HOME/skills/daemon/Tools/DaemonAggregator.ts --preview --verbose
 ```
+
+4. Report sections added, removed, unchanged, missing sources, and every security redaction.
+5. Flag any selected content that appears identity-specific, stale, financial, medical, location-sensitive, credential-bearing, or otherwise unsuitable for publication.
+
+Do not write, invoke the publisher adapter, or infer public selections during this workflow.

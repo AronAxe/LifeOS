@@ -16,7 +16,7 @@ to assess viability across time horizons.
 
 ## Prerequisites
 
-- World models must exist at `~/.claude/LIFEOS/MEMORY/RESEARCH/WorldModels/`
+- World models must exist beneath `<WORLD_MODEL_DIR>`
 - If models don't exist, prompt user to run UpdateModels workflow first
 
 ## Tier Detection
@@ -31,18 +31,15 @@ Detect from user prompt:
 ### Step 0: Validate Models Exist
 
 ```
-Check ~/.claude/LIFEOS/MEMORY/RESEARCH/WorldModels/ for all 11 model files.
+Check `<WORLD_MODEL_DIR>` for all 11 model files.
 If any missing: "World models incomplete. Run 'update world models' first."
 If models older than 30 days: warn user but proceed.
 ```
 
-### Step 1: Voice Notification
+### Step 1: Resolve inputs
 
-```bash
-curl -s -X POST http://localhost:31337/notify \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Testing your idea against all eleven world threat models at TIER tier", "voice_id": "fTtv3eikoepIosk8dTZ5"}'
-```
+Resolve `<WORLD_MODEL_DIR>` and the active installed skill directory. Record the
+model versions and update dates used for this run.
 
 ### Step 2: Extract and Decompose the Idea
 
@@ -59,7 +56,7 @@ For **Standard and Deep tiers:** Invoke FirstPrinciples skill to classify assump
 
 ### Step 3: Run Against World Models
 
-Read all 11 model files from `~/.claude/LIFEOS/MEMORY/RESEARCH/WorldModels/`.
+Read all 11 model files from `<WORLD_MODEL_DIR>`.
 
 #### Fast Tier (~2 min)
 Single-agent analysis:
@@ -70,7 +67,8 @@ Single-agent analysis:
 
 #### Standard Tier (~10 min)
 Parallel agent analysis:
-1. Spawn up to 11 parallel agents (Task tool, `run_in_background: true`)
+1. Dispatch one self-contained horizon brief per model through Hermes
+   `delegate_task`, batching to the configured concurrency limit.
 2. Each agent:
    - Reads ONE world model document
    - Analyzes the idea against that specific horizon
@@ -87,7 +85,8 @@ Full capability invocation:
 1. **FirstPrinciples** (if not already run): Full deconstruct → challenge → reconstruct cycle on the idea
 2. **Research update check**: For each horizon, run quick Research check for any new developments that affect this specific idea
 3. **Parallel horizon analysis**: Same as Standard but with deeper prompts and longer analysis per horizon
-4. **RedTeam** (32 agents): Full adversarial analysis of the idea across all horizons
+4. **RedTeam**: Run the installed adversarial workflow across all horizons; let
+   that skill choose its supported panel size rather than claiming a fixed count.
 5. **Council**: Multi-agent debate on the idea's long-term viability
    - Prompt: "Debate the viability of {idea} across time horizons from 6 months to 50 years. Consider: {per-horizon results}"
    - Extract Council Deliberation section
@@ -102,13 +101,11 @@ Use the template in `OutputFormat.md` (loaded from skill root). Ensure:
 - Confidence levels reflect model confidence × analysis certainty
 - Adversarial findings attribute to specific horizon contexts
 
-### Step 5: Voice Summary
+### Step 5: Return evidence
 
-```bash
-curl -s -X POST http://localhost:31337/notify \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Analysis complete. SUMMARY_OF_EXECUTIVE_VERDICT", "voice_id": "fTtv3eikoepIosk8dTZ5"}'
-```
+Return the executive verdict, per-horizon results, model versions, freshness
+warnings, and cited current-research URLs. Notify through Hermes only if the
+principal requested a notification.
 
 ## Output Format
 

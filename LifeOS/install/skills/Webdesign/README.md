@@ -1,58 +1,70 @@
 # Webdesign
 
-LifeOS orchestration skill for **Claude Design** (claude.ai/design) — Anthropic's visual design product launched April 17, 2026.
+HALOS web-interface design and integration skill for Hermes.
 
 ## What It Does
 
-Drives Claude Design programmatically through the Interceptor skill (real Chrome + authenticated claude.ai session), processes the handoff bundles it produces, and integrates the resulting designs into existing web applications.
+Webdesign turns a design brief into working interface code, integrates it into an existing application, and verifies the rendered result. The supported default is **DirectDesign**: Hermes loads the packaged frontend-design doctrine, audits the target project, implements a focused change, and exercises the result.
 
-Claude Design is the engine. This skill is the cockpit around it.
+Two external Claude Design adapters are retained for interoperability. They are optional, never selected implicitly, and require the user to provide and approve separately managed products, authentication, and browser or CLI prerequisites.
 
 ## Why This Exists
 
-Claude Design has no API, no CLI, no plugin. It is a surface on claude.ai. To use it inside a CLI-first workflow — as part of site building, blogging, admin panels, or marketing pages — you need a bridge. Webdesign is that bridge.
+Visual-first tools often produce a handoff gap; direct coding often drifts toward generic defaults. DirectDesign combines aesthetic discipline with the target codebase's actual components, tokens, framework, and verification commands. The optional adapters exist only for users who deliberately want an external Claude Design canvas or synchronization workflow.
 
-## Key Capability: Integration-Aware
+## Supported Default: DirectDesign
 
-Most design tools assume greenfield. Webdesign assumes the opposite: you already have an app and need to land a new prototype, page, or component into it cleanly. Workflows like `IntegrateIntoApp` produce diffs on top of existing code, respecting existing tokens and component patterns.
+DirectDesign requires no Claude runtime, subscription, browser profile, or external plugin. It:
 
-## Prerequisites
+1. Loads `References/FrontendDesignPhilosophy.md` with `skill_view`.
+2. Audits the target project's framework, tokens, components, and tests.
+3. Declares an aesthetic register and output contract.
+4. Implements production-grade code in the requested project.
+5. Runs the relevant tests and verifies the rendered result before claiming completion.
 
-- [Interceptor skill](https://github.com/anthropics/claude-code) installed and authenticated to claude.ai
-- Active Claude subscription with Claude Design access (Pro / Max / Team / Enterprise)
-- For integration: the target project's framework, token file, and component directory
+Mutable personal preferences belong outside the installed skill at:
 
-## Quick Start
-
-```
-Skill("Webdesign")
-
-# Then ask:
-"Create a prototype for a pricing page for an AI security startup"
-"Extract the design system from this codebase at ~/projects/my-site"
-"Integrate this prototype into the Astro app at ~/projects/landing"
+```text
+<LIFEOS_WORKSPACE>/skills/webdesign/PREFERENCES.md
 ```
 
-The skill routes your request to the right workflow automatically.
+## Optional External Adapters
+
+- **NativeDesignSync:** documentation for a separately managed compatible Claude Design/Claude Code installation. HALOS does not install, authenticate, update, or assume that product.
+- **ClaudeDesign via Interceptor:** an unverified web-canvas adapter. It requires explicit user selection, an independently configured Interceptor installation, an approved authenticated profile, and external product access.
+
+Failure of either adapter does not impair DirectDesign. Generic design requests route to DirectDesign.
+
+## Examples
+
+```text
+"Design a pricing page for an AI security startup. Editorial, dark, restrained."
+"Redesign this existing Astro page without changing its copy."
+"Audit and polish this dashboard, then verify it in the browser."
+```
+
+A request naming Claude Design or a synchronization command is treated as a request for an optional external adapter; prerequisites are checked before any external action.
 
 ## Workflows
 
-| Workflow | Purpose |
-|----------|---------|
-| CreatePrototype | Brief → polished prototype via Claude Design |
-| ExtractDesignSystem | Codebase / brand files → design tokens |
-| RefinePrototype | Iterate on existing Claude Design artifact |
-| WebsiteToRedesign | Live URL → modernized rebuild |
-| ExportToCode | Handoff bundle → local code |
-| IntegrateIntoApp | Prototype → diff against existing application |
-| DeployDesign | Built design → production host |
+| Workflow | Status | Purpose |
+|----------|--------|---------|
+| DirectDesign | Hermes-native default | Brief or existing project → implemented, verified interface |
+| NativeDesignSync | Optional external adapter | Explicit synchronization request through a separately managed CLI |
+| CreatePrototype | Optional external adapter | Explicit Claude Design web-canvas prototype |
+| ExtractDesignSystem | Optional external adapter | Supply project tokens to the external canvas |
+| RefinePrototype | Optional external adapter | Refine an existing external artifact |
+| WebsiteToRedesign | Optional external adapter | Use a live site as external-canvas input |
+| ExportToCode | Optional external adapter | Process a supplied handoff bundle |
+| IntegrateIntoApp | Shared integration discipline | Land supplied code or a bundle as a reviewable diff |
+| DeployDesign | Consent-gated | Deploy only through an explicitly approved project adapter |
 
-## Relationship to Other Tools
+## Related Capabilities
 
-- **`frontend-design` plugin** (Anthropic, auto-activates in Claude Code): the downstream code-generation engine when exporting bundles. Not invoked directly by this skill.
-- **Interceptor skill**: required, drives claude.ai/design.
-- **Art skill**: for illustrations, diagrams, header images — not overlapping scope.
+- **Art:** illustrations, diagrams, and standalone visual assets.
+- **Remotion:** programmatic video.
+- **Hermes computer/browser tools:** render and inspect DirectDesign output without requiring the optional Claude adapters.
 
 ## License
 
-See LICENSE.txt.
+See `LICENSE.txt`.

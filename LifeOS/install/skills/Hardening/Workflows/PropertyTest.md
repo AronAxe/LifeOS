@@ -1,12 +1,5 @@
 # PropertyTest Workflow
 
-Voice notification (run first):
-
-```bash
-curl -sk -X POST http://localhost:31337/notify -H "Content-Type: application/json" \
-  -d '{"message": "Hardening: PropertyTest workflow active", "voice_enabled": true}'
-```
-
 ## Purpose
 
 Identify candidates for property-based testing, name the properties formally, write them in fast-check, run them, and either land them as `bun-property` ISCs in the ISA's Test Strategy or capture shrunk counterexamples that become new example-based regression tests.

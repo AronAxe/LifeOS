@@ -9,6 +9,8 @@ version: 1.9.48
 
 # What LifeOS is and Why it Exists
 
+> **Upstream archive:** This page describes source-system behavior, not automatically installed HALOS capability. See `DOCUMENTATION/README.md` and `PORT_SCHEMAS/hook_mapping.md`.
+
 I created LifeOS in June of 2025 to answer a single question:
 
 > What are we building with all this AI?

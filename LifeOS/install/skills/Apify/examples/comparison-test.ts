@@ -20,18 +20,18 @@ async function demonstrateMCPApproach() {
   console.log('=== MCP APPROACH ===\n')
   console.log('Traditional MCP flow with multiple round-trips through model context:\n')
 
-  console.log('Step 1: mcp__Apify__search-actors')
+  console.log('Step 1: runtime-discovered actor search tool')
   console.log('  Input: { search: "instagram scraper", limit: 10 }')
   console.log('  → Tool definitions loaded: ~5,000 tokens')
   console.log('  → Search results returned: ~1,000 tokens')
   console.log('  → Results pass through model context')
 
-  console.log('\nStep 2: mcp__Apify__call-actor')
+  console.log('\nStep 2: runtime-discovered actor execution tool')
   console.log('  Input: { actor: "apify/instagram-scraper", input: {...} }')
   console.log('  → Run information returned: ~1,000 tokens')
   console.log('  → Results pass through model context')
 
-  console.log('\nStep 3: mcp__Apify__get-actor-output')
+  console.log('\nStep 3: runtime-discovered dataset retrieval tool')
   console.log('  Input: { datasetId: "xyz123" }')
   console.log('  → FULL dataset returned: ~50,000 tokens (100 items)')
   console.log('  → ALL results pass through model context')
@@ -63,7 +63,7 @@ async function demonstrateCodeFirstApproach() {
 
   console.log('\nStep 2: Model writes code to execute operations')
   const codeExample = `
-import { Apify } from '~/.claude/filesystem-mcps/apify'
+import { Apify } from '../index'
 
 const apify = new Apify()
 

@@ -7,10 +7,7 @@ effort: medium
 
 ## Customization
 
-**Before executing, check for user customizations at:**
-`~/.claude/LIFEOS/USER/CUSTOMIZATIONS/SKILLS/ExtractWisdom/`
-
-If this directory exists, load and apply any PREFERENCES.md, configurations, or resources found there. These override default behavior. If the directory does not exist, proceed with skill defaults.
+If the principal explicitly supplies an external preferences or writing-style path, read it before execution and treat it as an override. Otherwise proceed with the defaults below. Do not infer a private directory, search a legacy user tree, or write state beneath the installed skill.
 
 # ExtractWisdom — Dynamic Content Extraction
 
@@ -64,7 +61,7 @@ Extract at different depths depending on need. Default is **Full** if no level i
 
 ## Tone Rules (CRITICAL)
 
-**Canonical voice reference: `LIFEOS/USER/PRINCIPAL/WRITINGSTYLE.md`** — read this file for the full voice definition. The bullets should sound like the user telling a friend about it over coffee. Not compressed info nuggets. Not clever one-liners. Actual spoken observations.
+**Voice reference:** use a principal-supplied writing-style file when one is explicitly configured or provided. Otherwise infer tone only from material in the current request. The bullets should sound like the user telling a friend about it over coffee. Not compressed info nuggets. Not clever one-liners. Actual spoken observations.
 
 **THREE LEVELS — we're aiming for Level 3:**
 

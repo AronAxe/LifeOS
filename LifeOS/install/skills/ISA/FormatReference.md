@@ -1,8 +1,9 @@
 # ISA Format — Quick Reference
 
-Skimmable cheat sheet for the ISA file shape. The full, authoritative spec is
-`LifeOS/install/LIFEOS/DOCUMENTATION/Isa/IsaFormat.md` (v2.13.0, Algorithm v6.25.0) —
-on any contradiction, **the full spec wins** and this reference is corrected to match.
+Shipped reference for the ISA file shape. The operational rules in `SKILL.md`
+and the workflows beside it complete this contract. If they drift, reconcile
+the installed files before editing an ISA; no external source-tree document is
+assumed to exist.
 
 ---
 

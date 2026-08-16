@@ -1,65 +1,45 @@
 ---
 name: LifeOS
 version: 1.4.19
-description: Install and onboard a user into LifeOS — the Life Operating System (current state → ideal state via TELOS + the Algorithm). The agentic installer detects your OS + harness, wires hooks with permission, scaffolds your USER tree, pulls in sources you provide, and runs the TELOS / current→ideal interview that seeds your Pulse dashboard. USE WHEN install LifeOS, set up LifeOS, lifeos setup, lifeos-setup, lifeos interview, onboard me, run the interview, integrate LifeOS into my harness, update LifeOS, uninstall LifeOS, first-time setup. NOT FOR building or cutting a LifeOS release (private release tooling), editing TELOS after onboarding (use Telos / Interview), or LifeOS system maintenance (use the private maintenance skill).
+description: Bootstrap and verify a consent-gated HALOS installation on Hermes.
 disable-model-invocation: true
-argument-hint: "[setup|interview|update|uninstall]"
+argument-hint: "[install|update|onboard|remove]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
-# LifeOS
+# HALOS Bootstrap Installer
 
-The install + onboarding surface for **LifeOS** — the Life Operating System (formerly LifeOS). One command takes a stranger on any harness from nothing to a working, personalized install whose Pulse dashboard already shows their current state vs ideal state — without making them adopt a whole new harness.
+This is the installed HALOS lifecycle skill. For a first installation, point an agent at `LifeOS/SKILL.md` in the complete release checkout; the checkout supplies `Tools/ImportSkills.ts` and the public payload. Once imported, this skill governs verified updates, settings classification, onboarding offers, and removal review on Hermes.
 
-## How it ships
+HALOS is the Hermes-native port of LifeOS doctrine. It does not recreate the retired Claude Code, Pulse, launchd, file-memory, user-tree, symlink, or automatic-constitution runtime.
 
-LifeOS is distributed as **one self-contained skill** — the `LifeOS/` directory is the *entire* distribution. Everything ships inside it: the orchestrator (`SKILL.md`, `Workflows/`, `Tools/`), the whole-system payload under `install/`, and the one-line bootstrap at `install/install.sh`. **Nothing ships outside the skill** — no release-root `install.sh`, no `.claude/` clone.
+## When to use
 
-**The primary install is AI-native: give `INSTALL.md` (served at `ourlifeos.ai/install`) to your AI and say "install this."** LifeOS is AI-native, so the install is too — you hand the doc (or its link) to whatever harness you already use, and your AI installs LifeOS on your OS and harness, with permission at each step. It's the same document a human can read and follow. `INSTALL.md` opens with a capability gate, drives the install Tools (which run under `bun` on any OS, not a shell), wires integration per-harness (honest about what each gets), then runs Setup → Interview.
+Use when a principal asks to install, update, verify, onboard, or assess removal of HALOS on Hermes. Do not use to cut a release or to mutate a machine merely because the skill was read.
 
-A terminal shortcut stays for Claude Code on macOS/Linux:
+## Operating contract
 
-```
-curl -fsSL https://ourlifeos.ai/install.sh | bash
-```
+1. **Identify the release and target.** For first install, prove the release checkout contains `Tools/ImportSkills.ts`, `install/skills/LifeOS/Tools/InstallSettings.ts`, and `install/plugins/lifeos/plugin.yaml`. Inspect the selected `HERMES_HOME`; require an explicit target if it differs from the active profile.
+2. **Dry-run first.** Run `HERMES_HOME="<selected>" bun "<package-root>/Tools/ImportSkills.ts" --dry-run`, read the full report, and show planned skills/plugins, private count, collisions, and refusals. No mutation has occurred at this point.
+3. **Consent before import.** Apply only after an explicit approval of that plan: `HERMES_HOME="<selected>" bun "<package-root>/Tools/ImportSkills.ts"`. Preserve collisions; never overwrite, delete, or infer a conflict decision.
+4. **Consent before plugin activation.** The copied plugin is not active merely because it exists. If approved, run `HERMES_HOME="<selected>" hermes plugins enable lifeos`, then verify with `hermes plugins list --enabled`, `hermes skills list --source local`, and `hermes lifeos status`, each using the same target environment.
+5. **Classify settings separately.** Run `HERMES_HOME="<selected>" bun "<package-root>/install/skills/LifeOS/Tools/InstallSettings.ts" --hermes-home "<selected>" --dry-run`. Present the report. Only `BASH_DEFAULT_TIMEOUT_MS` → `terminal.timeout` and `fileCheckpointingEnabled` → `checkpoints.enabled` are verified mappings. Apply only after a separate approval, then run `hermes config check` against the same target.
+6. **Offer onboarding, do not assume it.** TELOS is a principal-supplied configured source. General knowledge belongs in configured Hindsight only with permission and a healthy provider. Do not create a user tree, seed identity/Pulse, create project context, schedule work, or retain unaccepted interpretation.
 
-Both are served from the skill's own single sources of truth — `INSTALL.md` at the skill root, `install/install.sh` for the shell path (which hands off to the agentic `/lifeos-setup`). The skill carries no version field (Claude Code ignores one); **versioning lives at the distribution layer** — the GitHub release tag and the `LIFEOS_RELEASES/<version>/` parent dir. The payload (skills, hooks, system prompt, Algorithm, docs, runtime tools) rides along under `install/` and is placed during setup, with permission.
+The full first-install procedure, decision boundaries, command forms, and evidence handoff are in the source bootstrap skill at `LifeOS/SKILL.md`. If that complete release checkout is unavailable, stop and request it rather than improvising an installer.
 
-## Workflow Routing
+## Update and removal
 
-| Trigger | Workflow |
-|---------|----------|
-| `setup`, `/lifeos-setup`, "install LifeOS", "integrate into my harness" | `Workflows/Setup.md` |
-| `interview`, "onboard me", "run the interview", TELOS capture | `Workflows/Interview.md` |
-| `update`, "update LifeOS", after a version bump | `Workflows/Update.md` |
-| `uninstall`, "remove LifeOS" | `Workflows/Uninstall.md` |
+Updates repeat dry-run → consent → additive import → optional plugin verification → separate settings decision. The importer preserves conflicts; it is not an overwrite deployer.
 
-Default flow (`/lifeos-setup`): **Setup phase** (system integration) → transitions into **Interview phase** (life onboarding). One continuous experience, two clearly-marked phases — setup is logistics, interview is meaning. Setup ALWAYS runs first; hooks must be wired before the interview seeds anything.
+No public automated uninstaller is implemented. Inventory the selected target, plugin, locally imported skills, release checkout, TELOS sources, and Hindsight data separately. Require an explicit, reviewed target list before any removal. Never delete broad Hermes directories, configuration, Hindsight data, source material, or principal records by implication.
 
-## The two phases
+## Boundaries
 
-**Setup (logistics, first).** Detect OS + harness → scan for conflicts and surface them → install prerequisites → overlay the system templates → scaffold the USER tree + link it → **trust-gated hook install** (show the exact change, back up `settings.json`, wait for yes) → activate the identity imports → verify with two evidence classes. Adapts to OS (macOS/Linux/Windows) and harness (Claude Code / Hermes / Cursor / OpenClaw).
+Do not invoke `DeployCore`, `DeployComponents`, `InstallHooks`, `ActivateImports`, the upstream shell installer, Claude launchers, Claude `settings.json` merging, `@LIFEOS` imports, user-tree/symlink operations, launchd, or Pulse. These are upstream mechanisms, not HALOS-on-Hermes adapters.
 
-**Interview (meaning, second).** Name the DA → principal identity → TELOS current state → TELOS ideal state → **pull in external sources the user provides** (existing notes, configs, exports) to enrich USER context → seed Pulse. By the end, the config tree is populated and Pulse shows real data, not empty scaffolding.
+The optional plugin provides its documented explicit tools, passive evidence hooks, and commands. It does not automatically inject identity, policy, constitution, scheduling, phase advancement, or agent control.
 
-## Hard rules
+## Evidence handoff
 
-- **Setup before Interview, always.** Hooks/integration land before any onboarding write.
-- **Additive, never clobbering.** `install.sh` touches only the LifeOS skill dir; setup writes are `existsSync`-guarded. Never overwrite or `rm` a populated dir or a foreign file.
-- **Permission before mutation.** Hook install shows the exact change (file count + settings entries) and backs up `settings.json` first. Nothing changes without an explicit yes.
-- **Config root keeps its canonical name.** The user tree lives under the config dir and is linked into the harness tree; "LifeOS" is the brand, the resolved config path does not rename (renaming it breaks the identity `@`-imports).
-- **Dev-tree refusal.** The hook install refuses to run inside the LifeOS source repo (detected via dev-tree markers — the private maintenance skill present, or a recognized source-repo git remote). Never mutate the author's live system.
-
-## Gotchas
-
-- **No `version:` in SKILL.md.** Claude Code ignores it. Version lives in the release (tag + `LIFEOS_RELEASES/<version>/` + the `install.sh` fetch), not in the skill.
-- **`install.sh` is non-destructive by design.** It installs only the LifeOS skill and backs up only a prior LifeOS skill — never the user's other skills, hooks, or config. The whole point is "bolt on, don't take over."
-- **Hooks are installed imperatively, with permission.** A bare skill cannot auto-wire hooks; the setup workflow writes them into the user's harness explicitly, after showing what changes.
-- **Config is `.toml`, never `.yaml`.** `LifeosConfig.ts` reads TOML; the legacy `.yaml` template was retired 2026-06-19.
-- **Cross-platform is solved at setup time, not statically.** The setup conversation detects the OS + harness and tailors hook commands and paths — don't assume macOS.
-
-## Examples
-
-- "install LifeOS" → `install.sh` drops the skill, then `/lifeos-setup` runs: detect env, surface conflicts, wire hooks with permission, scaffold the USER tree, then roll into the interview.
-- "run the lifeos interview" → Interview workflow: capture TELOS + current/ideal state, pull in the user's sources, seed Pulse.
-- "update LifeOS" → Update workflow: idempotent re-overlay after a version bump, non-destructive.
+Report the release root, selected `HERMES_HOME`, prerequisite evidence, dry-run/import result, collision/refusal status, plugin decision and verification, settings decision and config check, onboarding state, and every remaining limitation. Success requires evidence for each approved operation, not merely copied files.

@@ -1,6 +1,6 @@
 # IntegrateIntoApp
 
-> **Prefer Path 2 first.** If `/design-sync` is available, use `Workflows/NativeDesignSync.md` to keep design and code in lockstep natively. This Interceptor-bundle integration flow (Path 3) is the fallback for working from the web canvas and is unproven (the `interceptor-test` profile isn't logged into claude.ai). See SKILL.md → Prerequisites. (If your prototype source is already a generated code directory, the audit/diff/verify steps below still apply regardless of how it was produced.)
+> **Optional external adapter.** Use this workflow only for a prototype or handoff the user explicitly supplies through the Claude Design adapter. It is not preferred over DirectDesign, and HALOS assumes no browser profile or external CLI. The audit/diff/verify steps remain valid regardless of how the prototype was produced.
 
 Land a Claude Design prototype INTO an existing application as a framework-aware diff, not a greenfield scaffold.
 
@@ -56,7 +56,7 @@ find "$TARGET/src" -type d -name "components" -o -name "ui" 2>/dev/null > "$OUT/
 If `ExtractDesignSystem.md` has not already been run on this project, run it NOW. This primes Claude Design with the app's real tokens and stops it from inventing a competing palette.
 
 ```bash
-Skill("Webdesign") → Workflows/ExtractDesignSystem.md --codebase "$TARGET"
+Use the installed `webdesign` skill's `Workflows/ExtractDesignSystem.md` with the target codebase.
 ```
 
 ### 3. Compose the Integration Brief
@@ -131,7 +131,7 @@ bun dev &
 DEV_PID=$!
 sleep 5
 
-bun ~/.claude/skills/Webdesign/Tools/VerifyDesign.ts "http://localhost:$DEV_PORT$INTEGRATION_TARGET" "$OUT/in-context"
+bun "$HERMES_HOME/skills/webdesign/Tools/VerifyDesign.ts" "http://localhost:$DEV_PORT$INTEGRATION_TARGET" "$OUT/in-context"
 
 kill $DEV_PID
 ```

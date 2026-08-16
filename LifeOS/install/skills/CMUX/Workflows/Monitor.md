@@ -1,6 +1,6 @@
 # Monitor
 
-Poll a workspace's surfaces, classify each agent's state (idle / working / done / awaiting-input), and fire {{DA_NAME}} voice the moment one finishes or needs you. The observe-to-improve loop.
+Poll a workspace's surfaces, classify each agent's state (idle / working / done / awaiting-input), and report transitions. Optional notification is explicit rather than assumed.
 
 ## Why
 
@@ -24,13 +24,7 @@ cmux has no push or event-subscribe command. There is no "notify me when done" c
    - **done** — completion marker in the tail (green tests, "done", finished prompt)
    - **awaiting-input** — a prompt is waiting on you (y/n, password, confirm)
 
-2. **React on transition.** When a surface flips to `done` or `awaiting-input`, `monitor` calls `notifyVoice(msg)` — a fire-and-forget POST to Pulse:
-
-   ```
-   POST http://localhost:31337/notify  { message, voice_enabled: true }
-   ```
-
-   → {{DA_NAME}} speaks it. `beta/worker-2 finished` or `beta/lead awaiting input` comes over the speakers; you look only when told to.
+2. **React on transition.** Every pass emits JSON containing `states` and `notifications`. With no `CMUX_NOTIFY_ENDPOINT`, state monitoring continues and the notification result reports that the adapter is unavailable. For unattended delivery, configure an approved HTTP(S) endpoint explicitly. During an interactive Hermes run, the agent may instead call `text_to_speech` after reading a material transition.
 
 3. **One pass, no loop.** For a scripted spot-check (e.g. inside another workflow), `--once` does a single classification pass and exits:
 
@@ -38,9 +32,9 @@ cmux has no push or event-subscribe command. There is no "notify me when done" c
    bun ~/.claude/skills/CMUX/Tools/cmux.ts monitor --workspace beta --once
    ```
 
-## How it feeds Pulse and voice
+## Integration boundary
 
-`monitor` doesn't replace the LifeOS dashboard — it feeds it. The classified surface states flow to Pulse (localhost:31337) the same way the old Kitty tab-state layer surfaced working/done/awaiting, and completion messages ride the existing `/notify` → {{DA_NAME}} TTS path. cmux is the new surface being watched; Pulse and voice stay exactly as they were. State in, dashboard + voice out.
+`monitor` does not feed a hidden dashboard, create background jobs, or persist transcript content. It prints classified JSON to stdout. A separate consumer may be built and reviewed later; the installed skill makes no such bridge active.
 
 ## Worked example — babysit a race, hands-free
 
@@ -48,7 +42,7 @@ cmux has no push or event-subscribe command. There is no "notify me when done" c
 # a 5-agent race is running in workspace:7 (see AgentRace.md)
 bun ~/.claude/skills/CMUX/Tools/cmux.ts monitor --workspace workspace:7 --interval 2
 # ... you go do something else ...
-# {{DA_NAME}}: "workspace:7 race-3 finished"   <- first done, voice fires
+# stdout reports race-3 as done; an explicitly configured adapter may notify
 ```
 
 Then pull the winner:

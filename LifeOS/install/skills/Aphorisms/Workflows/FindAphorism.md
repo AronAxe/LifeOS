@@ -22,7 +22,7 @@ Running **FindAphorism** in **Aphorisms**...
 - Working on newsletter and needs opening/closing wisdom quote
 
 **Prerequisites:**
-- Aphorism database exists at `~/.claude/skills/Aphorisms/Database/aphorisms.md`
+- Resolve the quote library: use the absolute `APHORISMS_LIBRARY` when configured, otherwise load the packaged read-only seed with `skill_view(name="aphorisms", file_path="Database/aphorisms.md")`
 - Newsletter content or URL provided by user
 - Clear understanding of newsletter theme (if not provided, extract from content)
 
@@ -33,10 +33,10 @@ Running **FindAphorism** in **Aphorisms**...
 ### Step 1: Get Newsletter Content
 
 **If URL provided:**
-```bash
-# Use WebFetch to get content
-WebFetch(url, "Extract main article content, title, and key themes")
+```text
+web_extract(urls=[url])
 ```
+Use the extracted title and article body to identify the key themes. If extraction is incomplete, use `browser_exec` rather than inventing missing content.
 
 **If content pasted:**
 - Receive full text directly from user
@@ -96,9 +96,11 @@ Use deep thinking for deep thematic analysis. Identify:
 
 ### Step 3: Read Aphorism Database
 
-**Load database:**
-```bash
-Read ~/.claude/skills/Aphorisms/Database/aphorisms.md
+**Load the resolved library:**
+```text
+read_file(path="<resolved APHORISMS_LIBRARY absolute path>")
+# If no mutable library is configured, read only the packaged seed:
+skill_view(name="aphorisms", file_path="Database/aphorisms.md")
 ```
 
 **Review relevant sections:**

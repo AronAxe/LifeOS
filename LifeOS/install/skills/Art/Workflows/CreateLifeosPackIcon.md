@@ -211,7 +211,7 @@ Before marking icon complete:
 
 ## Related Workflows
 
-- `~/.claude/skills/_LIFEOS/Workflows/CreateRelease.md` - Release workflow (may include icon generation)
+- Release/publishing is separate and requires an explicit repository workflow and approval; this skill ships no release workflow.
 
 *Note: Previously referenced CreatePack.md, ValidatePack.md, and LifeosIntegrityCheck.md have been removed.*
 

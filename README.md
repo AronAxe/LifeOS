@@ -30,6 +30,9 @@
 
 ---
 
+> [!IMPORTANT]
+> **This repository is the Hermes Desktop port, not the upstream Claude Code installer.** It imports a reviewed Hermes-native skill set and retains upstream-only material as non-deployed source. It does not install Pulse, launchd/Kitty/CMUX tooling, a private filesystem-memory runtime, or scheduled jobs by default.
+
 https://github.com/user-attachments/assets/329897f5-828b-4c23-b607-1cf9c71cb4ec
 
 **LifeOS** is a General Purpose AI Harness for doing anything you want to do in life and work with AI. It captures who you are, what you care about, and where you're trying to go, then uses AI that knows you to help you get there. 
@@ -49,23 +52,25 @@ Stars help more people find the project and keep it moving. It takes one click.
 
 </div>
 
-## Install
+## Install HALOS on Hermes
 
-**Give it to your AI.** LifeOS is installed *by* an AI, so the install is just a prompt. Paste this into your AI coding harness — Claude Code, Cursor, Codex, Hermes, or any capable agent — and it does the whole setup for you:
+This repository is the **HALOS-on-Hermes port**, not the upstream Claude Code installer. It requires a working [Hermes Agent](https://hermes-agent.nousresearch.com/docs) installation and [Bun](https://bun.sh).
 
-```
-Read https://ourlifeos.ai/install and install LifeOS for me.
-```
+For the agent-first route, point a Hermes-capable agent at [`LifeOS/SKILL.md`](LifeOS/SKILL.md) in this checkout and ask it to install HALOS. It performs the consent-gated dry-run → import → optional plugin → settings classification → verification sequence against an explicitly selected `HERMES_HOME`.
 
-Your AI reads the install page and walks the setup, asking permission before it touches anything.
-
-**Prefer the terminal?** There's a one-line shortcut for Claude Code on macOS/Linux:
+Read the [canonical installation guide](LifeOS/INSTALL.md) before changing a machine. Its manual route is deliberately small: dry-run the public-skill/plugin importer, review collisions, obtain consent, import, then explicitly enable the optional `lifeos` plugin and verify it.
 
 ```bash
-curl -fsSL https://ourlifeos.ai/install.sh | bash
+HERMES_HOME="<selected-hermes-home>" bun LifeOS/Tools/ImportSkills.ts --dry-run
+# after explicit approval:
+HERMES_HOME="<selected-hermes-home>" bun LifeOS/Tools/ImportSkills.ts
+HERMES_HOME="<selected-hermes-home>" hermes plugins enable lifeos
+HERMES_HOME="<selected-hermes-home>" hermes skills list --source local
 ```
 
-Either path needs a capable AI coding harness — we build and run on [Claude Code](https://docs.claude.com/claude-code) — and [bun](https://bun.sh).
+The importer plans all 72 public skills, never overwrites a differing existing skill, and refuses a target carrying the private maintainer marker. A clean target receives the complete public set; any collision is preserved for review. In an already-active interactive session, run `/reload-skills` after import. Settings changes, project context, Hindsight use, TELOS onboarding, cron, and deletion are separate consent-bound decisions.
+
+The upstream shell installer, Claude launchers, `settings.json` mergers, `@LIFEOS` imports, Pulse/launchd services, and user-tree symlinks are **not** supported installation paths for this port.
 
 ## Core Components
 
@@ -255,7 +260,9 @@ badosanjos · benoitdepaire · bnkath2o · brycemagera · catchingknives · DAES
 ---
 
 <details>
-<summary><strong>📜 Update History</strong></summary>
+<summary><strong>📜 Upstream LifeOS Update History</strong></summary>
+
+> Historical upstream release notes below describe the source system. They are not HALOS-on-Hermes installation or capability claims; the supported HALOS surface is defined by `LifeOS/INSTALL.md` and the verified mapping ledger.
 
 <br/>
 

@@ -114,7 +114,7 @@ Numbered to match Recommendations. One block per technique.
 ## 🪞 Internal Reflections (Thread 3)
 
 ```markdown
-**Source:** ~/.claude/LIFEOS/MEMORY/LEARNING/REFLECTIONS/algorithm-reflections.jsonl
+**Source:** verified Hindsight/session/evaluation evidence supplied for this review
 **Entries analyzed:** [N] | **High-signal:** [N] (low sentiment, over-budget, or failed criteria)
 
 ### [Theme Name] ([N] occurrences, [HIGH/MEDIUM/LOW] signal)

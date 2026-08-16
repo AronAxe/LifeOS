@@ -7,11 +7,11 @@ convention: pai-freshness-v1
 
 # Principal Identity — User
 
-> Bootstrap default — functional before interview. Run `/interview` to personalize.
+> Upstream bootstrap scaffold retained for reference; HALOS does not deploy or auto-load it.
 >
-> ⚠ INTERVIEW REQUIRED — run `/interview` to populate this file with your real identity content. The DA loads it at every session start; without your content, the model operates on placeholders.
+> Principal identity is private. Route approved content to configured TELOS or a separately configured memory provider; do not populate this release file.
 
-Loaded at every session startup via CLAUDE.md `@` import. Gives the DA a concise identity reference.
+Upstream Claude installations loaded this through a `CLAUDE.md` import. HALOS does not.
 
 ---
 
@@ -62,4 +62,4 @@ When representing the user or working in their context:
 
 ---
 
-*After `/interview`, this file is rewritten with your actual identity. The DA reads it at every session start — keeping it current is how the DA stays aligned.*
+*Upstream behavior only: HALOS does not rewrite or read this scaffold at session start.*

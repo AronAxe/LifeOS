@@ -227,7 +227,7 @@ bun ~/.claude/skills/<your-headshot-skill>/Tools/Headshot.ts \
 ### Remove Background
 
 ```bash
-bun ~/.claude/LIFEOS/TOOLS/RemoveBg.ts ~/Downloads/yt-headshot-${TIMESTAMP}.png
+rembg i ~/Downloads/yt-headshot-${TIMESTAMP}.png ~/Downloads/yt-headshot-${TIMESTAMP}-transparent.png
 ```
 
 ---

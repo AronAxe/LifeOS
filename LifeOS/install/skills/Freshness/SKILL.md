@@ -8,7 +8,7 @@ effort: low
 
 ## What It Does
 
-Constitutional files age silently. The DA loads TELOS, SOUL.md, and the constitution at every session start and optimizes the principal's current→ideal loop against them — so when those files drift out of date, every downstream recommendation drifts with them, invisibly. Freshness makes the drift visible: it grades each tracked file **A–F** against a threshold chosen for how fast that kind of content moves, and rolls the per-file grades into one overall grade the DA can act on.
+Identity and direction files age silently. When a workflow deliberately uses configured TELOS, SOUL.md, or HALOS doctrine, stale content can distort its recommendations. Freshness makes that risk visible: on explicit invocation it grades each available tracked file **A–F** against a threshold chosen for how fast that kind of content moves, then rolls the per-file grades into one overall grade. It does not prove that every file is loaded at session start.
 
 This is a read-only sensing skill. It never edits content — it reports what is stale so the principal (via `Telos` or `Interview`) can refresh it.
 
@@ -23,7 +23,7 @@ Borrowed from the LifeOS FreshnessSystem, and load-bearing:
 
 ### Hermes adaptation
 
-The Dropbox TELOS files carry no `last_reviewed` frontmatter — they are plain principal content keyed by filesystem mtime. Hermes therefore:
+The configured TELOS source may carry no `last_reviewed` frontmatter — it is plain principal content keyed by filesystem mtime. Hermes therefore:
 
 - Uses **filesystem mtime as a proxy for `last_updated`**, and grades from it with an explicit **"last human review unknown"** qualifier for any file lacking an explicit review timestamp. The grade is honest about being an upper bound on freshness (mtime ≥ true last-review).
 - Reads mtimes with `read_file` metadata or `terminal(stat)` — no network, no model.
@@ -33,11 +33,11 @@ The Dropbox TELOS files carry no `last_reviewed` frontmatter — they are plain 
 
 | Source | Path | Content |
 |--------|------|---------|
-| **TELOS files** | `E:/Dropbox/ARON BIJL MSC/TELOS/` (canonical) | the principal's mission, goals, strategies, beliefs, current state — canonical, ~25 files |
+| **TELOS files** | `TELOS_DIR` (required, principal-supplied canonical source) | the principal's mission, goals, strategies, beliefs, current state |
 | **SOUL.md** | `$HERMES_HOME/SOUL.md` | DA identity — voice, personality, relationship |
-| **HERMES_CONSTITUTION.md** | `LifeOS/install/LIFEOS/HERMES_CONSTITUTION.md` | the constitutional / ephemeral-system-prompt layer |
+| **HERMES_CONSTITUTION.md** | `LifeOS/install/LIFEOS/HERMES_CONSTITUTION.md` | shipped HALOS doctrine reference; not automatically loaded by the importer |
 
-TELOS is the canonical principal content — an empty template shipped with the repo is *not* the source of truth; the configured Dropbox directory is (`TELOS_DIR` env var overrides the default).
+TELOS is the canonical principal content — an empty template shipped with the repo is *not* the source of truth. `TELOS_DIR` is required; the checker refuses to run when it is unset or does not name an existing directory.
 
 ## A–F Grading
 

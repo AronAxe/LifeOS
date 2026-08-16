@@ -1,97 +1,52 @@
 # Quick Workflow
 
-Fast single-round perspective check. Use for sanity checks and quick feedback.
+Use for a fast one-round perspective check when a full three-round Council would be disproportionate.
 
-## Voice Notification
+## 1. Frame and compose
 
-```bash
-curl -s -X POST http://localhost:31337/notify \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Running the Quick workflow in the Council skill to get fast perspectives"}' \
-  > /dev/null 2>&1 &
-```
-
-Running the **Quick** workflow in the **Council** skill to get fast perspectives...
-
-## Prerequisites
-
-- Topic or question to evaluate
-- Optional: Custom council members
-
-## Members
-
-Write 4 member briefs inline (name + role + stance), then launch with `general-purpose`. See `CouncilMembers.md`.
-
-## Execution
-
-### Step 1: Write & Announce Quick Council
-
-Write 4 member briefs tailored to the topic, then announce:
+Record the topic, immediate decision, decisive context, and confidentiality boundary. Write three or four distinct member briefs following `../CouncilMembers.md`.
 
 ```markdown
 ## Quick Council: [Topic]
 
-**Council Members:** [List member names with one-line roles]
-**Mode:** Single round (fast perspectives)
+**Decision:** [what is being checked]
+**Members:** [name — role] …
+**Mode:** one independent round
 ```
 
-### Step 2: Parallel Perspective Gathering
+## 2. Gather perspectives
 
-Launch all council members in parallel using `subagent_type: "general-purpose"`.
+Call Hermes `delegate_task` with independent tasks in its `tasks` array, respecting the current concurrency limit. Each receives its member brief, the topic context, and:
 
-**Each agent prompt includes the member's brief PLUS:**
-```
+```text
 QUICK COUNCIL CHECK
-
-Topic: [The topic]
-
-[Relevant context for the topic]
-
-Give your immediate take from your specialized perspective:
-- Key concern, insight, or recommendation
-- 30-50 words max
-- Be direct and specific
-
-This is a quick sanity check, not a full debate.
+Return:
+1. your direct recommendation;
+2. the strongest reason;
+3. the most important risk or missing evidence;
+4. one condition that would reverse your view.
+Be concise and specific.
 ```
 
-### Step 3: Output Perspectives
+Do not give same-round members one another's answers. Mark failed tasks rather than filling the gap.
+
+## 3. Summarize
 
 ```markdown
 ### Perspectives
 
-**[Agent 1 Name] ([traits]):**
-[Brief take]
+**[Member — role]:** [response]
 
-**[Agent 2 Name] ([traits]):**
-[Brief take]
+### Quick synthesis
 
-**[Agent 3 Name] ([traits]):**
-[Brief take]
-
-**[Agent 4 Name] ([traits]):**
-[Brief take]
-
-### Quick Summary
-
-**Consensus:** [Do they generally agree? On what?]
-**Concerns:** [Any red flags raised?]
-**Recommendation:** [Proceed / Reconsider / Need full debate]
+**Convergence:** …
+**Material disagreement:** …
+**Recommendation:** proceed | reconsider | gather evidence | run full debate
+**Decisive next check:** …
 ```
 
-## When to Escalate
+Escalate to `Debate.md` when members identify materially different decision criteria, unresolved high-impact risk, or a need for actual rebuttal.
 
-If the quick check reveals significant disagreement or complex trade-offs, recommend:
+## Completion
 
-```
-This topic has enough complexity for a full council debate.
-Run: "Council: [topic]" for 3-round structured discussion.
-```
-
-## Timing
-
-- Total: 15-30 seconds (single parallel round)
-
-## Done
-
-Quick perspectives gathered. Use for fast validation; escalate to DEBATE for complex decisions.
+The quick check passes when each available perspective is attributed, disagreement is not hidden, and the recommendation is tied to an explicit decision criterion.

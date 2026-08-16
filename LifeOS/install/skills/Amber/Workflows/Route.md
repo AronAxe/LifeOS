@@ -10,7 +10,7 @@ None required (defaults to the full unrouted queue), or a specific `capture_id` 
 
 1. **Pull the unrouted queue.** `hindsight_recall` for `cat:amber` + `source:amber_capture` **without** the `routed:true` tag. Each is a preserved capture that has not yet earned a destination.
 
-2. **Load TELOS context once.** `hindsight_recall` for `cat:telos` (the projection of `E:/Dropbox/ARON BIJL MSC/TELOS/` retained under `document_id: user:aron:telos`). This is the rubric — *good for what the principal is actually trying to do*, not just *good*. Read live; do not cache a stale copy.
+2. **Load TELOS context once.** `hindsight_recall` for `cat:telos` (the configured principal TELOS projection retained under `document_id: user:{id}:telos`). This is the rubric — *good for what the principal is actually trying to do*, not just *good*. Read live; do not cache a stale copy.
 
 3. **Grade each capture** against TELOS. Produce, per capture:
    - a one-way classification into exactly one route:
@@ -26,7 +26,7 @@ None required (defaults to the full unrouted queue), or a specific `capture_id` 
    - `project_integration` → an explicit routing report line proposing a project note.
    - `none` / below threshold → **no destination**; the capture stays in the ledger forever, recallable — never discarded.
 
-6. **Mark routed.** For each routed capture, `hindsight_retain` the same `document_id: user:aron:amber:{capture_id}` with an added `routed:true` tag and the chosen route recorded. Hindsight replaces the prior facts for that stable id; the raw capture content stays immutable.
+6. **Mark routed.** For each routed capture, `hindsight_retain` the same `document_id: user:{id}:amber:{capture_id}` with an added `routed:true` tag and the chosen route recorded. Hindsight replaces the prior facts for that stable id; the raw capture content stays immutable.
 
 7. **Idempotency.** A capture already tagged `routed:true` is skipped. Re-routing a specific `capture_id` is allowed only when explicitly requested.
 

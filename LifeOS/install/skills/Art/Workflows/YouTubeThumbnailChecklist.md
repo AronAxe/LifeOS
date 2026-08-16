@@ -38,7 +38,7 @@ Running **YouTubeThumbnailChecklist** in **Art**...
 □ Determined thumbnail type (Main/Audio/Sponsored)
 □ Extracted title text from content (3-7 words max)
 □ Identified content mood/tone for headshot selection
-□ Selected specific headshot file from `LIFEOS/USER/CUSTOMIZATIONS/SKILLS/Art/HeadshotExamples/` (your private headshots) OR
+□ Selected a specific headshot from `<LIFEOS_WORKSPACE>/skills/art/HeadshotExamples/` (an explicitly configured private workspace) OR
 □ Planned to generate NEW headshot using Headshot skill
 □ Determined if background art exists OR needs generation
 □ If generating art: wrote specific dark-palette prompt
@@ -232,7 +232,7 @@ Running **YouTubeThumbnailChecklist** in **Art**...
 ```
 □ Headshot is present
 □ Headshot is NEW/CUSTOM (not reused from previous thumbnails) OR
-□ Headshot is appropriate existing photo from `LIFEOS/USER/CUSTOMIZATIONS/SKILLS/Art/HeadshotExamples/`
+□ Headshot is an appropriate existing photo from `<LIFEOS_WORKSPACE>/skills/art/HeadshotExamples/`
 □ Headshot matches content mood/tone
 □ Headshot size matches example proportion (~35-40% width)
 □ Headshot position matches example (right side)

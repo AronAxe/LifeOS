@@ -17,7 +17,7 @@
  *
  * @example
  * ```typescript
- * import { scrapeInstagramProfile, searchGoogleMaps } from ''
+ * import { scrapeInstagramProfile, searchGoogleMaps } from './actors/index'
  *
  * // Instagram profile with filtering
  * const profile = await scrapeInstagramProfile({

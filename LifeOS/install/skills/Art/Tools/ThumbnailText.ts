@@ -41,7 +41,6 @@ const NAVY = "#1A2744";
 const PERIWINKLE = "#6B8DD6";
 const WHITE = "#FFFFFF";
 const VARIANT_BORDER: Record<string, string> = { core: "#316AE9", sponsored: "#306F1D" };
-const BRAND_LOGO = join(homedir(), ".claude", "LIFEOS", "USER", "CUSTOMIZATIONS", "SKILLS", "Art", "brand", "ti-logo-white.png");
 
 function arg(name: string, def?: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
@@ -144,7 +143,7 @@ function main(): void {
   const accent = arg("accent", PERIWINKLE)!;
   const subColor = arg("subtitle-color", WHITE)!;
   const faceSide = (arg("face-side", "right") as "right" | "left");
-  const font = arg("font", "Hermes-Maia-6-Caps")!; // principal-specified thumbnail font (2026-06-28): "Hermes Maia 6 caps". File: ~/Library/Fonts/Hermes Maia 6 Caps Regular.otf. (Was Anton-Regular; overridden by explicit principal directive.)
+  const font = arg("font") || process.env.LIFEOS_ART_FONT || "DejaVu-Sans-Bold";
   const output = arg("output", join(homedir(), "Downloads", "sm-thumb.png"))!;
   const variant = (arg("variant", "core") as "core" | "sponsored");
   const borderArg = arg("border");
@@ -152,7 +151,7 @@ function main(): void {
   const noBorder = flag("no-border");
   const noLogo = flag("no-logo");
   const noRule = flag("no-rule");
-  const logoPath = arg("logo", BRAND_LOGO)!;
+  const logoPath = arg("logo") || process.env.LIFEOS_ART_LOGO || "";
 
   if (!title) {
     console.error("ERROR: --title is required");

@@ -5,7 +5,7 @@
 
 import { BaseGrader, registerGrader, type GraderContext } from '../Base.ts';
 import type { GraderConfig, GraderResult, PairwiseComparisonParams } from '../../Types/index.ts';
-import { inference, type InferenceLevel } from '../../../../LIFEOS/TOOLS/Inference.ts';
+import { inference, type InferenceLevel } from '../../Tools/HermesInference.ts';
 import { readFileSync, existsSync } from 'fs';
 
 export class PairwiseComparisonGrader extends BaseGrader {
@@ -28,29 +28,19 @@ export class PairwiseComparisonGrader extends BaseGrader {
       });
     }
 
-    // Map model preference to inference level (default to medium/Sonnet)
-    const levelMap: Record<string, InferenceLevel> = {
-      'claude-haiku-4-5-20251001': 'low',
-      'claude-sonnet-4-6': 'medium',
-      'claude-opus-4-8': 'high',
-      'claude-opus-4-6': 'high',
-      'claude-sonnet-4-20250514': 'medium',
-      'claude-opus-4-20250514': 'high',
-      'claude-fable-5': 'max',
-    };
-    const level: InferenceLevel = levelMap[params.judge_model ?? ''] ?? 'medium';
+    const level: InferenceLevel = 'medium';
     const positionSwap = params.position_swap ?? true;
 
     // Run comparison(s)
     const results: { position: string; winner: 'A' | 'B' | 'tie'; reasoning: string }[] = [];
 
     // First comparison: Output = A, Reference = B
-    const result1 = await this.compare(context.output, reference, level, params.criteria);
+    const result1 = await this.compare(context.output, reference, level, params.criteria, params.judge_model);
     results.push({ position: 'output_first', ...result1 });
 
     if (positionSwap) {
       // Second comparison: Reference = A, Output = B
-      const result2 = await this.compare(reference, context.output, level, params.criteria);
+      const result2 = await this.compare(reference, context.output, level, params.criteria, params.judge_model);
       // Flip winner since positions are swapped
       const flippedWinner = result2.winner === 'A' ? 'B' : result2.winner === 'B' ? 'A' : 'tie';
       results.push({
@@ -92,6 +82,7 @@ export class PairwiseComparisonGrader extends BaseGrader {
         results,
         position_swap: positionSwap,
         inference_level: level,
+        judge_model: params.judge_model ?? 'configured Hermes default',
         criteria: params.criteria,
       },
     });
@@ -101,7 +92,8 @@ export class PairwiseComparisonGrader extends BaseGrader {
     outputA: string,
     outputB: string,
     level: InferenceLevel,
-    criteria?: string[]
+    criteria?: string[],
+    model?: string
   ): Promise<{ winner: 'A' | 'B' | 'tie'; reasoning: string }> {
     const criteriaText = criteria?.length
       ? `Focus on these criteria:\n${criteria.map(c => `- ${c}`).join('\n')}`
@@ -132,6 +124,7 @@ Compare these outputs and determine which is better.`;
         systemPrompt,
         userPrompt,
         level,
+        model,
         timeout: 30000,
       });
 

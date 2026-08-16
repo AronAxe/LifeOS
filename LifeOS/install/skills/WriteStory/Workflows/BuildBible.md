@@ -8,7 +8,7 @@ The Story Bible is the central artifact of the WriteStory system. It IS the ISC 
 
 ## Prerequisites
 
-- The saved interview for this book: `LIFEOS/USER/CUSTOMIZATIONS/SKILLS/WriteStory/projects/<book-slug>/interview.md` — read it first. It carries the confirmed spine, the derivation lens used, the per-layer state, and the one-page **Foolscap spine** (theme, dramatic question, hook, climax, three acts). BuildBible expands that spine; it does not start over.
+- The saved interview for this book: `<LIFEOS_WRITING_WORKSPACE>/projects/<book-slug>/interview.md` — read it first. It carries the confirmed spine, the derivation lens used, the per-layer state, and the one-page **Foolscap spine** (theme, dramatic question, hook, climax, three acts). BuildBible expands that spine; it does not start over.
 - Read `StoryLayers.md` for layer definitions
 - Read `StorrFramework.md` for character construction protocol
 - Read `PressfieldFramework.md` for concept, hook, theme-question, villain design
@@ -163,9 +163,9 @@ Now create the FULL beat map — every major story beat with ALL seven layers ma
 
 The Story Bible IS the project's ISA — the living plan that grows across sessions and tracks what's done versus what's left. Create it through the ISA system, not as a one-off PRD.
 
-**Location:** `LIFEOS/USER/CUSTOMIZATIONS/SKILLS/WriteStory/projects/<book-slug>/ISA.md`
+**Location:** `<LIFEOS_WRITING_WORKSPACE>/projects/<book-slug>/ISA.md`
 
-Create it via `Skill("ISA", "scaffold project ISA at <path>")`, then fill it. Map the Story Bible content into the ISA's sections:
+Load the installed `isa` skill, scaffold the project ISA at that path, then fill it. Map the Story Bible content into the ISA's sections:
 
 - The story's **CRITERIA** (character arcs, plot beats, mystery reveals, the reader-experience target from the interview) become the ISA's `## Criteria` as ISCs — the things that must be true for the book to work.
 - The **beat map and layer detail** live in the ISA body. The **Foolscap spine** from the interview seeds the `## Goal`.

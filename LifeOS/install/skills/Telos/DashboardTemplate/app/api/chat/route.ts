@@ -1,76 +1,53 @@
-import { NextResponse } from "next/server"
-import { getTelosContext } from "@/lib/telos-data"
-import { spawn } from "child_process"
+import { NextResponse } from 'next/server'
+import { getConfiguredTelosDir, getTelosContext, telosChatConfigured } from '@/lib/telos-data'
 
 export async function POST(request: Request) {
   try {
-    const { message } = await request.json()
-
+    const body = await request.json()
+    const message = typeof body?.message === 'string' ? body.message.trim() : ''
     if (!message) {
+      return NextResponse.json({ error: 'Message is required' }, { status: 400 })
+    }
+    if (!getConfiguredTelosDir()) {
+      return NextResponse.json({ error: 'TELOS_DIR must be configured as an absolute path' }, { status: 503 })
+    }
+    if (!telosChatConfigured()) {
       return NextResponse.json(
-        { error: "Message is required" },
-        { status: 400 }
+        { error: 'Chat is disabled. Configure TELOS_CHAT_ENDPOINT and explicitly set TELOS_CHAT_INCLUDE_CONTEXT=true.' },
+        { status: 503 },
       )
     }
 
-    // Load all TELOS context
-    const telosContext = getTelosContext()
+    const endpoint = process.env.TELOS_CHAT_ENDPOINT!.trim()
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    const token = process.env.TELOS_CHAT_BEARER_TOKEN?.trim()
+    if (token) headers.Authorization = `Bearer ${token}`
 
-    const systemPrompt = `You are a helpful AI assistant with access to the user's complete Personal TELOS (Life Operating System).
-
-${telosContext}
-
-When answering questions:
-- Reference specific information from the TELOS files above
-- Be conversational and helpful
-- If asked about goals, projects, beliefs, wisdom, etc., use the exact information from the relevant sections
-- If information isn't in the TELOS data, say so clearly
-- Keep responses concise but informative`
-
-    // Use Inference tool instead of direct API
-    const inferenceResult = await new Promise<{ success: boolean; output?: string; error?: string }>((resolve) => {
-      const homeDir = process.env.HOME || ''
-      // medium (Sonnet): cross-section synthesis over the user's full TELOS; low/haiku goes shallow (task-intelligence review P3)
-      const proc = spawn('bun', ['run', `${homeDir}/.claude/LIFEOS/TOOLS/Inference.ts`, '--level', 'medium', systemPrompt, message], {
-        stdio: ['ignore', 'pipe', 'pipe'],
-      })
-
-      let stdout = ''
-      let stderr = ''
-
-      proc.stdout.on('data', (data) => { stdout += data.toString() })
-      proc.stderr.on('data', (data) => { stderr += data.toString() })
-
-      proc.on('close', (code) => {
-        if (code !== 0) {
-          resolve({ success: false, error: stderr || `Process exited with code ${code}` })
-        } else {
-          resolve({ success: true, output: stdout.trim() })
-        }
-      })
-
-      proc.on('error', (err) => {
-        resolve({ success: false, error: err.message })
-      })
+    const upstream = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        message,
+        context: getTelosContext(),
+        instructions: 'Answer from the supplied TELOS context. Cite the relevant filename or section and state when evidence is absent.',
+      }),
+      signal: AbortSignal.timeout(60_000),
     })
 
-    if (!inferenceResult.success) {
-      console.error("Inference Error:", inferenceResult.error)
-      throw new Error(`Inference failed: ${inferenceResult.error}`)
+    const payload = await upstream.json().catch(() => null)
+    if (!upstream.ok) {
+      console.error('TELOS chat adapter rejected the request:', upstream.status)
+      return NextResponse.json({ error: 'Configured chat adapter rejected the request' }, { status: 502 })
     }
-
-    const assistantMessage = inferenceResult.output
-
-    if (!assistantMessage) {
-      throw new Error("No response from inference")
+    if (!payload || typeof payload.response !== 'string' || !payload.response.trim()) {
+      return NextResponse.json(
+        { error: 'Configured chat adapter must return JSON with a non-empty response string' },
+        { status: 502 },
+      )
     }
-
-    return NextResponse.json({ response: assistantMessage })
+    return NextResponse.json({ response: payload.response.trim() })
   } catch (error) {
-    console.error("Error in chat API:", error)
-    return NextResponse.json(
-      { error: "Failed to process request" },
-      { status: 500 }
-    )
+    console.error('Error in TELOS chat API:', error)
+    return NextResponse.json({ error: 'Failed to process request through the configured chat adapter' }, { status: 500 })
   }
 }

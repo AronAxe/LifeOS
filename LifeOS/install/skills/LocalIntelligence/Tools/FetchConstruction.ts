@@ -7,17 +7,17 @@
  *  - City open-data portal — best-effort URL discovery
  *  - Planning commission agendas via Granicus/Legistar discovery
  *
- * v1: stubbed — returns source_status="unavailable" with a TODO marker.
- * Implement against the Census BPS API first; that path is the most uniform
- * across the country and yields the best baseline signal.
+ * Uses the configured category adapter. Census BPS is a recommended adapter
+ * source, but place/metro resolution is not guessed in the bundled tool.
  */
 
 import type { FetchResult, Hometown } from "./Types.ts"
 import { unavailable } from "./Types.ts"
+import { fetchFromExternalAdapter } from "./ExternalAdapter.ts"
 
 export async function fetchConstruction(home: Hometown): Promise<FetchResult> {
-  return unavailable(
-    `construction fetcher not yet implemented — TODO: Census BPS for ${home.city}, ${home.state}`
+  return fetchFromExternalAdapter("construction", home) ?? unavailable(
+    "construction requires LIFEOS_LOCAL_INTELLIGENCE_ADAPTER; no place/metro mapping is guessed",
   )
 }
 

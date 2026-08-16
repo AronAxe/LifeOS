@@ -1,0 +1,12 @@
+{
+  "name": "lifeos-hermes-port",
+  "private": true,
+  "type": "module",
+  "description": "Repository-level checks for the LifeOS → Hermes Desktop port. Not a published package: it exists so `bun test` and the portable-release scan have a home.",
+  "scripts": {
+    "test": "bun test tests/",
+    "test:py": "python -m unittest discover -s tests -p \"test_*.py\" -v",
+    "scan": "bun LifeOS/Tools/PortableScan.ts",
+    "verify": "bun run scan && bun test tests/ && bun run test:py"
+  }
+}

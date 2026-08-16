@@ -41,11 +41,10 @@ export default function AskPage() {
         }),
       })
 
-      if (!response.ok) {
-        throw new Error("Failed to get response")
-      }
-
       const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to get response")
+      }
 
       const assistantMessage: Message = {
         role: "assistant",
@@ -58,7 +57,7 @@ export default function AskPage() {
       console.error("Error:", error)
       const errorMessage: Message = {
         role: "assistant",
-        content: "Sorry, I encountered an error. Please try again.",
+        content: error instanceof Error ? error.message : "The configured assistant adapter failed.",
         timestamp: new Date(),
       }
       setMessages((prev) => [...prev, errorMessage])
@@ -75,7 +74,7 @@ export default function AskPage() {
           Ask AI
         </h1>
         <p className="text-lg text-gray-600">
-          Chat with Claude Haiku 4.5 to get instant answers
+          Ask questions through your explicitly configured assistant adapter
         </p>
       </div>
 
@@ -84,7 +83,7 @@ export default function AskPage() {
           <CardTitle className="flex items-center justify-between">
             <span>Chat Interface</span>
             <Badge variant="primary" className="bg-[#2e7de9]">
-              Claude Haiku 4.5
+              Configured adapter
             </Badge>
           </CardTitle>
         </CardHeader>

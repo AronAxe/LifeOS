@@ -1,5 +1,6 @@
 ---
 name: thesis
+description: Apply the LifeOS thesis through Hermes-native mechanisms.
 trigger: Use when reasoning about LifeOS purpose, maturity level, the current→ideal hill-climb, or communicating what LifeOS is.
 ---
 

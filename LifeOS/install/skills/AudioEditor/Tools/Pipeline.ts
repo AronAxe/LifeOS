@@ -9,7 +9,7 @@
  */
 
 import { $ } from "bun";
-import { existsSync } from "fs";
+import { existsSync, rmSync } from "fs";
 import { basename, dirname, extname, join } from "path";
 
 const TOOLS_DIR = import.meta.dir;
@@ -143,7 +143,7 @@ if (doPolish) {
   }
 
   // Clean up pre-polish intermediate file
-  await $`rm -f ${editedFile}`.quiet();
+  rmSync(editedFile, { force: true });
 
   console.log("");
 } else {

@@ -2,14 +2,12 @@
 
 **Default Ideate workflow.** Runs the full evolutionary cycle through all 9 phases (CONSUME → DREAM → DAYDREAM → CONTEMPLATE → STEAL → MATE → TEST → EVOLVE → META-LEARN), with a Loop Controller that decides continue / pivot / stop after each cycle.
 
-## Voice Notification
+## Workspace
 
-```bash
-curl -s -X POST http://localhost:31337/notify \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Running the FullCycle workflow in the Ideate skill to evolve novel solutions"}' \
-  > /dev/null 2>&1 &
-```
+Resolve `LIFEOS_IDEATE_WORKSPACE`, or use `<PROJECT_ROOT>/.lifeos-ideate`.
+Create one slugged run directory and persist configuration, seeds, phase outputs,
+scores, and loop decisions there. Use configured Hermes notifications only when
+the principal asks for them.
 
 ## Inputs
 
@@ -183,14 +181,13 @@ Runs once after the Loop Controller issues STOP. Analyzes the entire evolutionar
 
 ## State Persistence
 
-Each run persists to `~/.claude/LIFEOS/MEMORY/WORK/{slug}/ideate/`. See `../SKILL.md` § "State Persistence" for the full directory layout and idea data structure.
+Each run persists to `<IDEATE_WORKSPACE>/<slug>/`. See `../SKILL.md` § "State Persistence" for the full directory layout and idea data structure.
 
 ## Final Output
 
 See `../SKILL.md` § "Final Output Format" for the markdown template.
 
-## Execution Log
+## Completion evidence
 
-```bash
-echo '{"ts":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","skill":"Ideate","workflow":"FullCycle","input":"8_WORD_SUMMARY","status":"ok|error","duration_s":SECONDS}' >> ~/.claude/LIFEOS/MEMORY/SKILLS/execution.jsonl
-```
+Return the run directory, final ranked output, persisted seed manifest, and loop
+decision log. These artifacts are the execution evidence.

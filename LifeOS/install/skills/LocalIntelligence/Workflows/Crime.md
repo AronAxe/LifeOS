@@ -1,25 +1,23 @@
 # Crime Workflow
 
-Local crime stats and recent incidents. **Delegates entirely to the `_CRIMESTATS` skill** — this workflow does not re-implement crime data fetching.
-
-## Voice Notification
-
-```bash
-curl -s -X POST http://localhost:31337/notify \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Running Crime in LocalIntelligence"}' \
-  > /dev/null 2>&1 &
-```
-
-Running **Crime** in **LocalIntelligence**...
+Collect the crime category through the principal-configured LocalIntelligence
+adapter. No private skill or crime-data source is bundled.
 
 ## Procedure
 
-1. Resolve hometown via `Tools/Hometown.ts` → `{ city, state }`.
-2. Invoke the configured crime-data adapter (the principal's private crime-stats skill if installed; otherwise the public default crime adapter) with the resolved city — typically the QuickStats workflow for the digest, IncidentReport for "what happened recently."
-3. Shape the adapter output into the LocalIntelligence `FetchResult` envelope.
-4. Persist in the digest under `crime` key.
+1. Resolve the hometown via `Tools/Hometown.ts`.
+2. Confirm `LIFEOS_LOCAL_INTELLIGENCE_ADAPTER` is configured.
+3. Run `Tools/FetchCrime.ts`. The launcher executes the adapter directly with
+   category `crime` and the hometown JSON, then validates its `FetchResult`.
+4. Return source status, source URLs, dates, and errors without embellishment.
+5. Persist the result under the digest's `crime` key only when running DailyBrief.
 
-## Forbidden
+## Safety constraints
 
-- Direct calls to CitizenRIMS, FBI UCR, AreaVibes, NeighborhoodScout, or any crime-data source from this workflow or `Tools/FetchCrime.ts`. All crime data routes through `_CRIMESTATS`.
+- Public, source-attributed records only.
+- No people-search aggregators, CAPTCHA/paywall bypass, or covert collection.
+- An arrest or incident record is not a finding of guilt; preserve the source's
+  wording and status.
+- If the adapter is absent, fails, times out, or returns malformed output, report
+  `source_status: "unavailable"`. Do not fall back to an undeployed private skill
+  or silently query another service.

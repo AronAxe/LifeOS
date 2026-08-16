@@ -2,7 +2,7 @@
 /**
  * Analyze.ts — LLM-powered edit classification
  *
- * Reads a word-level transcript and uses Claude to classify segments as:
+ * Reads a word-level transcript and uses the configured Hermes model to classify segments as:
  * KEEP, CUT_FILLER, CUT_FALSE_START, CUT_EDIT_MARKER, CUT_STUTTER, CUT_DEAD_AIR
  *
  * Distinguishes rhetorical emphasis from accidental repetition.
@@ -12,7 +12,7 @@
  */
 
 import { existsSync } from "fs";
-import { inference } from "../../../LIFEOS/TOOLS/Inference.ts";
+import { inference } from "./HermesInference.ts";
 
 interface Chunk {
   text: string;

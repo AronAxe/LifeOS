@@ -1,240 +1,55 @@
-# Find Sources
+# Find Sources Workflow
 
-## Voice Notification
+Discover and rank candidate sources for a future upgrade review. Discovery does not subscribe, schedule, trust, or persist a source automatically.
 
-```bash
-curl -s -X POST http://localhost:31337/notify \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Running the FindSources workflow in the Upgrade skill to discover sources"}' \
-  > /dev/null 2>&1 &
+## 1. Define the evidence need
+
+Specify subsystem, missing knowledge, time horizon, acceptable source types, language/geography, access/cost limit, and update cadence. Typical classes are official release notes, standards, repositories, issue trackers, papers, expert engineering blogs, conference channels, and vendor documentation.
+
+## 2. Search by source class
+
+Use several routes rather than one generic query:
+
+- official product/project domains and changelogs;
+- repository releases, commits, issues, and maintainers;
+- standards bodies and regulator publications;
+- paper indexes and cited authors/labs;
+- conference programs, technical channels, and expert link graphs;
+- high-quality newsletters/aggregators for discovery only.
+
+Open each candidate and verify ownership, recency, access, and actual relevance. Prefer canonical sources over mirrors.
+
+## 3. Score candidates
+
+Use a documented 1–5 scale for:
+
+- authority/primary-source proximity;
+- relevance to the target subsystem;
+- demonstrated signal quality;
+- update cadence/timeliness;
+- accessibility and extraction reliability;
+- noise, commercial bias, or manipulation risk;
+- ongoing cost/maintenance burden.
+
+Record at least one representative item supporting the score. Popularity alone is not authority.
+
+## 4. Output recommendations
+
+```text
+Source: <name>
+Canonical URL: <url>
+Owner/type: <publisher; release notes, repo, paper feed, channel...>
+Evidence need served: <...>
+Cadence: <observed or unknown>
+Access/cost: <...>
+Scores: authority __ relevance __ signal __ accessibility __
+Risks/bias: <...>
+Representative item: <url/date>
+Recommendation: add | trial | watch manually | reject
 ```
 
-Running the **FindSources** workflow in the **Upgrade** skill to discover sources...
+Group candidates into high, medium, and low priority and explain the threshold. Deduplicate syndication and distinguish a source from a single useful item.
 
-Discover and evaluate new sources to add to upgrade monitoring.
+## 5. Add only after approval
 
-**Trigger:** "find upgrade sources", "find new sources", "discover channels", "expand monitoring"
-
----
-
-## Overview
-
-This workflow helps identify new sources worth monitoring for LifeOS-relevant updates:
-- YouTube channels creating relevant content
-- Blogs and newsletters covering AI development
-- GitHub repositories with useful patterns
-- Community resources and forums
-
----
-
-## Process
-
-### Step 1: Define Search Criteria
-
-Clarify what type of sources to find:
-
-| Category | Examples |
-|----------|----------|
-| **AI Development** | Claude tutorials, AI coding workflows |
-| **Agent Patterns** | Multi-agent systems, orchestration |
-| **Tool Building** | CLI tools, MCP servers, integrations |
-| **Security** | AI security, prompt injection, safety |
-| **Productivity** | Developer workflows, automation |
-
----
-
-### Step 2: Search for YouTube Channels
-
-Use web search to find relevant channels:
-
-```
-Search: "Claude Code tutorial YouTube channel"
-Search: "AI agent development YouTube"
-Search: "MCP server tutorial YouTube"
-```
-
-For each discovered channel, evaluate:
-- Content relevance to LifeOS infrastructure
-- Update frequency (active vs dormant)
-- Content quality and depth
-- Unique perspective or expertise
-
----
-
-### Step 3: Search for Blogs/Newsletters
-
-Look for written content sources:
-
-```
-Search: "Claude Code blog posts"
-Search: "AI development newsletter"
-Search: "LLM engineering blog"
-```
-
-Evaluate each source for:
-- Relevance to LifeOS goals
-- Technical depth
-- Update frequency
-- Signal-to-noise ratio
-
----
-
-### Step 4: Search for GitHub Repositories
-
-Find repositories with useful patterns:
-
-```
-Search: site:github.com "Claude Code" examples
-Search: site:github.com MCP server typescript
-Search: site:github.com AI agent framework
-```
-
-Look for:
-- Active maintenance
-- Good documentation
-- Patterns applicable to LifeOS
-- TypeScript preferred (stack alignment)
-
----
-
-### Step 5: Evaluate and Rank Sources
-
-For each potential source, score:
-
-| Criterion | Weight | Score (1-5) |
-|-----------|--------|-------------|
-| Relevance to LifeOS | 30% | |
-| Content Quality | 25% | |
-| Update Frequency | 20% | |
-| Unique Value | 15% | |
-| Stack Alignment | 10% | |
-
-**Priority Assignment:**
-- Score ≥ 4.0 → 🔥 HIGH - Add immediately
-- Score 3.0-3.9 → 📌 MEDIUM - Consider adding
-- Score < 3.0 → 💡 LOW - Monitor occasionally
-
----
-
-### Step 6: Output Recommendations
-
-```markdown
-# New Source Recommendations
-**Discovery Date:** [date]
-
-## 🔥 HIGH PRIORITY (Add Now)
-
-### [Source Name]
-**Type:** YouTube / Blog / GitHub / Other
-**URL:** [url]
-**Relevance:** [Why this matters for LifeOS]
-**Content Focus:** [What they cover]
-**Update Frequency:** [How often they post]
-
-**To Add:**
-```json
-{
-  "name": "[Source Name]",
-  "url": "[url]",
-  "priority": "HIGH",
-  "description": "[What this source covers]"
-}
-```
-
----
-
-## 📌 MEDIUM PRIORITY (Consider)
-
-[Similar format]
-
----
-
-## 💡 LOW PRIORITY (Optional)
-
-[Similar format]
-
----
-
-## How to Add Sources
-
-### For YouTube Channels:
-Edit `~/.claude/LIFEOS/USER/CUSTOMIZATIONS/SKILLS/Upgrade/youtube-channels.json`
-
-### For Other Sources:
-Currently, non-YouTube sources are monitored via the base `sources.json`.
-To request additions to base Anthropic monitoring, note them for next LifeOS release.
-```
-
----
-
-### Step 7: Offer to Add
-
-If user approves recommendations:
-
-```bash
-# Read current user config
-cat ~/.claude/LIFEOS/USER/CUSTOMIZATIONS/SKILLS/Upgrade/youtube-channels.json
-
-# Add new channels (merge with existing)
-# Update the channels array with new entries
-```
-
----
-
-## Discovery Strategies
-
-### Follow the Experts
-- Find who Anthropic engineers follow/reference
-- Check who creates content cited in official docs
-- Look at conference speaker lists
-
-### Community Mining
-- Search Discord/Slack for recommended resources
-- Check Reddit threads for learning resources
-- Look at "awesome" lists on GitHub
-
-### Algorithm Surfing
-- Start from known good channels, explore recommendations
-- Check related channels on YouTube
-- Follow citation chains in blog posts
-
----
-
-## Examples
-
-**General discovery:**
-```
-User: "find new upgrade sources"
-→ Search for relevant YouTube channels
-→ Search for AI development blogs
-→ Evaluate and rank findings
-→ Output recommendations with add instructions
-```
-
-**Specific category:**
-```
-User: "find YouTube channels about MCP servers"
-→ Focused search on MCP content
-→ Evaluate MCP-specific channels
-→ Recommend best MCP resources
-```
-
-**Add recommended source:**
-```
-User: "add that channel"
-→ Read current user config
-→ Add new channel entry
-→ Confirm addition
-```
-
----
-
-## Integration
-
-**With Other Workflows:**
-- **Upgrade** - New sources feed into monitoring
-- **ResearchUpgrade** - Discovered sources can be researched
-
-**With USER Customization:**
-- Sources are added to USER directory, not base skill
-- Personal monitoring preferences stay private
+Present the exact configured registry or linked resource that would change. Obtain approval, merge without deleting existing entries, preserve schema/order, read back the write, and report it. Do not create polling, cron jobs, notifications, provider subscriptions, or credentials as part of source discovery.

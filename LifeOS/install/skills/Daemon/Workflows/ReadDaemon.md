@@ -1,57 +1,17 @@
 # ReadDaemon Workflow
 
-**Purpose:** Fetch and display the current state of the live daemon profile.
-
-## Trigger Phrases
-
-- "read daemon"
-- "check daemon"
-- "what's on my daemon"
-- "daemon status"
-- "show daemon"
+**Purpose:** Inspect the current local public-profile artifact and, when configured, compare it with a live destination.
 
 ## Process
 
-### Step 1: Fetch Live MCP Data
+1. Inventory current source availability without writing:
 
 ```bash
-curl -s https://mcp.daemon.example.com \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"get_all","arguments":{}},"id":1}'
+bun $HERMES_HOME/skills/daemon/Tools/DaemonAggregator.ts --sources
 ```
 
-### Step 2: Parse and Display
+2. Read the configured local daemon artifact directly. Report its sections, item counts, last-updated field, and any missing or malformed sections.
+3. If `LIFEOS_DAEMON_STATUS_URL` is configured, fetch that exact URL with the web tool and compare its observable content or checksum with the local artifact.
+4. Report local state and live state separately. If no live URL is configured, say that remote status is unavailable.
 
-Extract the JSON response and display each section with its content length and freshness.
-
-### Step 3: Check Local vs Live
-
-Compare the local `${LIFEOS_USER_DIR}/Daemon/daemon.md` against the live API response to identify drift.
-
-```bash
-bun ${LIFEOS_SKILL_DIR}/Tools/DaemonAggregator.ts --sources
-```
-
-## Output Format
-
-```
-Daemon Status (daemon.example.com)
-  Last updated: 2026-04-08T21:45:00Z
-
-  Sections:
-    About: 342 chars
-    Mission: 256 chars
-    Location: Bay Area
-    Books: 12 items
-    Movies: 8 items
-    Predictions: 8 items
-    Preferences: 10 items
-    Daily Routine: 9 items
-    Podcasts: 5 items
-    TELOS: populated
-    Projects: 8 technical, 3 creative
-
-  Live endpoint: 200 OK
-  MCP API: responding
-  Local sync: [in sync / X sections drifted]
-```
+Do not assume a domain, MCP endpoint, hosting provider, repository, or deployment topology.

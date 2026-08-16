@@ -16,7 +16,7 @@ Refresh or create world model documents using deep research and user-provided an
 
 ## Prerequisites
 
-- Model template at `~/.claude/skills/WorldThreatModel/ModelTemplate.md`
+- Model template at `<WORLD_THREAT_MODEL_SKILL_DIR>/ModelTemplate.md`
 - Research skill available for web research
 
 ## Workflow Steps
@@ -24,18 +24,16 @@ Refresh or create world model documents using deep research and user-provided an
 ### Step 0: Check Existing State
 
 ```
-Read ~/.claude/LIFEOS/MEMORY/RESEARCH/WorldModels/INDEX.md (if exists)
+Read `<WORLD_MODEL_DIR>/INDEX.md` (if it exists)
 Inventory which models exist and their last_updated dates
 Determine: full creation vs. targeted update
 ```
 
-### Step 1: Voice Notification
+### Step 1: Resolve and snapshot
 
-```bash
-curl -s -X POST http://localhost:31337/notify \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Updating world threat models. This will take several minutes as I research current state for each time horizon.", "voice_id": "fTtv3eikoepIosk8dTZ5"}'
-```
+Resolve `<WORLD_MODEL_DIR>` and the installed skill directory. Before changing an
+existing model, copy it to a timestamped backup beneath
+`<WORLD_MODEL_DIR>/.history/` and record the source URLs used for the update.
 
 ### Step 2: Determine Update Scope
 
@@ -79,11 +77,11 @@ For each model, following `ModelTemplate.md`:
 4. Include specific data points, named entities, cited reasoning
 5. Write Wildcards section with probability estimates
 
-Save to: `~/.claude/LIFEOS/MEMORY/RESEARCH/WorldModels/{horizon}.md`
+Save to: `<WORLD_MODEL_DIR>/{horizon}.md`
 
 ### Step 5: Update INDEX
 
-Write/update `~/.claude/LIFEOS/MEMORY/RESEARCH/WorldModels/INDEX.md`:
+Write/update `<WORLD_MODEL_DIR>/INDEX.md`:
 
 ```markdown
 # World Threat Models — Index
@@ -101,13 +99,11 @@ Last full update: {date}
 - YYYY-MM-DD: {what was updated and why}
 ```
 
-### Step 6: Voice Completion
+### Step 6: Verify and report
 
-```bash
-curl -s -X POST http://localhost:31337/notify \
-  -H "Content-Type: application/json" \
-  -d '{"message": "World models updated. N horizons refreshed with current research.", "voice_id": "fTtv3eikoepIosk8dTZ5"}'
-```
+Read back each changed model, verify all required sections and citations, update
+the index, and report changed files plus backup paths. Use a configured Hermes
+notification only if the principal asked for one.
 
 ## Agent Prompt Template (for parallel model creation)
 
@@ -130,7 +126,8 @@ REQUIREMENTS:
 - Include at least 4 wildcards with probability estimates
 - Rate your overall confidence and explain why
 
-RESEARCH: Use WebSearch to find current data, forecasts, and analysis relevant to
+RESEARCH: Use the available Hermes web-research tools to find current data,
+forecasts, and analysis relevant to
 this {HORIZON} timeframe across all sections (geopolitics, technology, economics,
 society, environment, security).
 
@@ -149,7 +146,7 @@ Include the frontmatter with horizon, last_updated, version: 1, and confidence r
 
 ## State Management (Loop Compatibility)
 
-- Models on disk are the state
+- Versioned files beneath `<WORLD_MODEL_DIR>` are the state
 - Step 0 reads existing state to determine what needs updating
 - Each model is independently updatable
 - INDEX.md tracks aggregate state

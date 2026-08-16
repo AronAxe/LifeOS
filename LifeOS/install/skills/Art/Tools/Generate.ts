@@ -20,7 +20,7 @@ for (const __k of ["LIFEOS_DIR", "LIFEOS_CONFIG_DIR", "PROJECTS_DIR"]) {
  * Usage:
  *   generate --model nano-banana-pro --prompt "..." --size 16:9 --output /tmp/image.png
  *
- * @see ~/.claude/skills/art/README.md
+ * @see ../SKILL.md
  */
 
 import Replicate from "replicate";
@@ -34,33 +34,31 @@ import { extname, resolve } from "node:path";
 // ============================================================================
 
 /**
- * Load environment variables from ${LIFEOS_DIR}/.env
- * This ensures API keys are available regardless of how the CLI is invoked
+ * Optionally load environment variables from an explicitly configured directory.
+ * Process-level variables always take precedence.
  */
 async function loadEnv(): Promise<void> {
-  const paiDir = process.env.LIFEOS_DIR || resolve(process.env.HOME!, '.claude');
-  const envPath = resolve(paiDir, '.env');
-  try {
-    const envContent = await readFile(envPath, 'utf-8');
-    for (const line of envContent.split('\n')) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith('#')) continue;
-      const eqIndex = trimmed.indexOf('=');
-      if (eqIndex === -1) continue;
-      const key = trimmed.slice(0, eqIndex).trim();
-      let value = trimmed.slice(eqIndex + 1).trim();
-      // Remove surrounding quotes if present
-      if ((value.startsWith('"') && value.endsWith('"')) ||
-          (value.startsWith("'") && value.endsWith("'"))) {
-        value = value.slice(1, -1);
+  const configDir = process.env.LIFEOS_CONFIG_DIR?.trim();
+  if (configDir) {
+    const envPath = resolve(configDir, '.env');
+    try {
+      const envContent = await readFile(envPath, 'utf-8');
+      for (const line of envContent.split('\n')) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const eqIndex = trimmed.indexOf('=');
+        if (eqIndex === -1) continue;
+        const key = trimmed.slice(0, eqIndex).trim();
+        let value = trimmed.slice(eqIndex + 1).trim();
+        if ((value.startsWith('"') && value.endsWith('"')) ||
+            (value.startsWith("'") && value.endsWith("'"))) {
+          value = value.slice(1, -1);
+        }
+        if (!process.env[key]) process.env[key] = value;
       }
-      // Only set if not already defined (allow overrides from shell)
-      if (!process.env[key]) {
-        process.env[key] = value;
-      }
+    } catch {
+      // An explicit config directory is optional; provider checks below remain fail-closed.
     }
-  } catch (error) {
-    // Silently continue if .env doesn't exist - rely on shell env vars
   }
 
   // Canonical key aliases — the user's .env may use _OPTIN suffix variants for some
@@ -217,8 +215,7 @@ async function detectMimeType(filePath: string): Promise<string> {
 // Help Text
 // ============================================================================
 
-// LifeOS directory for documentation paths
-const LIFEOS_DIR = process.env.LIFEOS_DIR || `${process.env.HOME}/.claude`;
+const ART_SKILL_DIR = resolve(import.meta.dir, "..");
 
 function showHelp(): void {
   console.log(`
@@ -325,8 +322,8 @@ ERROR CODES:
   1  General error (invalid arguments, API error, file write error)
 
 MORE INFO:
-  Documentation: ${LIFEOS_DIR}/skills/Art/README.md
-  Source: ${LIFEOS_DIR}/skills/Art/Tools/Generate.ts
+  Documentation: ${ART_SKILL_DIR}/SKILL.md
+  Source: ${ART_SKILL_DIR}/Tools/Generate.ts
 `);
   process.exit(0);
 }
@@ -1037,7 +1034,7 @@ async function generateWithNanoBananaPro(
 
 async function main(): Promise<void> {
   try {
-    // Load API keys from ${LIFEOS_DIR}/.env
+    // Load API keys from the process environment or explicit LIFEOS_CONFIG_DIR.
     await loadEnv();
 
     const args = parseArgs(process.argv);

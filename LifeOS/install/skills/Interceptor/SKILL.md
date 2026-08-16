@@ -306,8 +306,8 @@ The full per-verb CLI listing — macOS Native (Computer Use), VM Lifecycle, Cor
 
 When spawning agents for Interceptor work:
 
-```
-Agent(subagent_type="general-purpose", prompt="
+```text
+delegate_task(goal="""
   Use interceptor CLI for all browser and macOS automation work.
   Browser: open <url> --context "$INTERCEPTOR_TEST_CONTEXT_ID", read [--markdown], act eN, inspect. Screenshots go through Tools/Capture.sh, never raw screenshot.
   Native (macOS): macos open <app>, macos read, macos act <ref>, macos inspect, macos vm *.
@@ -323,7 +323,7 @@ Agent(subagent_type="general-purpose", prompt="
   operator's main profile unless the parent agent explicitly says so.
   `act --trusted` for OS-level HID input (was --os).
   [your specific task instructions here]
-")
+""")
 ```
 
 ## Workflow Routing

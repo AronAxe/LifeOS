@@ -14,30 +14,29 @@ Generate a fresh ISA from a prompt at a specified effort tier. The output is a p
 |-------|----------|-------------|
 | prompt | yes | The user's request — verbatim or distilled |
 | tier | yes | E1 / E2 / E3 / E4 / E5 |
-| project | no | If task targets a known project from PROJECTS.md, the project ISA path is used; otherwise a task ISA at `MEMORY/WORK/{slug}/ISA.md` |
+| project | no | If the task targets a configured project root, its ISA path is used; otherwise create a task ISA beneath `<ISA_WORKSPACE>/work/{slug}/ISA.md` |
 | ephemeral_feature | no | If set, scaffold a feature-file excerpt instead of a full ISA |
 
 ## Output
 
 A markdown file at one of:
 - `<project-root>/ISA.md` — when `project` is supplied (existing project ISA is read-extended, not overwritten)
-- `~/.claude/LIFEOS/MEMORY/WORK/{slug}/ISA.md` — when no project (slug = `YYYYMMDD-HHMMSS_kebab-task-description`)
-- `~/.claude/LIFEOS/MEMORY/WORK/{slug}/_ephemeral/<feature>.md` — when `ephemeral_feature` is set
+- `<ISA_WORKSPACE>/work/{slug}/ISA.md` — when no project (slug = `YYYYMMDD-HHMMSS_kebab-task-description`)
+- `<ISA_WORKSPACE>/work/{slug}/_ephemeral/<feature>.md` — when `ephemeral_feature` is set
 
 ## Procedure
 
-### Step 1 — Voice notification
+### Step 1 — Resolve the workspace
 
-```bash
-curl -s -X POST http://localhost:31337/notify \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Running the Scaffold workflow in the ISA skill"}' \
-  > /dev/null 2>&1 &
-```
+Resolve `LIFEOS_ISA_WORKSPACE`, or use `<PROJECT_ROOT>/.lifeos-isa`. Confirm the
+absolute output path before writing and do not place mutable artifacts inside the
+installed skill directory.
 
 ### Step 2 — Pick the canonical template
 
-Always start by reading `~/.claude/skills/ISA/Examples/canonical-isa.md` for section headers and tone. For E1 reference, read `e1-minimal.md`. For E5 reference, read `e5-enterprise.md`.
+Resolve the active ISA skill directory and read `Examples/canonical-isa.md` for
+section headers and tone. For E1 reference, read `Examples/e1-minimal.md`; for
+E5, read `Examples/e5-enterprise.md`.
 
 ### Step 3 — Preserve principal-stated goal, then derive (Algorithm v7.0.0 R1)
 
@@ -58,7 +57,8 @@ Run the four-signal detector on the prompt:
 
 **Multi-literal:** if multiple candidates ("do X and Y by Z"), **first wins as `principal_stated_goal:`**; others demote to derived Constraints with `derived_from: principal_stated_goal compound` annotation.
 
-**Classifier handshake:** `TheRouter.hook.ts` may emit `GOAL_SIGNAL: <1|2|3|4|none>` in additionalContext. Trust as hint, re-validate via the detector above.
+**Optional caller hint:** a caller may supply `GOAL_SIGNAL: <1|2|3|4|none>` in
+the brief. Treat it as a hint and re-validate it with the detector above.
 
 When detection fires + min-content passes, write the four frontmatter fields:
 
@@ -89,7 +89,9 @@ One rule, replacing the deleted v6.x density-formula machinery: **could I be wro
 If materially ambiguous — the goal supports ≥2 interpretations leading to materially different builds, or required content can't be scaffolded without speculation — ask up to 3 targeted questions (E3+) or prepend the ambiguity flag (E1/E2): `⚠️ Picking X over Y because R; redirect if wrong.` Literal whole-response `proceed` accepts reasoned defaults.
 
 **Skip conditions (do not run the check):**
-- `INTERVIEW_ELIGIBLE: false` in the most recent `TheRouter.hook.ts` additionalContext block (the hook decided this is fast-path work). Line absent — e.g. a continuation prompt where the hook didn't re-fire — → infer eligibility from the running tier: `true` iff tier ≥ E3. This handoff is explicit text-passing; no shared state, no subprocess IPC. The model is the carrier.
+- `INTERVIEW_ELIGIBLE: false` was explicitly supplied in the current brief.
+  When absent, infer eligibility from the running tier: `true` iff tier ≥ E3.
+  This is explicit text-passing; there is no shared hook state.
 - The scaffold call has `ephemeral_feature` set (ephemeral mode operates on an already-scaffolded master).
 
 **Record the outcome in frontmatter** — `context_sufficient: true|false` and `interview_invoked: true|false` (the only two keys v7 ISAs carry for this check; the v6.x density/divergence/acknowledgment ceremony keys are deleted).
@@ -223,7 +225,7 @@ When `ephemeral_feature` is set:
    - `## Test Strategy` entries matching those ISCs
    - `## Decisions` filtered to entries mentioning this feature's ISC IDs (optional)
    - Empty `## Verification` section ready to populate
-4. Write to `MEMORY/WORK/{slug}/_ephemeral/<feature>.md`.
+4. Write to `<ISA_WORKSPACE>/work/{slug}/_ephemeral/<feature>.md`.
 5. Add a header comment: `<!-- EPHEMERAL FEATURE FILE — derived from <master-isa-path>. Reconcile via Skill("ISA", "reconcile <this-path> → <master-path>"). Do not hand-edit master from this file. -->`
 
 ## Failure modes

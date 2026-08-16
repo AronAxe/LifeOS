@@ -10,10 +10,11 @@
 
 import type { FetchResult, Hometown } from "./Types.ts"
 import { unavailable } from "./Types.ts"
+import { fetchFromExternalAdapter } from "./ExternalAdapter.ts"
 
 export async function fetchElections(home: Hometown): Promise<FetchResult> {
-  return unavailable(
-    `elections fetcher not yet implemented — TODO: Ballotpedia API for ${home.city}, ${home.state}`
+  return fetchFromExternalAdapter("elections", home) ?? unavailable(
+    "elections requires LIFEOS_LOCAL_INTELLIGENCE_ADAPTER; no bundled credential or jurisdiction mapping is assumed",
   )
 }
 

@@ -51,7 +51,7 @@ An exception to the containment rule is allowed *only* if a file must explicitly
 
 ## Common Situations & Pitfalls
 
-- **Pitfall - Copy-Pasting Shell Output:** Pasting an error message or terminal output into a public documentation file might accidentally include your absolute path (e.g., `C:/Users/.../`). Always scrub pasted output.
+- **Pitfall - Copy-Pasting Shell Output:** Pasting an error message or terminal output into a public documentation file might accidentally include your absolute path (for example, `<ABSOLUTE_USER_HOME>/`). Always scrub pasted output.
 - **Situation - Creating a New Skill:** When scaffolding a new skill, ensure the directory name is generic `TitleCase`. If the skill requires API keys, document that the user should create an `.env` file, but do not create one in the public template.
 - **Pitfall - Hardcoded Infrastructure:** Hardcoding an internal local IP or specific server name in a deployment script. Use `<TARGET_SERVER_IP>` or an environment variable like `$DEPLOY_HOST` instead.
 

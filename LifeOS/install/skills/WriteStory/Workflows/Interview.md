@@ -14,7 +14,7 @@ Take what the writer already has — a line, a folder of notes, a half-drafted c
 
 ## What "done" looks like
 
-A saved `interview.md` at `LIFEOS/USER/CUSTOMIZATIONS/SKILLS/WriteStory/projects/<book-slug>/interview.md` containing:
+A saved `interview.md` at `<LIFEOS_WRITING_WORKSPACE>/projects/<book-slug>/interview.md` containing:
 
 - **Seed class** and the **derivation lens** used (one line each, with why)
 - **The confirmed spine** — every element provenance-labeled (inferred-from-seed vs. offered) and every element ratified or redirected by the writer

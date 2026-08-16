@@ -6,14 +6,15 @@
 
 import type { EvalSuite, EvalType, SaturationStatus, EvalRun, Task } from '../Types/index.ts';
 import { existsSync, mkdirSync, readdirSync, writeFileSync, readFileSync } from 'fs';
-import { join, basename } from 'path';
+import { join, basename, resolve } from 'path';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { parseArgs } from 'util';
 
 const EVALS_DIR = join(import.meta.dir, '..');
-const SUITES_DIR = join(EVALS_DIR, 'Suites');
-// Run artifacts live outside the skill tree (runtime state, not skill content).
-const RESULTS_DIR = join(EVALS_DIR, '..', '..', 'LifeOS', 'MEMORY', 'STATE', 'Evals-Results');
+const BUILTIN_SUITES_DIR = join(EVALS_DIR, 'Suites');
+const EVALS_WORKSPACE = resolve(process.env.LIFEOS_EVALS_WORKSPACE ?? join(process.cwd(), '.lifeos-evals'));
+const SUITES_DIR = join(EVALS_WORKSPACE, 'suites');
+const RESULTS_DIR = join(EVALS_WORKSPACE, 'results');
 
 /**
  * Ensure directories exist
@@ -66,11 +67,13 @@ export function createSuite(
 export function loadSuite(name: string): EvalSuite | null {
   ensureDirs();
 
-  // Check both directories
-  for (const dir of ['Capability', 'Regression']) {
-    const filePath = join(SUITES_DIR, dir, `${name}.yaml`);
-    if (existsSync(filePath)) {
-      return parseYaml(readFileSync(filePath, 'utf-8')) as EvalSuite;
+  // Workspace definitions override shipped read-only examples.
+  for (const root of [SUITES_DIR, BUILTIN_SUITES_DIR]) {
+    for (const dir of ['Capability', 'Regression']) {
+      const filePath = join(root, dir, `${name}.yaml`);
+      if (existsSync(filePath)) {
+        return parseYaml(readFileSync(filePath, 'utf-8')) as EvalSuite;
+      }
     }
   }
 
@@ -83,22 +86,25 @@ export function loadSuite(name: string): EvalSuite | null {
 export function listSuites(type?: EvalType): EvalSuite[] {
   ensureDirs();
 
-  const suites: EvalSuite[] = [];
+  const suites = new Map<string, EvalSuite>();
   const dirs = type ? [type === 'capability' ? 'Capability' : 'Regression'] : ['Capability', 'Regression'];
 
-  for (const dir of dirs) {
-    const dirPath = join(SUITES_DIR, dir);
-    if (!existsSync(dirPath)) continue;
+  // Read workspace first so a principal-approved override wins by name.
+  for (const root of [SUITES_DIR, BUILTIN_SUITES_DIR]) {
+    for (const dir of dirs) {
+      const dirPath = join(root, dir);
+      if (!existsSync(dirPath)) continue;
 
-    for (const file of readdirSync(dirPath)) {
-      if (file.endsWith('.yaml')) {
-        const suite = parseYaml(readFileSync(join(dirPath, file), 'utf-8')) as EvalSuite;
-        suites.push(suite);
+      for (const file of readdirSync(dirPath)) {
+        if (file.endsWith('.yaml')) {
+          const suite = parseYaml(readFileSync(join(dirPath, file), 'utf-8')) as EvalSuite;
+          if (!suites.has(suite.name)) suites.set(suite.name, suite);
+        }
       }
     }
   }
 
-  return suites;
+  return [...suites.values()];
 }
 
 /**

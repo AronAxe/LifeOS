@@ -30,11 +30,12 @@ export function Sidebar() {
     fetch('/api/files/count')
       .then(res => res.json())
       .then(data => {
-        setFileCount(data.count)
-        setFiles(data.files)
+        const listedFiles = Array.isArray(data.files) ? data.files : []
+        setFileCount(Number.isInteger(data.count) ? data.count : 0)
+        setFiles(listedFiles)
 
         // Build file navigation
-        const navItems: FileNav[] = data.files.map((filename: string) => {
+        const navItems: FileNav[] = listedFiles.map((filename: string) => {
           const isCSV = filename.endsWith('.csv')
           const slug = filename.replace('.md', '').replace('.csv', '').replace('data/', '')
           return {

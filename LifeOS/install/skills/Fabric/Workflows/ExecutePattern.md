@@ -100,13 +100,7 @@ Use when native URL fetching fails.
 - `summarize_debate`
 - `youtube_summary`
 
-**Invocation** — run in the BACKGROUND so it does not block the summary:
-
-```bash
-bun ~/.claude/skills/_HARVEST/Tools/harvest.ts "<the same input the user sent into summarize>"
-```
-
-Use `Bash` with `run_in_background: true`. The CLI handles source detection (URL / YouTube / text), body fetch, Arbol classification, and executor dispatch — never re-implement the writer here.
+**Optional retention integration:** after producing the summary, invoke the installed Harvest skill only when the user also asked to harvest/save/ingest the source. Do not call a private executable or create a filesystem Knowledge note implicitly.
 
 **Input-type gate:**
 
@@ -190,9 +184,7 @@ User Request
     │   ├─ "5 sentence" → create_5_sentence_summary
     │   ├─ "micro" or "tldr" → create_micro_summary
     │   └─ Default → summarize
-    │   *(auto-harvest side-effect: any summarize-family pattern with a URL or
-    │    text ≥200 chars also fires `~/.claude/skills/_HARVEST/Tools/harvest.ts`
-    │    in the background — see Step 4b)*
+    │   *(optional Harvest-skill retention only when the request also asks to save or ingest the source — see Step 4b)*
     │
     ├─ Contains "threat model"?
     │   ├─ "stride" → create_stride_threat_model

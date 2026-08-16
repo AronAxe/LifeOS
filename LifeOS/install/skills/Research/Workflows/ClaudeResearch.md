@@ -1,104 +1,21 @@
-/**
- * # Claude Web Research Command - Intelligent Multi-Query WebSearch
- *
- * This command analyzes your research question, decomposes it into 4-8 targeted
- * sub-queries, and executes them in parallel using Claude's WebSearch tool.
- *
- * ## Usage
- * ```bash
- * bun ${LIFEOS_DIR}/commands/perform-claude-research.md "your complex research question here"
- * ```
- *
- * ## Features
- * - Intelligent query decomposition into multiple focused searches
- * - Parallel execution using Claude WebSearch for speed
- * - Iterative follow-up searches based on initial findings
- * - Comprehensive synthesis of all findings
- *
- * ## Advantages
- * - Uses Claude's built-in WebSearch (no API keys needed)
- * - Free and unlimited usage
- * - Integrated with Claude's knowledge and reasoning
- */
+# Portable Compatibility Research Workflow
 
-import { spawn } from 'child_process';
-import { promisify } from 'util';
+This filename is retained for callers that used the former provider-named route. The workflow is now provider-neutral and uses Hermes-native tools.
 
-const exec = promisify(require('child_process').exec);
+## Method
 
-// Get the research question from command line
-const originalQuestion = process.argv.slice(2).join(' ');
+1. Restate the question, freshness requirement, decision context, and expected output.
+2. Decompose broad questions into four to eight non-overlapping searches: definition/background, primary evidence, recent developments, technical detail, alternatives, expert or practitioner analysis, counter-evidence, and practical implications.
+3. Execute simple searches directly with `web_search`. Use `delegate_task` only for independent bounded angles when parallelism adds real value.
+4. Open actual sources with `web_extract`; use `browser_exec` for dynamic pages.
+5. Deduplicate claims and URLs, verify decisive evidence, and preserve contradictions.
+6. Synthesize with citations, limitations, and open questions.
 
-if (!originalQuestion) {
-  console.error('❌ Please provide a research question');
-  console.error('Usage: bun ${LIFEOS_DIR}/commands/perform-claude-research.md "your question here"');
-  process.exit(1);
-}
+## Boundaries
 
-console.log('📅 ' + new Date().toISOString());
-console.log('\n📋 SUMMARY: Intelligent web research with query decomposition using Claude WebSearch\n');
-console.log('🔍 ANALYSIS: Decomposing research question into targeted queries...\n');
-console.log('Original question:', originalQuestion);
+- No provider-specific researcher type is required or selected.
+- No hidden command or external orchestration harness is implied.
+- No API key is assumed.
+- Paid or custom source adapters require explicit approval when cost or egress is uncertain.
 
-// Generate search queries based on the question
-function generateSearchQueries(question: string): string[] {
-  const queries: string[] = [];
-
-  // Always include the original question
-  queries.push(question);
-
-  // Add context/background query
-  queries.push(`what is ${question} background context`);
-
-  // Add recent developments query
-  const currentYear = new Date().getFullYear();
-  queries.push(`${question} latest news ${currentYear}`);
-  queries.push(`${question} recent developments ${currentYear}`);
-
-  // Add technical/detailed query
-  queries.push(`${question} technical details explained`);
-
-  // Add comparison/alternatives query
-  queries.push(`${question} comparison alternatives options`);
-
-  // Add expert analysis query
-  queries.push(`${question} expert analysis opinion`);
-
-  // Add practical implications query
-  queries.push(`${question} implications impact consequences`);
-
-  return queries.slice(0, 8); // Limit to 8 queries max
-}
-
-// Main execution
-(async () => {
-  try {
-    const searchQueries = generateSearchQueries(originalQuestion);
-
-    console.log('\n⚡ ACTIONS: Generated', searchQueries.length, 'targeted search queries:\n');
-    searchQueries.forEach((q, i) => console.log(`  ${i + 1}. ${q}`));
-
-    console.log('\n✅ RESULTS: Executing searches via Claude WebSearch...\n');
-    console.log('═'.repeat(60));
-
-    // Output instructions for the claude-researcher agent
-    console.log('\n📊 SEARCH QUERIES TO EXECUTE:\n');
-    console.log('The claude-researcher agent should execute these WebSearch queries:\n');
-
-    searchQueries.forEach((query, index) => {
-      console.log(`\n### Query ${index + 1}: ${query}`);
-      console.log(`WebSearch: "${query}"`);
-      console.log('');
-    });
-
-    console.log('═'.repeat(60));
-
-    console.log('\n📊 STATUS: Query decomposition complete');
-    console.log('➡️ NEXT: Claude-Researcher agent will execute these searches using WebSearch tool\n');
-    console.log('🎯 COMPLETED: Completed query decomposition for web research');
-
-  } catch (error) {
-    console.error('❌ Error during research planning:', error);
-    process.exit(1);
-  }
-})();
+For ordinary work route to `StandardResearch.md`; for broad work use `ExtensiveResearch.md`; for claim-level adjudication use `DeepVerifiedResearch.md`.

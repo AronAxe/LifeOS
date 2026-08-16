@@ -29,7 +29,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-USER_PREFS="${HOME}/.claude/LIFEOS/USER/CUSTOMIZATIONS/SKILLS/Interceptor/preferences.env"
+LIFEOS_WORKSPACE="${LIFEOS_WORKSPACE:-}"
+USER_PREFS="${LIFEOS_WORKSPACE:+${LIFEOS_WORKSPACE}/skills/interceptor/preferences.env}"
 
 usage() {
     cat <<EOF
@@ -115,7 +116,7 @@ if [ "$USE_CURRENT" -eq 1 ] && [ -n "$TARGET_URL" ]; then
 fi
 
 # --- 1. resolve pinned target ---
-if [ -f "$USER_PREFS" ]; then
+if [ -n "$USER_PREFS" ] && [ -f "$USER_PREFS" ]; then
     # shellcheck disable=SC1090
     . "$USER_PREFS"
 fi
@@ -214,9 +215,11 @@ MIN_STDDEV="${INTERCEPTOR_MIN_STDDEV:-0.017}"
 guard_skipped() {
     local reason="$1"
     echo "Capture.sh: ⚠️  BLANK-FRAME GUARD SKIPPED ($reason) — this capture is NOT checked for a black/blank frame; do not treat it as pixel-verified without looking. Install ImageMagick (brew install imagemagick) to enable." >&2
-    local log="${HOME}/.claude/LIFEOS/MEMORY/OBSERVABILITY/capture-guard.jsonl"
-    mkdir -p "$(dirname "$log")" 2>/dev/null || true
-    printf '{"ts":"%s","event":"guard-skipped","reason":"%s","out":"%s"}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$reason" "$OUT" >> "$log" 2>/dev/null || true
+    local log="${INTERCEPTOR_CAPTURE_GUARD_LOG:-}"
+    if [ -n "$log" ]; then
+        mkdir -p "$(dirname "$log")" 2>/dev/null || true
+        printf '{"ts":"%s","event":"guard-skipped","reason":"%s","out":"%s"}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$reason" "$OUT" >> "$log" 2>/dev/null || true
+    fi
 }
 
 content_ok() {

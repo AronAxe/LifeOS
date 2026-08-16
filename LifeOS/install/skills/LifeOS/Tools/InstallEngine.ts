@@ -560,11 +560,11 @@ type HooksMap = Record<string, MatcherGroup[]>;
 /**
  * Normalize a hook command for dedup: collapse the harness/PAI path-var forms to
  * a single canonical token and squeeze whitespace, so the same hook expressed as
- * `${LIFEOS_DIR}/x`, `$LIFEOS_DIR/x`, or `~/.claude/x` dedupes to one.
+ * `${LIFEOS_DIR}/x`, `$LIFEOS_DIR/x`, or a harness-home path dedupes to one.
  */
 function normalizeCommand(cmd: string): string {
   return cmd
-    .replace(/\$\{?LIFEOS_DIR\}?|\$\{?CLAUDE_PROJECT_DIR\}?|\$\{?CLAUDE_PLUGIN_ROOT\}?|~\/\.claude|\$HOME\/\.claude|\$\{HOME\}\/\.claude/g, "§ROOT§")
+    .replace(/\$\{?LIFEOS_DIR\}?|\$\{?[A-Z_]+(?:PROJECT_DIR|PLUGIN_ROOT)\}?|(?:~|\$HOME|\$\{HOME\})\/\.[^/\s]+/g, "§ROOT§")
     .replace(/\s+/g, " ")
     .trim();
 }

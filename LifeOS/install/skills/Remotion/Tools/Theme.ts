@@ -1,8 +1,8 @@
 /**
  * LifeOS Theme for Remotion
  *
- * Derived from Art skill preferences at:
- * ~/.claude/LIFEOS/USER/CUSTOMIZATIONS/SKILLS/Art/PREFERENCES.md
+ * Derived from the Art skill's default aesthetic. Principal overrides, when
+ * supplied, live outside the installed skill under LIFEOS_WORKSPACE.
  *
  * Core aesthetic: Charcoal architectural sketch with purple accents
  * Visual feel: Monumental emotional spaces, gestural linework, cool washes

@@ -10,10 +10,11 @@
 
 import type { FetchResult, Hometown } from "./Types.ts"
 import { unavailable } from "./Types.ts"
+import { fetchFromExternalAdapter } from "./ExternalAdapter.ts"
 
 export async function fetchArrests(home: Hometown): Promise<FetchResult> {
-  return unavailable(
-    `arrests fetcher not yet implemented — TODO: sheriff blotter discovery for ${home.county ?? home.city} County`
+  return fetchFromExternalAdapter("arrests", home) ?? unavailable(
+    "arrests requires LIFEOS_LOCAL_INTELLIGENCE_ADAPTER; no bundled national source is sufficiently uniform",
   )
 }
 

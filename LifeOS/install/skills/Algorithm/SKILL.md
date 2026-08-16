@@ -1,193 +1,113 @@
 ---
 name: Algorithm
-description: "The Hermes-native execution engine — the seven-phase current→ideal loop (OBSERVE, THINK, PLAN, BUILD, EXECUTE, VERIFY, LEARN) with effort tiers, ISC quality gates, ID-stability, and the verification doctrine. Turns a substantial request into a hill-climb against a written, falsifiable ISA and closes only on tool evidence. USE WHEN: run the algorithm, execute with the algorithm, substantial or multi-phase work, build/ship a feature, anything where 'done' needs to be written down and verified, a task that spans multiple tools/agents/sessions. NOT FOR trivial one-line answers (answer inline) or owning the ISA artifact itself (use ISA)."
+description: "A Hermes-native manual execution doctrine. A seven-phase loop (OBSERVE, THINK, PLAN, BUILD, EXECUTE, VERIFY, LEARN) integrating safety boundaries, effort tiers, ISC quality gates, and verification doctrine. Turns a substantial request into a hill-climb and closes only on tool evidence. It is a working discipline and checklist, not an automated state machine. USE WHEN: substantial or multi-phase work, executing a task spanning multiple tools/sessions, or when clear decision boundaries (classify, recommend, human decision) are needed."
 effort: high
 ---
 
 # The Algorithm — Hermes Execution Engine
 
-## What It Does
+## Status and scope
 
-The Algorithm is the one loop LifeOS runs at every scale: move a thing from its **current state** to its **ideal state** by writing "done" as testable claims (the ISA) and refining until every claim survives every probe it can be subjected to. It is conjecture and refutation against the ISA — the spec *is* the test suite, and tool evidence is altitude. Without tool evidence there is no up or down.
+This skill ports a portable working doctrine, not a retired runtime. It does **not** install automated phase transitions, turn-completion middleware, a scheduler, or an automatic second task-state machine. Hermes tools, the project workspace, and the principal's decisions remain authoritative. If the optional native `lifeos` plugin is installed, its explicit `lifeos_isa` operations may persist a bounded ISA working record under the selected Hermes home; that is opt-in tool state, not automatic workflow control. Effort tiers, quality gates, and verification remain self-enforced manual quality floors.
 
-This skill owns the **procedure**: phase transitions, effort-tier floors, ISC quality gates, and the verification doctrine. The `HERMES_CONSTITUTION.md` (loaded as the ephemeral system prompt) owns the **invariants**; this skill implements them. When the two disagree, the constitution wins and this skill is corrected to match. The **ISA** skill owns the artifact this loop operates on — this skill never duplicates ISA content, it invokes it.
+Use it when a request is consequential enough that the current state, desired result, decision, implementation, and verification should be visible. Keep trivial work trivial.
 
-## When To Run It
+## The Seven Phases and Safety Boundaries
 
-Dynamic range is the whole point: a one-line answer and a week-long build are the same loop at different depths. Do **not** impose ceremony on a trivial request, and do **not** skip verification on consequential work. Run the full loop when "done" needs articulation, construction, or verification — a feature, an app, a migration, infrastructure, anything spanning multiple tools, agents, or sessions. The trigger is what *done* requires, not a complexity label.
+The core loop integrates the seven phases with portable safety boundaries (classify, recommend, human decision). These are a reasoning-and-execution contract, **not** a requirement to emit phase banners on every turn or a fixed number of tool calls.
 
-The phases are a reasoning-and-execution contract, **not** a requirement to emit phase banners on every turn.
-
----
-
-## The Seven Phases
-
-Each phase names its Hermes-native tooling. Phases may compress or overlap for smaller work; nothing here mandates a fixed number of tool calls.
-
-| # | Phase | What happens | Hermes-native tooling |
-|---|-------|--------------|-----------------------|
-| 1 | **OBSERVE** | Establish current state, constraints, sources, missing context, external prerequisites. Scaffold the ISA. | `hindsight_recall` for prior durable context (identity, TELOS projection, project knowledge, past learnings/failures on this slug). `/skill ISA` → Scaffold at the correct home + CheckCompleteness. Read/Grep/Glob for the code's actual state. Probe external prerequisites (tokens, logins, deploy targets) *before* execution. |
-| 2 | **THINK** | Identify the real problem, the relevant TELOS direction, risks, assumptions. Resolve material ambiguity. | Query the **cognitive graph** (`mind.db` — the Aron-model: values, heuristics, tensions, mental models) for decision architecture. Consult `WorldThreatModel` (world-model) / `BitterPillEngineering` (danger-model) when blast radius warrants. Use `FirstPrinciples`, `Council`, `RedTeam`, `IterativeDepth` for hard reasoning. Ask up to 3 targeted questions when the answer would change what gets built. |
-| 3 | **PLAN** | Define ideal state as ISCs, dependencies, features, and the verification approach. | `/skill ISA` to write Goal + atomic Criteria + Test Strategy + Features. Extract an ephemeral feature slice when delegating (`/skill ISA` → Scaffold `--ephemeral`). Decide the spend: models, agents, audit depth. |
-| 4 | **BUILD** | Make the **smallest coherent change** that moves one claim toward true. | Edit/Write. One vertical slice at a time — end-to-end increments, not horizontal layers. |
-| 5 | **EXECUTE** | Run the relevant tools, integrations, workflows, agents. | Terminal/Bash, MCP tools, delegated subagents (`Delegation` skill at 3+ independent workstreams). `🤖 DISPATCH: <agent> — <model>` when delegating. |
-| 6 | **VERIFY** | Test the actual result with evidence of the right modality. No "should work". | Tool probe per claim (see Verification Doctrine). A Hermes post-tool lifecycle mirrors ISA/workspace state; a Hermes turn-completion gate (the native equivalent of the LifeOS VerificationGate + WritingGate) checks the close. Optional cross-vendor / fresh-context skeptic pass for high-blast-radius work. |
-| 7 | **LEARN** | Record durable lessons, corrections, dead ends, and unresolved questions. | `hindsight_retain` with rich content (durable facts/learnings/failures — NOT active task state). `/skill ISA` → Append (Decisions / Changelog C-R-L / Verification). Route doctrine/identity/rule changes to the principal, not silently into memory. |
-
-> **Hook-replacement note.** LifeOS drove these transitions with Claude Code hooks (`ISASync`, `CheckpointPerISC`, `StopGates`, `AlgorithmNudge`, `MemoryReviewFire`). Under Hermes those are runtime-native: the post-tool lifecycle syncs workspace/ISA state, git checkpoints land on ISC closure, the turn-completion middleware enforces the verification and writing gates, skill routing + the constitution replace the nudge layer, and `hindsight_retain` replaces the memory-review fire. See `PORT_SCHEMAS/hook_mapping.md`. Do not expect `settings.json` hooks or `launchd`.
-
----
-
-## Derived Ascent Status (optional)
-
-The Hermes Algorithm’s existing seven-phase loop stays authoritative. The historical Ascent labels (Traverse, Marking, Ascending, Anchoring, Camped, Cairn) may be used only as optional present-tense UI/status descriptions derived from current observable task/workspace evidence and the seven-phase loop.
-
-They are not phases, persisted task state, a second state machine, a scheduling system, or a required desktop/terminal implementation. No Kitty/cmux/Pulse integration or `work.json` data model is ported.
-
----
+| # | Phase | Purpose & Safety Integration | Hermes Evidence |
+|---|---|---|---|
+| 1 | **OBSERVE** | Establish current state, constraints, missing prerequisites. | Read relevant files, inspect live state. Use `hindsight_recall` only for durable context. |
+| 2 | **THINK** | Identify the real problem, scope, risks. **Classify:** Distinguish fact from assumption. State the material ambiguity or safety boundary before acting. | Explicit reasoning in the workspace or session. |
+| 3 | **PLAN** | Define ideal state and test strategy. **Recommend & Human decision:** Present the smallest sound course (including alternatives). Obtain approval for external communication, financial action, deletion, publishing, or consequential changes. | Written plan, explicit recommendation, and principal's approval. |
+| 4 | **BUILD** | **Implement:** Make the narrowest coherent change that moves one claim toward true. End-to-end increments, not horizontal layers. | A focused diff, file edit, or code block. |
+| 5 | **EXECUTE** | Run the relevant tools, integrations, and workflows conditionally based on *installed capabilities*. | Terminal commands, supported tool execution. |
+| 6 | **VERIFY** | **Verify:** Test actual result with evidence of the right modality. No "should work". No result closes on intent alone. | Read-back, test output, live probe. |
+| 7 | **LEARN** | **Learn:** Preserve only durable, evidence-backed lessons. | Hindsight for stable knowledge; workspace/session artifacts for active task state. |
 
 ## Effort Tiers (E1–E5)
 
-Effort tiers set **floors**, not ceilings — the minimum ISA structure and the minimum thinking depth a run of that weight must clear. Spend scales *up* from the floor as the work reveals difficulty and blast radius; it never drops below it. The principal's plain-language steering ("go heavy", "quick pass", a stated budget) outranks the tier and outranks my judgment. A literal `/e1`–`/e5` reads as "go at least this heavy."
+Effort tiers set self-enforced **floors**, not ceilings—the minimum structure and thinking depth a run of that weight must clear. The principal's plain-language steering outranks the tier.
 
-| Tier | Shape | ISC floor (required ISA sections) | HARD thinking floor |
-|------|-------|-----------------------------------|---------------------|
-| **E1** | Trivial / fast-path (<~90s) | Goal, Criteria | None mandated — answer inline; a minimal Goal+Criteria ISA may be direct-written and the shape check logged inline. |
+| Tier | Shape | Minimum Structure Floor | Thinking Floor |
+|---|---|---|---|
+| **E1** | Trivial / fast-path (<90s) | Goal, Criteria | Answer inline. |
 | **E2** | Single-domain change | Problem, Goal, Criteria, Test Strategy | Brief explicit reasoning before building. |
-| **E3** | Mid-size project | Problem, Vision, Out of Scope, Constraints, Goal, Criteria, Features, Test Strategy | Extended thinking; surface risks and at least one alternative. |
-| **E4** | Cross-cutting / high blast radius | All fourteen ISA sections (Dependencies / Bridge Criteria only when cross-ISA links exist) | Deep thinking; delegation and/or a reasoning skill (Council / RedTeam / FirstPrinciples); consider a cross-vendor or fresh-context audit. |
-| **E5** | Maximum / mission-critical | All fourteen + an ISA **Interview** run before BUILD | Maximum thinking; multi-pass; an independent second look is the default, and eliding it requires a logged reason. |
+| **E3** | Mid-size project | Vision, Constraints, Features, Goal, Criteria, Test Strategy | Extended thinking; surface risks and at least one alternative. |
+| **E4** | Cross-cutting / high blast radius | Full structured breakdown across domains | Deep thinking; consider delegation or an independent second look. |
+| **E5** | Maximum / mission-critical | Full structured breakdown + multi-pass review | Maximum thinking; an independent second look is the default. |
 
-The ISC-floor column is enforced by the **ISA** skill's Tier Completeness Gate — this skill does not re-implement it. A **project** `<project>/ISA.md` is always at least E3 structure regardless of the active task's tier; one transient E1 task must never downgrade the long-lived source of truth.
+*Note: There is no automatic tier enforcement or automatic completeness gate. These are manual working disciplines.*
 
-> These tiers are the port's explicit floor ladder. The live LifeOS Algorithm (v8+) retired tier *declaration* in favor of judgment discovered from the work; the floors are retained here as a Hermes-native quality contract so a run can never under-articulate or under-verify below its weight. Both truths hold: spend follows the work, and the floor is the minimum that work of a given weight must clear.
+## ISC Quality Gates & ID Stability
 
----
+Every Ideal State Criterion (ISC) that closes a claim must pass these gates as a self-enforced standard:
 
-## ISC Quality Gates
+1. **Granularity.** One ISC = one atomic, binary, independently verifiable claim, naming the tool probe that falsifies it.
+2. **Tier floor.** Required sections for the active tier are populated.
+3. **Doctrinal minimums:**
+   - **≥1 anti-criterion** (`Anti:` prefix) on the build itself—what must *not* happen.
+   - **≥1 antecedent** (`Antecedent:` prefix) when the goal is **experiential** (art, design, content, anything that has to "land"). Verifiable goals don't need one.
 
-Every Ideal State Criterion (ISC) that closes a claim must pass three gates. The ISA skill owns their mechanics; the Algorithm enforces they were applied before a run completes.
-
-1. **Granularity.** One ISC = one atomic, binary, independently verifiable claim, each naming the tool probe that would falsify it. If a claim needs "and" to describe its done condition, split it (Splitting Test).
-2. **Tier floor.** The required sections for the active tier are present and populated (empty sections never appear). A miss blocks `phase: complete`.
-3. **Doctrinal minimums (HARD, every tier):**
-   - **≥1 anti-criterion** on the build itself (`Anti:` prefix) — what must *not* happen. Absence at OBSERVE is a hard completeness failure.
-   - **≥1 antecedent** (`Antecedent:` prefix) when the goal is **experiential** (art, design, content, anything that has to "land") — a precondition that reliably produces the target feeling. Verifiable goals (build/deploy/schema) don't need one; experiential goals always do.
-
----
-
-## ID-Stability Rule
-
-**ISC IDs never re-number on edit.** This is the cornerstone that makes ephemeral-feature-file reconciliation and cross-session references safe.
-
-- **Splits** become children: when the Splitting Test refines `ISC-7`, keep `ISC-7` as the parent and add `ISC-7.1`, `ISC-7.2`, … Never collapse the numbering.
-- **Drops** become tombstones: `- [ ] ISC-N: [DROPPED — see Decisions YYYY-MM-DD]`. Never delete the line — historical references in Decisions, Changelog, and Verification must keep resolving.
-- Reconcile keys on stable IDs; renumbering breaks feature-file merges *silently* (the failure looks like "the worker's checkmarks didn't land in master").
-
----
+**ID-Stability Rule:**
+ISC IDs never re-number on edit.
+- **Splits** become children: `ISC-7.1`, `ISC-7.2`.
+- **Drops** become tombstones: `- [ ] ISC-N: [DROPPED]`. Never delete the line.
+Never collapse the numbering.
 
 ## Verification Doctrine
 
-**"Should work" is forbidden.** No claim closes without tool evidence of the right modality, in the same or the next tool block. Never report "done" from intent, a plan, or an untested code path. Match the evidence to the claim:
+**"Should work" is forbidden.** No claim closes without tool evidence of the right modality. Match evidence to the claim:
 
-| Claim kind | Required evidence |
-|------------|-------------------|
-| File change | Read-back + diff |
-| Code | Grep / run the test / type-check / direct execution (prefer red-before-build) |
-| Command | Checked exit + output |
-| HTTP | `curl -i` (or equivalent) with the response |
-| Deploy / remote | Live probe of the deployed URL/ID + read-back |
-| Web / UI | The actual user path; visual verification when appearance matters |
-| Appearance | Viewed non-degenerate pixels |
-| Motion | Frame scrub |
-| Schema | `SELECT` |
-| Config | Read-back |
-| Memory change | A successful provider result + a recall/read-back check |
+| Claim | Minimum Evidence |
+|---|---|
+| File or doc change | Read-back and diff review |
+| Code change | Relevant test, type/build check, or direct execution |
+| Command | Checked exit status and meaningful output |
+| Config or service | Read-back plus the appropriate health/client check |
+| Remote or published | Live probe and returned identifier or URL |
+| Memory change | Successful retain plus recall/read-back |
 
-If verification is genuinely unavailable, say **"deployed/changed but unverified"** — never substitute weaker evidence. `[DEFERRED-VERIFY]` is a holding state, not a pass: name the follow-up task; it blocks `complete` unless waived in the Log.
+If appropriate verification cannot be run, state **changed but unverified** and name what remains. Do not upgrade a documented intention into an implementation claim.
 
-**Class sweep.** A defect recognized as an instance of a class does not close until one grep/glob enumerates every sibling, each fixed-and-verified or tombstoned: `🧹 CLASS-SWEEP: <class> — N siblings via <probe>; M fixed, K tombstoned`.
+**Class sweep:** A defect recognized as an instance of a class does not close until one grep/glob enumerates every sibling, each fixed-and-verified or tombstoned: `CLASS-SWEEP: <class> — N siblings; M fixed, K tombstoned`.
 
----
+## Minimal Working Record
 
-## Capability Enumeration (closed list — no phantom capabilities)
+Keep active task state out of durable Hindsight. For substantial work, use a Hermes-native minimal working-record model: a workspace, task, or project artifact (for example, a markdown file in the workspace or the active session). When the optional native `lifeos` plugin is installed and the principal chooses it, an explicit `lifeos_isa` record is also suitable for bounded ISA criteria and evidence; it does not advance itself. The working record must contain:
 
-The capabilities available to a run are exactly the **installed Hermes skill body** plus the enumerated Hermes runtime tools (Hindsight recall/retain/reflect, the cognitive graph, terminal/file/memory toolsets, delegation, MCP tools that are actually connected). This list is closed:
+1. Current state and evidence.
+2. Desired state and non-goals.
+3. Decision/approval boundary.
+4. Planned verification.
+5. Result, evidence, and any unresolved limitation.
 
-- **Invoke a skill when its trigger matches — do not handroll what a skill already does.** The skill descriptions are THE capability inventory; a second copy would rot.
-- **Never invent a capability that isn't installed.** If a run needs a tool, integration, or service that is not present, that is a MISSING prerequisite to surface at OBSERVE — not a step to narrate as if it ran. Phantom capabilities (claiming a probe, integration, or agent that doesn't exist) are a verification-doctrine violation.
-- **A subagent's self-report is not evidence** — the transcript / tool output is. Every writing agent's claim is probed on disk before it is trusted.
+*Note: Recommendations that the principal has not accepted belong in this ephemeral work/review state, not Hindsight fact storage.*
 
----
+## Workflow Routing & Decision Boundaries
 
-## Workflow Routing
+Capabilities available to a run are strictly bounded by what is actually installed and present in the Hermes environment.
 
-The Algorithm is a loop, not a menu — but it routes to other skills at known seams. Match the situation to the skill.
+- **Do not assume a cognitive graph, custom skill, external service, MCP, browser, or agent exists** merely because legacy/upstream material mentions it. Check installed Hermes capabilities before relying on them.
+- `delegate_task` is a supported bounded tool; use it with independent verification of its outputs.
+- Hindsight tools (`hindsight_recall`, `hindsight_retain`) are for durable memory only, when configured and healthy.
 
-| Situation | Route to |
-|-----------|----------|
-| Need to scaffold / score / reconcile the ISA artifact | **ISA** (`/skill ISA`) — see the ISA integration section below |
-| Constitutional invariant in question (identity, memory boundaries, security, verification) | `HERMES_CONSTITUTION.md` (ephemeral system prompt) — invariants live there |
-| 3+ independent workstreams | **Delegation** — fan out; `🤖 DISPATCH` per agent |
-| Hard reasoning / competing approaches | **FirstPrinciples**, **Council**, **RedTeam**, **IterativeDepth**, **Science** |
-| Long-horizon / high-blast-radius stress test | **WorldThreatModel** (world-model), **BitterPillEngineering** (danger-model) |
-| Idea worth preserving surfaced mid-run | **Amber** — capture it so it isn't lost |
-| Prior work / session context needed | `hindsight_recall` first; **ContextSearch** for session/ISA history |
-| Output-quality refinement against a metric | **Optimize**, **Evals**, **Hardening** |
+## Ascent Labels
 
----
-
-## ISA Integration (cross-reference — the ISA skill owns the artifact)
-
-The Algorithm operates the loop; the **ISA** skill owns the Ideal State Artifact. This skill invokes ISA workflows at the phase seams below and **does not duplicate ISA content** — the fourteen-section body, the Splitting/Variation tests, the C-R-L Changelog format, and the completeness gate all live in `/skill ISA` and `LIFEOS/DOCUMENTATION/Isa/IsaFormat.md`.
-
-| Phase seam | ISA invocation | Purpose |
-|------------|----------------|---------|
-| **OBSERVE** | `/skill ISA` → **Scaffold** at tier T | Write "done" before building — an ISA at the correct home (`<project>/ISA.md` for persistent things, `MEMORY/WORK/{slug}/ISA.md` for tasks). |
-| **OBSERVE → THINK boundary** | `/skill ISA` → **CheckCompleteness** at tier T | Confirm the tier floor + doctrinal minimums are met before committing to a plan; a miss blocks. |
-| **PLAN** | `/skill ISA` → **Scaffold `--ephemeral`** (extract feature) | Produce an isolated feature slice for a delegated / fresh-context agent, keyed on stable ISC IDs. |
-| **LEARN** | `/skill ISA` → **Append** | Record Decisions (incl. dead ends), the four-piece C-R-L Changelog, and quoted per-ISC Verification evidence. |
-| **Session resume** | `/skill ISA` → **Reconcile** | Deterministically merge an ephemeral feature file's checkmarks/evidence back into the master ISA. Never re-run passed gates; keep going. |
-
-Invoke ISA workflows by name via `/skill ISA "<intent>"` (the Hermes-native replacement for the LifeOS `Skill("ISA", "…")` call). The ISA skill is invocation-agnostic — it behaves identically whether the Algorithm calls it or the principal does.
-
----
-
-## Gotchas
-
-- **Inline-reachable answers spend nothing (the writing-agent trap).** If the answer is in front of you, use zero agents. A fan-out past ~8 agents reserves verification budget and names a non-agent fallback. Every writing agent's on-disk claim is probed before it is trusted.
-- **The ISA at close is not the ISA at open.** Any run that surfaced new information — corrections, failed probes, discovered constraints, implied wants — folds it in *as it arrives*: claims added, split, tightened, or killed. Discoveries in-transcript with zero ISA deltas after scaffold is the falsifier for a run that stopped thinking.
-- **Do not put active task state into Hindsight.** ISA checklists, phase state, and work registries belong in workspace/session artifacts. Hindsight holds durable facts, learnings, and reflected wisdom — not the live state of this run.
-- **Every explicit ask is honored, skipped-with-reason, or surfaced.** A depth/steering directive ("think deeply", "quick pass") is itself an explicit ask under this rule — an explicit depth directive that produced neither visible capability use nor a stated reason for answering inline is a break to surface, never swallow.
-- **A gate that never fires is theater.** Doctrine without a probe decays. If a quality gate here can't be evidenced by a tool result, it is self-attested and must be watched for decay — prefer a mechanical check.
-
----
+Historical Ascent terms (Traverse, Marking, Ascending, Anchoring, Camped, Cairn) may be used as optional, nonpersistent present-tense descriptions of visible work. They are derived labels only. Do not persist them as task state, schedule work from them, build a UI state machine around them, or treat them as a second lifecycle.
 
 ## Examples
 
 ### Example 1 — E2 single-domain feature (add a verify mode to a backup CLI)
 
-1. **OBSERVE** — `hindsight_recall` on the repo/slug; Read the CLI's arg parser; `/skill ISA` → Scaffold at E2 (`MEMORY/WORK/{slug}/ISA.md`) → Problem, Goal, Criteria, Test Strategy. Probe: does the backup format expose a checksummable field? (Read.)
-2. **THINK** — real problem is *silent* corruption, so an anti-criterion writes itself: `Anti: --verify exits 0 on a truncated archive`.
-3. **PLAN** — ISCs: `ISC-1 --verify recomputes SHA-256 and compares`, `ISC-2 mismatch → non-zero exit`. Test Strategy: `bun-test`, red-before-build.
-4. **BUILD → EXECUTE** — smallest change; run the test (red → green).
-5. **VERIFY** — Grep the diff, run the suite, `curl`-free (local) so exit-code + output is the evidence. VerificationGate-equivalent passes.
-6. **LEARN** — `/skill ISA` → Append the Verification evidence; `hindsight_retain` the gotcha if the checksum field was non-obvious.
+1. **OBSERVE** — Read the CLI's arg parser and check if the backup format exposes a checksummable field.
+2. **THINK** — Classify the problem: real issue is *silent* corruption. Write an anti-criterion: `Anti: --verify exits 0 on a truncated archive`.
+3. **PLAN** — Recommend ISCs: `ISC-1 --verify recomputes checksum and compares`, `ISC-2 mismatch → non-zero exit`. Wait for human decision if required.
+4. **BUILD & EXECUTE** — Smallest change to implement the feature. Run tests.
+5. **VERIFY** — Grep the diff, run the suite, verify exit code + output.
+6. **LEARN** — Record the verification evidence in the workspace artifact. Retain durable lessons in Hindsight if applicable.
 
-### Example 2 — E4 cross-cutting migration (REST → GraphQL with backwards-compat)
+### Example 2 — E1 fast-path (add a `--no-color` flag)
 
-- OBSERVE recalls prior migration learnings and scaffolds an E4 ISA (all fourteen sections, Dependencies present because two services share a seam). THINK runs `RedTeam` on the compat plan and queries the cognitive graph for the principal's stance on breaking changes. PLAN extracts one ephemeral feature slice per endpoint and **Delegation** fans them to worktree-isolated agents (`🤖 DISPATCH` each). VERIFY probes each live endpoint (`curl -i`) *and* runs a cross-vendor audit because blast radius is high; a class-sweep enumerates every un-migrated endpoint. LEARN reconciles each ephemeral file back to master and retains the migration postmortem.
-
-### Example 3 — E1 fast-path (add a `--no-color` flag)
-
-- No ceremony: direct-write a minimal Goal + 4 Criteria ISA, make the change, Grep the flag is wired and run `tool --no-color | cat` to confirm no escape codes, log the shape check inline. Done in one pass — the loop still ran, just at its floor.
-
----
-
-## Cross-References
-
-- Constitutional invariants: `LifeOS/install/LIFEOS/HERMES_CONSTITUTION.md` (ephemeral system prompt)
-- The artifact: **ISA** skill (`skills/ISA/SKILL.md`) + format spec `LIFEOS/DOCUMENTATION/Isa/IsaFormat.md`
-- Source doctrine adapted: `LIFEOS/ALGORITHM/LATEST` (currently v8.4.0) + `LIFEOS/DOCUMENTATION/Algorithm/AlgorithmSystem.md`
-- Hook → Hermes-native mapping: `PORT_SCHEMAS/hook_mapping.md`
-- Memory boundaries + tags: `PORT_SCHEMAS/hindsight_memory_schema.md`
+- No ceremony: inline direct-write a minimal Goal + Criteria, make the change, Grep the flag is wired, run `tool --no-color | cat` to confirm no escape codes. Done in one pass.

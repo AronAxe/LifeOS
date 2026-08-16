@@ -117,9 +117,7 @@ When `/optimize` is invoked, the Algorithm enters with `mode: optimize` in the I
 ISC criteria become **guard rails** — assertions that must hold true across ALL experiments. Guard rails must REMAIN satisfied perpetually. A violation triggers automatic revert regardless of score improvement.
 
 **Reference files:**
-- `~/.claude/LIFEOS/ALGORITHM/optimize-loop.md` — the full loop protocol
-- `~/.claude/LIFEOS/ALGORITHM/eval-guide.md` — how to write good eval criteria
-- `~/.claude/LIFEOS/ALGORITHM/target-types.md` — target detection and ISC generation
+- This skill's loop-protocol, evaluation-guide, and target-type sections are the portable references; no external Algorithm files are installed.
 
 ## Examples
 

@@ -1,60 +1,61 @@
-# Getting Started — after the install
+# Getting Started — after the HALOS import
 
-You installed LifeOS. This page covers the part `INSTALL.md` couldn't: the **external tools** LifeOS's doctrine uses when they're available. None are required — every one degrades honestly when absent — but each unlocks a real capability. For each: what it powers, how to set it up, and how to prove it's live.
+HALOS installs public LifeOS doctrine as Hermes skills. The importer is additive: it does not activate plugins, migrate secrets, create a principal corpus, schedule jobs, or apply settings without a separate explicit decision.
 
-**The one command to remember:**
+## 1. Confirm the import report
 
+The importer report is the installation receipt. A complete public import reports 72 public skills and the native `lifeos` plugin payload, with private `_ALLCAPS` skills excluded. Conflicts are reported and never overwritten silently.
+
+If you have not applied the import yet, use the dry run first:
+
+```bash
+bun LifeOS/Tools/ImportSkills.ts --dry-run
 ```
-bun <configRoot>/LIFEOS/TOOLS/Doctor.ts
+
+Apply only after reviewing the destination and collision report:
+
+```bash
+bun LifeOS/Tools/ImportSkills.ts
 ```
 
-Run it whenever anything feels off. Every ❌ line carries its own fix command. `--network` adds end-to-end auth checks (only for tools you've configured). `decline <name>` turns a capability off permanently and silently — declining is a supported way to run LifeOS, not a defect.
+After an import or update, reload skills in the current Hermes client or begin a new session before testing changed guidance.
 
----
+## 2. Keep mutable data outside installed skills
 
-## codex — cross-vendor audit
+Installed skill directories are read-only packages. They are not workspaces and must not hold preferences, browser profiles, story projects, evaluation results, or other mutable principal data.
 
-**Powers:** an independent second-vendor review on high-impact work. Without it, audits still run — but same-vendor, and the output is labeled accordingly.
+Skills that support reusable customizations refer to `<LIFEOS_WORKSPACE>/skills/<skill-name>/`. Set `LIFEOS_WORKSPACE` only to an explicitly approved writable directory. Domain-specific tools may use a narrower variable, such as `LIFEOS_EVALS_WORKSPACE` or `LIFEOS_WRITING_WORKSPACE`; their skill documentation is authoritative.
 
-- **Install:** `bun install -g @openai/codex`
-- **Auth:** `codex login` (needs an OpenAI account)
-- **Verify:** `bun <configRoot>/LIFEOS/TOOLS/Doctor.ts` → codex ✅
-- **Don't want it?** `Doctor.ts decline codex` — audits stay single-vendor, honestly labeled.
+A missing workspace is not permission to invent one. Tools and workflows must remain read-only or ask for a destination before writing.
 
-## Interceptor — real-browser verification
+## 3. Treat optional capabilities honestly
 
-**Powers:** verification of anything web-facing through a real Chrome — screenshots, console logs, actual page loads. Doctrine treats "curl returned 200" as *not* verification; this is the tool that does it right.
+There is no global LifeOS Doctor, capability manifest, hidden daemon, or automatic degradation registry on Hermes. Each skill declares its own prerequisites and must fail visibly when an optional dependency is absent.
 
-- **Install:** the skill ships with LifeOS; it needs a real browser binary — Google Chrome or Brave.
-- **Auth:** none.
-- **Verify:** `Doctor.ts` → interceptor ✅ (skill present + browser found).
+Use Hermes-native tools where available:
 
-## Cloudflare / wrangler — scheduled cloud flows
+- web retrieval through the configured Hermes web and browser tools;
+- inference through the consent-gated Hermes inference adapter;
+- speech through the configured Hermes text-to-speech tool;
+- delegation through Hermes subagents;
+- scheduled work only through an explicitly created Hermes cron job.
 
-**Powers:** the "runs while you sleep" layer (Arbol) and Worker deploys.
+Provider credentials, external CLIs, paid scraping, browser profiles, and publishing adapters remain optional and separately consent-gated. Credential presence never implies spending or publication approval.
 
-- **Install:** wrangler runs via `bunx wrangler` — nothing global needed.
-- **Auth:** create a Cloudflare API token (Workers permissions), add to `<configRoot>/.env` as `CLOUDFLARE_API_TOKEN=...`
-- **Verify:** `Doctor.ts --network` → cloudflare ✅ (runs a real `wrangler whoami`).
-- **Don't want it?** `Doctor.ts decline cloudflare`.
+## 4. Activate the native plugin separately
 
-## ElevenLabs — voice notifications
+Importing the `lifeos` plugin payload does not enable it. Review `INSTALL.md` and `PORT_SCHEMAS/hook_mapping.md`, then make plugin activation as a separate explicit decision.
 
-**Powers:** spoken notifications through the Pulse voice server.
+The plugin supplies bounded ISA state, event evidence, public-profile preview, status, lifecycle hooks, commands, SQLite state, and dashboard support. It does not inject the constitution or identity automatically, retain transcript text, advance phases, create schedules, or recreate the retired Claude/Pulse runtime.
 
-- **Install:** nothing — it's an API.
-- **Auth:** add `ELEVENLABS_API_KEY=...` and `ELEVENLABS_VOICE_ID=...` to `<configRoot>/.env`. Pick a **premade or cloned** voice from your ElevenLabs library — "famous" voices are not usable through the API and fail with `famous_voice_not_permitted`. A scoped, TTS-only API key works fine.
-- **Verify:** `Doctor.ts --network` → voice ✅ (runs a real 2-character synthesis on the exact path notifications use).
-- **Don't want it?** `Doctor.ts decline voice` — notifications stay on-screen only.
+## 5. Verify the capability you intend to use
 
----
+Test the actual path end to end rather than relying on installation presence. For example:
 
-## How degradation works (so you can trust it)
+- render a scratch ISA through the installed ISA renderer;
+- run an evaluation with a stub or explicitly approved Hermes inference command;
+- execute a web retrieval and retain source receipts;
+- preview a daemon/public-profile update without publishing it;
+- confirm an optional adapter fails closed when its configuration is absent.
 
-- The Doctor writes an **advisory manifest** (`LIFEOS/MEMORY/STATE/capabilities.json`). It's a cache with TTLs, not truth — the runtime re-checks cheaply at the moment a capability is actually used.
-- A **broken** capability warns once at the moment you'd have used it, with its fix command. Cooldowns prevent nagging.
-- A **declined** capability is silent forever, everywhere.
-- Output produced without a doctrine-relevant capability is **labeled** (e.g. "same-vendor audit only") — absence is never hidden inside a confident result.
-- The manifest is tamper-evident: `Doctor.ts --verify` flags any edit made outside the Doctor.
-
-That's the contract: nothing here scores you, nothing nags, and nothing pretends.
+That is the operating contract: explicit sources, explicit consent, visible degradation, and evidence from the real execution path.

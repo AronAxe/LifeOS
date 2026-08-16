@@ -9,14 +9,17 @@ import { loadSuite, checkSaturation } from './SuiteManager.ts';
 import { TrialRunner, formatEvalResults } from './TrialRunner.ts';
 import { TranscriptCapture, createTranscript } from './TranscriptCapture.ts';
 import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'fs';
-import { join } from 'path';
+import { join, resolve } from 'path';
 import { parse as parseYaml } from 'yaml';
 import { parseArgs } from 'util';
-import { $ } from 'bun';
 
 const EVALS_DIR = join(import.meta.dir, '..');
-// Run artifacts live outside the skill tree (runtime state, not skill content).
-const RESULTS_DIR = join(EVALS_DIR, '..', '..', 'LifeOS', 'MEMORY', 'STATE', 'Evals-Results');
+const EVALS_WORKSPACE = resolve(process.env.LIFEOS_EVALS_WORKSPACE ?? join(process.cwd(), '.lifeos-evals'));
+const WORKSPACE_USE_CASES_DIR = join(EVALS_WORKSPACE, 'use-cases');
+const BUILTIN_USE_CASES_DIR = join(EVALS_DIR, 'UseCases');
+// Runtime state belongs to the current project (or an explicitly configured
+// workspace), never to the immutable installed skill tree.
+const RESULTS_DIR = join(EVALS_WORKSPACE, 'results');
 
 /**
  * Run an eval suite for ALGORITHM verification
@@ -119,11 +122,13 @@ export async function runEvalForAlgorithm(
  * Find task file by ID
  */
 function findTaskFile(taskId: string): string | null {
-  const useCasesDir = join(EVALS_DIR, 'UseCases');
   const possiblePaths = [
-    join(useCasesDir, `${taskId}.yaml`),
-    join(useCasesDir, 'Regression', `${taskId}.yaml`),
-    join(useCasesDir, 'Capability', `${taskId}.yaml`),
+    join(WORKSPACE_USE_CASES_DIR, `${taskId}.yaml`),
+    join(WORKSPACE_USE_CASES_DIR, 'Regression', `${taskId}.yaml`),
+    join(WORKSPACE_USE_CASES_DIR, 'Capability', `${taskId}.yaml`),
+    join(BUILTIN_USE_CASES_DIR, `${taskId}.yaml`),
+    join(BUILTIN_USE_CASES_DIR, 'Regression', `${taskId}.yaml`),
+    join(BUILTIN_USE_CASES_DIR, 'Capability', `${taskId}.yaml`),
   ];
 
   for (const path of possiblePaths) {
@@ -143,7 +148,7 @@ function saveRunResults(suiteName: string, run: EvalRun): void {
   const runDir = join(suiteResultsDir, run.id);
   if (!existsSync(runDir)) mkdirSync(runDir);
 
-  writeFileSync(join(runDir, 'run.json'), JSON.stringify(run, null, 2));
+  writeFileSync(join(runDir, 'results.json'), JSON.stringify(run, null, 2));
 }
 
 /**
@@ -158,9 +163,10 @@ export function formatForISC(result: AlgorithmEvalResult): string {
  * Update ISC row with eval result
  */
 export async function updateISCWithResult(result: AlgorithmEvalResult): Promise<void> {
-  const status = result.passed ? 'DONE' : 'BLOCKED';
-
-  await $`bun run ~/.claude/skills/THEALGORITHM/Tools/ISCManager.ts update --row ${result.isc_row} --status ${status} --note "${formatForISC(result)}"`.quiet();
+  throw new Error(
+    `Automatic ISA mutation is not available from this standalone CLI. ` +
+    `Use the Hermes lifeos_isa tool to apply row ${result.isc_row} after reviewing: ${formatForISC(result)}`,
+  );
 }
 
 // CLI interface

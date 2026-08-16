@@ -29,14 +29,14 @@ LifeOS orchestrates agents three ways today — in-harness subagents (`Agent`/`T
 
 ## Vision
 
-`Skill("CMUX")` boots a named, color-identified cmux workspace of agents in one command — a 3-tier orchestrator→lead→worker team, an N-agent hotfix race, a 2×2 fleet, or the remote fleet — and {{DA_NAME}} drives them through the send/read loop, watches them via a poll-based monitor that fires {{DA_NAME}}'s voice on completion, and any agent can prompt any other agent flat. The video's whole feature set is native, our existing stack (Pulse, voice, Algorithm, memory, model routing) is intact underneath, and the Kitty terminal-watching layer has a clear, staged path to being replaced by cmux. Euphoric surprise: "I typed one command and watched a real team of agents light up, and {{DA_NAME}} told me out loud when they finished."
+`Skill("CMUX")` boots a named cmux workspace of agents in one command — a tiered team, an N-agent race, a grid, or remote SSH panes — and drives them through the send/read loop. The monitor emits classified JSON state. Interactive speech uses Hermes `text_to_speech`; unattended notification requires explicit `CMUX_NOTIFY_ENDPOINT`. No dashboard, provider hook, phase, or memory integration is implicit.
 
 ## Out of Scope
 
 - Ripping out the working Kitty tab-state hooks THIS session (staged in DESIGN.md Phase 3 — never modify working features unprompted).
-- Full Pulse SSE bridge for live cmux state (designed as Phase 2, stubbed not shipped).
+- Dashboard or SSE ingestion of live cmux state.
 - Linux/tmux fallback implementation (cmux is Mac-only; noted as a design risk, not built).
-- Replacing Pulse, the voice server, the Algorithm, model routing, or the memory system (principal chose "replace terminal layer only").
+- Modifying Hermes UI, TTS configuration, phase doctrine, model routing, or memory.
 - Building cmux itself or forking it.
 
 ## Principles
@@ -53,18 +53,18 @@ LifeOS orchestrates agents three ways today — in-harness subagents (`Agent`/`T
 - cmux is a Mac GUI app; socket exists only while running; wrapper must auto-launch.
 - Socket auth via `CMUX_SOCKET_PASSWORD`/`--password`/Settings.
 - Public skill (`TitleCase`): zero real hosts/IPs/identity; `~/` not absolute user home paths.
-- Voice endpoint is `localhost:31337/notify`; Pulse/Algorithm/memory contracts unchanged.
+- Notification is optional and fail-closed through explicit `CMUX_NOTIFY_ENDPOINT`; no dashboard, hook, Algorithm, or memory contract is installed.
 - Never modify working features unprompted — Kitty hooks stay live until an explicit cutover.
 
 ## Dependencies
 
-- requires: voice-server — `POST localhost:31337/notify {message,voice_enabled}` reachable
+- optional: notification-adapter — explicit HTTP(S) `CMUX_NOTIFY_ENDPOINT`; omitted by default
 - requires: cmux-binary — `~/.local/bin/cmux` v0.62.x with the documented command surface
 - requires: fleet-config — the CMUX USER customization dir holds `fleet.json` (optional; mini-fleet degrades to `--hosts`)
 
 ## Goal
 
-"switch to CMUX and implement all of our cool features, plus all the features that he talks about, into a new upgraded CMUX experience." Concretely: ship a public `CMUX` skill whose `Tools/cmux.ts` wrapper drives the real cmux via the send/read/open-close loop; provide recipes for 3-tier teams, agent-races, named fleets, and the remote mini-fleet; wire completion → {{DA_NAME}} voice; keep Pulse/voice/Algorithm/memory intact; and deliver a migration DESIGN.md that maps every video feature AND every LifeOS feature into the cockpit with a staged Kitty→cmux replacement. Verified by actually driving a live cmux workspace.
+Ship a public `CMUX` skill whose `Tools/cmux.ts` wrapper drives real cmux through the send/read/open-close loop; provide recipes for tiered teams, agent races, named fleets, and remote SSH panes; emit classified monitor state; and keep notification behind an explicit adapter. Dashboard, hook, phase, and memory integrations are outside this skill. Live-driving requires verification against a real macOS cmux workspace.
 
 ## Criteria
 
@@ -78,9 +78,9 @@ LifeOS orchestrates agents three ways today — in-harness subagents (`Agent`/`T
 - [ ] ISC-8: `fleet --name --grid 2x2` creates a live 2×2 grid
 - [ ] ISC-9: `mini-fleet` reads fleet config (or --hosts) and opens one SSH pane per host; NO hardcoded hosts in the file
 - [ ] ISC-10: `monitor --once` polls surface-health + read-screen and classifies each surface idle|working|done|awaiting-input
-- [ ] ISC-11: `monitor` fires `notifyVoice` (POST /notify) on transition to done/awaiting — verified by a voice-event
+- [ ] ISC-11: `monitor` reports done/awaiting transitions and records notification success/failure when an adapter is configured
 - [ ] ISC-12: `flash --workspace <ref>` triggers a visible flash on a live workspace
-- [ ] ISC-13: `voice "<msg>"` POSTs to localhost:31337/notify and returns ok
+- [ ] ISC-13: `voice "<msg>"` fails closed without `CMUX_NOTIFY_ENDPOINT` and reports adapter delivery when configured
 - [ ] ISC-14: `list`/`tree` returns parsed JSON topology of a live cmux instance
 - [ ] ISC-15: Flat comms — one agent surface can `cmux send` a prompt to another surface, proven by read-back
 - [ ] ISC-16: `SKILL.md` present with valid frontmatter (name CMUX, description with USE WHEN + NOT FOR), routing table, Gotchas, Examples
@@ -125,22 +125,24 @@ LifeOS orchestrates agents three ways today — in-harness subagents (`Agent`/`T
 | live verification | ISC-3..15,25,26 | wrapper | no | high |
 | public-clean + audit | ISC-21..23,27,28 | all | no | max |
 
-## Decisions
+## Historical upstream decisions
 
-- D-1: E5 interview fired (mandatory). Answers: BUILD it · UNIFIED (LifeOS agents + hands-on teams) · REPLACE terminal layer only (Pulse/voice/Algorithm/memory stay).
+The entries below explain the source design chronology. They are not installed runtime contracts; the Hermes-port disposition in the active sections above supersedes them.
+
+- D-1: The upstream build chose a unified terminal cockpit and a terminal-layer-only migration. HALOS preserves the cockpit, not the upstream service stack.
 - D-2: Direct parallel agents over a full Workflow — build has a sequential spine (scaffold→fill→live-verify) and live cmux GUI driving must stay in the main loop. Delegation floor ≥4 met (Forge build + 2 general-purpose + CodexResearcher).
 - D-3: Kitty→cmux hook cutover STAGED, not done this session — ripping out working hooks unprompted violates "never modify working features." DESIGN.md Phase 3.
 - D-4: Public skill → fleet hosts read from USER config, never hardcoded. Socket password from env.
 - D-5: `model:fable` on Agent dispatch currently executes Opus (logged harness downgrade) — E5 delegates run Opus in fact; Forge/CodexResearcher run their own vendor.
-- D-6: PLAN-REFRESH (CodexResearcher). cmux is PUSH-native via `cmux claude-teams` (auto-injects Claude Code lifecycle hooks → `cmux claude-hook <event>`) + `set-hook`/`wait-for`/`pipe-pane`/OSC. Monitor must prefer hook-push; polling is fallback. Contract's "poll-not-event" was wrong — wrapper `monitor` needs reconcile.
+- D-6: Upstream research identified provider-specific cmux lifecycle hooks. HALOS does not install them; the portable wrapper polls cmux state.
 - D-7: PLAN-REFRESH. Socket is DEFAULT-DENY ("only processes started inside cmux can connect"). Wrapper's "auto-launch then drive from outside" fails without auth. Two supported paths: run orchestrator INSIDE a cmux surface (inherits `CMUX_SOCKET_PATH`), or set a Settings socket password → `CMUX_SOCKET_PASSWORD`. Wrapper must detect the auth wall and surface it, not silent-fail. ISC-3 auto-launch is necessary-but-insufficient; add auth-mode handling.
-- D-8: Build ON `cmux claude-teams` (it IS Claude Code + session tracking) rather than reinventing a status poller. Pulse bridge = read session JSON (`report_meta`/`set-status`/`set-progress`/`log` → sidebar, persisted, readable WITHOUT socket). cmux is OSS github.com/manaflow-ai/cmux, GPL-3.0, Ghostty-based, macOS-only.
+- D-8: The upstream design proposed provider hooks and session-JSON ingestion. HALOS rejects both as implicit contracts; cmux remains an optional macOS terminal dependency.
 
 ## Changelog
 
 - conjectured: cmux exposes no event stream, so monitoring must poll `surface-health`+`read-screen` (written into CONTRACT + first SKILL.md gotcha).
-- refuted_by: CodexResearcher local-verified `cmux claude-teams` hook injection + `set-hook`/`wait-for`/`pipe-pane`/OSC push mechanisms; the `claude` shim wires SessionStart/Stop/Notification → `cmux claude-hook`.
-- learned: cmux is push-native and default-deny on the socket; the clean LifeOS integration runs agents via `claude-teams` inside a surface (inherited auth) and mirrors state to Pulse by reading the session JSON — no polling, no auth wall.
-- criterion_now: SKILL.md gotchas corrected (push-native + default-deny + no-auth sidebar-JSON bridge); wrapper `monitor` + auth handling pending reconcile against the Forge build.
+- refuted_by: Upstream research found provider-specific lifecycle hooks, but those do not constitute a portable Hermes interface.
+- learned: cmux is default-deny on the socket; run inside a cmux surface or configure `CMUX_SOCKET_PASSWORD` deliberately.
+- criterion_now: the Hermes port uses explicit polling, performs no session-JSON ingestion, and keeps notification behind `CMUX_NOTIFY_ENDPOINT`.
 
 ## Verification

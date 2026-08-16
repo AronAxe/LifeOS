@@ -1,113 +1,58 @@
 # Standard Research Workflow
 
-**Mode:** 4 different researcher types, 1 query each | **Timeout:** 2 minutes
+Use as the default for research that needs more than one source or perspective but does not require a persistent deep-investigation workspace.
 
-## 🚨 CRITICAL: URL Verification Required
+## 1. Frame the task
 
-**BEFORE delivering any research results with URLs:**
-1. Verify EVERY URL using WebFetch or curl
-2. Confirm the content matches what you're citing
-3. NEVER include unverified URLs - research agents HALLUCINATE URLs
-4. A single broken link is a CATASTROPHIC FAILURE
+Record:
 
-See `SKILL.md` for full URL Verification Protocol.
+- exact question and decision context;
+- freshness, geography, and time frame;
+- expected output shape;
+- source constraints and disallowed egress;
+- whether the request concerns published facts, community sentiment, code state, or another source class.
 
-## When to Use
+Read `../SourceRoutingProtocol.md` before choosing tools.
 
-- Default mode for most research requests
-- User says "do research" or "research this"
-- Need multiple perspectives quickly
+## 2. Build complementary searches
 
-## Workflow
+Create two to four distinct formulations rather than repeating one query. Cover as relevant:
 
-### Step 0: Source Routing Check (MANDATORY)
+- primary or official evidence;
+- current independent reporting or analysis;
+- technical, academic, or practitioner evidence;
+- alternatives, failure cases, and disconfirming evidence.
 
-**READ:** `../SourceRoutingProtocol.md` if not already loaded.
+For independent broad workstreams, use one `delegate_task` batch with complete, bounded briefs. Do not specify provider models or undeployed agent types. If the task is small, execute the searches directly.
 
-Scan the user's request for sentiment signals: "fans thought", "ratings of", "best | worst | favorite", "reactions to", "consensus on", event + recent date.
+## 3. Extract evidence
 
-- **Signal fires → sentiment-mode routing.** Walk the API-first cascade in `../SourceRoutingProtocol.md`. Reallocate one of the four agent slots in Step 2 to a community-API agent. Recommended swap: drop GrokResearcher (least relevant for community sentiment) and replace with a general-purpose subagent whose Tier-1 brief is: **(a)** Reddit JSON API call against 2-3 relevant subreddits via Bash + `curl -A "LifeOS-Research/1.0"`, **(b)** X API v2 recent-search via `curl -H "Authorization: Bearer $X_BEARER_TOKEN"` against `api.twitter.com/2/tweets/search/recent` for the first-6-hour reaction cluster, **(c)** Apify only as Tier-2 fallback if either Tier-1 path fails. Return verbatim quotes with thread/post URLs and engagement scores. If ≥30s budget headroom remains, also spawn a YouTube agent that uses Data API v3 (if `YOUTUBE_API_KEY` set) or `fabric -y` on top reactor videos.
-- **No signal → Step 1 unchanged.** Four web-search agents as documented below.
+Open the strongest sources with `web_extract`; use `browser_exec` for dynamic public pages. For every material finding record claim, quotation or structured field, URL, title, date, locator, source quality, and limitation.
 
-### Step 1: Craft One Query Per Researcher
+## 4. Cross-check
 
-Create ONE focused query optimized for each researcher's strengths:
-- **Claude**: Academic depth, detailed analysis, scholarly sources
-- **Gemini**: Multi-perspective synthesis, cross-domain connections
-- **Grok**: Contrarian, fact-based perspective; long-term truth over short-term trend; social/political nuance
-- **Perplexity**: Live-web retrieval with citations; fastest current-state snapshot
+Group duplicate claims and trace whether sources are genuinely independent. Apply:
 
-### Step 2: Launch 4 Agents in Parallel (1 of each type)
+- `HIGH` when strong recoverable evidence has independent confirmation;
+- `MED` for credible single-chain support;
+- `LOW` for indirect, weak, stale, or incomplete evidence;
+- `CONFLICT` when credible sources disagree.
 
-**SINGLE message with 4 Task calls:**
+Check every important number, date, causal claim, and current-status assertion. Follow `../UrlVerificationProtocol.md`.
 
-```typescript
-Task({
-  subagent_type: "ClaudeResearcher",
-  description: "[topic] analysis",
-  prompt: "Do ONE search for: [query optimized for depth/analysis]. Tag each finding with confidence: [HIGH], [MED], or [LOW]. Return findings immediately."
-})
+## 5. Synthesize
 
-Task({
-  subagent_type: "GeminiResearcher",
-  description: "[topic] perspectives",
-  prompt: "Do ONE search for: [query optimized for breadth/perspectives]. Tag each finding with confidence: [HIGH], [MED], or [LOW]. Return findings immediately."
-})
+Return:
 
-Task({
-  subagent_type: "GrokResearcher",
-  description: "[topic] contrarian take",
-  prompt: "Do ONE search for: [query optimized for contrarian/long-term-truth angle]. Prefer counter-consensus signal and durable facts over trending narrative. Tag each finding with confidence: [HIGH], [MED], or [LOW]. Return findings immediately."
-})
+1. direct answer or executive summary;
+2. verified findings grouped by theme;
+3. conflicts and low-confidence items;
+4. implications for the stated decision;
+5. limitations and open questions;
+6. source list with recoverable URLs.
 
-Task({
-  subagent_type: "PerplexityResearcher",
-  description: "[topic] current state",
-  prompt: "Do ONE search for: [query optimized for live-web current state with citations]. Tag each finding with confidence: [HIGH], [MED], or [LOW]. Return findings immediately."
-})
-```
+Do not report a fixed agent count, duration, or provider roster. Report actual searches, sources opened, and verification outcomes.
 
-**Each agent:**
-- Gets ONE query
-- Does ONE search
-- Returns immediately
+## Completion
 
-### Step 3: Cross-Check Synthesis
-
-Combine the two perspectives **with confidence scoring and conflict detection:**
-
-1. **Cross-reference findings:** Where both agents report the same fact → tag `[HIGH]`
-2. **Flag unique findings:** Findings from only one agent → tag `[MED]`
-3. **Detect contradictions:** Where agents disagree → tag `[CONFLICT]` with both sides
-4. **Quantitative check:** Any number cited by one agent — did the other agent's sources confirm it?
-
-This adds ~2-3 seconds to synthesis (reading both results with conflict lens) — well within the <5s budget.
-
-### Step 4: Parallel URL Verification
-
-Agents now self-verify URLs before returning. For any remaining unverified URLs, batch-verify in parallel:
-
-```bash
-# Parallel URL check (not sequential)
-for url in "${urls[@]}"; do curl -s -o /dev/null -w "%{http_code} $url\n" -L "$url" & done; wait
-```
-
-**If URL fails:** Remove it. If the finding was `[HIGH]` based on cross-reference, downgrade to `[MED]`.
-
-### Step 5: Return Results
-
-```markdown
-📋 SUMMARY: Research on [topic]
-🔍 ANALYSIS: [Key findings with confidence tags: [HIGH] [MED] [LOW] [CONFLICT]]
-⚡ ACTIONS: 2 researchers × 1 query each + cross-check synthesis
-✅ RESULTS: [Synthesized answer]
-📊 STATUS: Standard mode - 4 agents, cross-checked
-📁 CAPTURE: [Key verified facts]
-➡️ NEXT: [Suggest extensive if CONFLICT items need resolution]
-📖 STORY EXPLANATION: [5-8 numbered points]
-🎯 COMPLETED: Research on [topic] complete
-```
-
-## Speed Target
-
-~15-30 seconds for results
+The task passes when the requested question is answered at the agreed depth, every material claim has recoverable evidence, contradictions remain visible, and source failures are disclosed.

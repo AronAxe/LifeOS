@@ -287,7 +287,7 @@ Generate structured markdown report:
 
 Save generated report to:
 ```
-~/.claude/History/research/[YYYY-MM]/[YYYY-MM-DD]_US-Economic-State-Analysis.md
+<OUTPUT_DIR>/research/[YYYY-MM]/[YYYY-MM-DD]_US-Economic-State-Analysis.md
 ```
 
 ## Error Handling

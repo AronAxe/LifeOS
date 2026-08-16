@@ -9,13 +9,13 @@ generator: LIFEOS/TOOLS/GenerateTelosSummary.ts
 
 # Principal TELOS — User
 
-> 🎯 SAMPLE TEMPLATE — This file shows the SHAPE of your TELOS data. Every entry below is a placeholder. Run `/interview` (or talk to your DA) to replace these samples with your actual mission, goals, beliefs, etc. Pulse will show populated entries here once you run the interview.
+> 🎯 UPSTREAM SAMPLE TEMPLATE — This file shows the source-system TELOS shape. HALOS does not deploy, populate, render in Pulse, or treat it as canonical.
 >
-> ⚠ INTERVIEW REQUIRED — run `/interview` to populate this file with your real identity content. The DA loads it at every session start; without your content, the model operates on placeholders.
+> Use only the principal-supplied configured TELOS source after explicit consent. Do not place real identity content in this release scaffold.
 
 > Auto-generated from TELOS source files (MISSION, GOALS, PROBLEMS, STRATEGIES, NARRATIVES, CHALLENGES, etc). Do not edit manually — rerun `bun LIFEOS/TOOLS/GenerateTelosSummary.ts` after updating any TELOS/*.md file.
 
-> This is a bootstrap scaffold. After running `/interview` and filling in TELOS/*.md files, regenerate this summary. The DA loads it at every session start — keeping it current is how the DA stays aligned with your actual goals and constraints.
+> Upstream tools generated and loaded this summary. HALOS installs no generator, watcher, or session-start loader for it.
 
 ## Missions
 

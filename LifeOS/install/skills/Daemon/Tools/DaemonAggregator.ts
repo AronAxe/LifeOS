@@ -35,8 +35,8 @@ for (const k of ["LIFEOS_DIR", "LIFEOS_CONFIG_DIR", "PROJECTS_DIR"]) {
 
 // ─── Path Resolution ───
 
-const HOME = process.env.HOME || process.env.USERPROFILE || "";
-const LIFEOS_DIR = process.env.LIFEOS_DIR || join(HOME, ".claude", "LIFEOS");
+const CONFIGURED_LIFEOS_DIR = process.env.LIFEOS_DIR?.trim();
+const LIFEOS_DIR = CONFIGURED_LIFEOS_DIR ? resolve(CONFIGURED_LIFEOS_DIR) : "";
 const USER_DIR = join(LIFEOS_DIR, "USER");
 const MEMORY_DIR = join(LIFEOS_DIR, "MEMORY");
 const TELOS_DIR = join(USER_DIR, "TELOS");
@@ -79,11 +79,27 @@ function isExcluded(filePath: string): boolean {
 
 // ─── Public Projects List ───
 
-const PUBLIC_PROJECTS = [
-  "Website", "Fabric", "SecLists", "LifeOS", "Surface",
-  "Human 3.0", "UL Site", "Daemon", "Substrate", "Telos",
-  "TheAlgorithm", "FoundryServices", "Ladder", "LifeOS Marketing",
-];
+function configuredIds(name: string): Set<string> {
+  return new Set(
+    (process.env[name] ?? "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean),
+  );
+}
+
+const PUBLIC_PROJECTS = configuredIds("LIFEOS_DAEMON_PUBLIC_PROJECTS");
+const PUBLIC_MISSION_IDS = configuredIds("LIFEOS_DAEMON_PUBLIC_MISSION_IDS");
+const PUBLIC_GOAL_IDS = configuredIds("LIFEOS_DAEMON_PUBLIC_GOAL_IDS");
+const PUBLIC_SECTIONS = new Set(
+  [...configuredIds("LIFEOS_DAEMON_PUBLIC_SECTIONS")].map((value) => value.toLowerCase()),
+);
+
+function requireConfiguredSource(): void {
+  if (!CONFIGURED_LIFEOS_DIR) {
+    throw new Error("LIFEOS_DIR must point to the principal-supplied LifeOS source tree.");
+  }
+}
 
 // ─── Source Readers ───
 
@@ -114,16 +130,11 @@ function readMissions(): string {
 
   for (const line of lines) {
     const trimmed = line.trim();
-    // Include M0 and M1 — they're public-safe philosophical missions
-    if (trimmed.match(/^[-*]\s+\*?\*?M[01]\b/)) {
+    const id = trimmed.match(/^[-*]\s+\*?\*?(M\d+)\b/i)?.[1]?.toUpperCase();
+    if (id && PUBLIC_MISSION_IDS.has(id)) {
       publicMissions.push(trimmed.replace(/^[-*]\s+/, ""));
     }
   }
-
-  // M2 reworded: mind upload aspiration without partner reference
-  publicMissions.push(
-    "M2: Explore the transfer and storage of human minds into digital formats for future continuity."
-  );
 
   return publicMissions.join("\n");
 }
@@ -138,7 +149,8 @@ function readGoals(): string {
   for (const line of lines) {
     const trimmed = line.trim();
     // Include goals for public projects, exclude revenue/follower targets
-    if (trimmed.match(/^[-*]\s+\*?\*?G\d+\b/)) {
+    const id = trimmed.match(/^[-*]\s+\*?\*?(G\d+)\b/i)?.[1]?.toUpperCase();
+    if (id && PUBLIC_GOAL_IDS.has(id)) {
       // Filter out goals with revenue, follower count, or monetization targets
       if (
         !trimmed.match(/\b(revenue|follower|subscriber|monetiz)/i) &&
@@ -258,7 +270,7 @@ function readPublicProjects(): { technical: string[]; creative: string[]; person
 
     const name = cells[0].replace(/\*\*/g, "").trim();
 
-    if (PUBLIC_PROJECTS.includes(name)) {
+    if (PUBLIC_PROJECTS.has(name)) {
       const url = cells[2] || "";
       if (url.includes("github.com")) {
         technical.push(`${name} — ${url}`);
@@ -393,12 +405,7 @@ function readPreferences(): string[] {
 
 function readExistingDaemon(): Record<string, unknown> {
   const daemonPath = join(USER_DAEMON_DIR, "daemon.md");
-  if (!existsSync(daemonPath)) {
-    // Fall back to old location
-    const oldPath = join(HOME, ".claude", "skills", "_DAEMON", "Mcp", "daemon.md");
-    if (!existsSync(oldPath)) return {};
-    return parseDaemonMd(readFileSync(oldPath, "utf-8"));
-  }
+  if (!existsSync(daemonPath)) return {};
   return parseDaemonMd(readFileSync(daemonPath, "utf-8"));
 }
 
@@ -447,17 +454,18 @@ interface DaemonUpdate {
 }
 
 export function aggregate(): DaemonUpdate {
+  requireConfiguredSource();
   const existing = readExistingDaemon();
 
   // About: always prefer existing hand-written bio over auto-generated
-  const about = (existing.about as string) || readAbout() || "";
+  const about = (existing.about as string) || (PUBLIC_SECTIONS.has("identity") ? readAbout() : "") || "";
   const mission = readMissions() || (existing.mission as string) || "";
-  const books = readBooks();
-  const movies = readMovies();
-  const wisdom = readWisdom();
-  const recentIdeas = readRecentIdeas(10);
+  const books = PUBLIC_SECTIONS.has("books") ? readBooks() : [];
+  const movies = PUBLIC_SECTIONS.has("movies") ? readMovies() : [];
+  const wisdom = PUBLIC_SECTIONS.has("wisdom") ? readWisdom() : [];
+  const recentIdeas = PUBLIC_SECTIONS.has("ideas") ? readRecentIdeas(10) : [];
   const projects = readPublicProjects();
-  const workThemes = readWorkThemes(14, 8);
+  const workThemes = PUBLIC_SECTIONS.has("work-themes") ? readWorkThemes(14, 8) : [];
   const goals = readGoals();
 
   // Combine missions and goals into TELOS section
@@ -505,7 +513,7 @@ export function aggregate(): DaemonUpdate {
   return {
     about,
     mission: telosParts.join("\n\n"),
-    current_location: (existing.current_location as string) || "San Francisco Bay Area",
+    current_location: (existing.current_location as string) || "",
     telos: telosParts.join("\n\n"),
     favorite_books: mergedBooks,
     favorite_movies: mergedMovies,
@@ -636,8 +644,20 @@ Options:
   --filter          Apply SecurityFilter to output (default: on)
   --no-filter       Skip SecurityFilter (for debugging only)
   --verbose         Show aggregation details
+
+Configuration:
+  LIFEOS_DIR                         Principal-supplied LifeOS source tree (required)
+  LIFEOS_DAEMON_PUBLIC_PROJECTS      Comma-separated project names approved for publication
+  LIFEOS_DAEMON_PUBLIC_MISSION_IDS   Comma-separated mission IDs approved for publication
+  LIFEOS_DAEMON_PUBLIC_GOAL_IDS      Comma-separated goal IDs approved for publication
+  LIFEOS_DAEMON_PUBLIC_SECTIONS      Opt-in source groups: identity,books,movies,wisdom,ideas,work-themes
 `);
     process.exit(0);
+  }
+
+  if (!CONFIGURED_LIFEOS_DIR) {
+    console.error("LIFEOS_DIR must point to the principal-supplied LifeOS source tree.");
+    process.exit(2);
   }
 
   // Load security overrides if available

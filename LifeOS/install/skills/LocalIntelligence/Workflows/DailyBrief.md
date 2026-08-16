@@ -1,40 +1,43 @@
 # DailyBrief Workflow
 
-Run the master daily civic digest for the principal's hometown. Calls every fetcher, writes `latest.json`, summarizes the top items in chat.
+Run the eight-category civic digest for the configured hometown, persist the JSON
+artifacts, and summarize the result without hiding unavailable sources.
 
-## Voice Notification
+## Prerequisites
 
-```bash
-curl -s -X POST http://localhost:31337/notify \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Running DailyBrief in LocalIntelligence"}' \
-  > /dev/null 2>&1 &
-```
-
-Running **DailyBrief** in **LocalIntelligence**...
+- `LIFEOS_PRINCIPAL_IDENTITY` points to a readable principal-supplied file with a
+  valid `Hometown` line.
+- `LIFEOS_LOCAL_INTELLIGENCE_DIR` optionally selects the output directory.
+- `LIFEOS_LOCAL_INTELLIGENCE_ADAPTER` is required for the seven
+  jurisdiction-specific categories; News has a bundled fetcher.
 
 ## Procedure
 
-1. Resolve hometown via `Tools/Hometown.ts`. If absent, surface a setup-help message and exit.
-2. Run `bun run ~/.claude/skills/LocalIntelligence/Tools/Refresh.ts` — orchestrator runs all eight fetchers via `Promise.allSettled`.
-3. Read the resulting `~/.claude/LIFEOS/MEMORY/DATA/LocalIntelligence/latest.json`.
-4. Summarize top 3 items per category, with date and source link.
-5. Surface any `meta.errors` entries — name the failing source, do not hide it.
+1. Resolve the active installed LocalIntelligence skill directory.
+2. Run:
+   ```bash
+   bun run <LOCAL_INTELLIGENCE_SKILL_DIR>/Tools/Refresh.ts
+   ```
+3. Parse the command's JSON summary and read
+   `<LOCAL_INTELLIGENCE_DIR>/latest.json`.
+4. Report every category's `source_status` and all `meta.errors` before the prose
+   summary.
+5. Summarize up to three items per successful category with date, publisher, and
+   source URL.
+6. Label the digest **partial** when any category is unavailable. Do not turn
+   missing adapter coverage into an empty-news claim.
 
-## Intent-to-Flag Mapping
+## Read-only summary mode
 
-| User says | Flag | Effect |
-|-----------|------|--------|
-| "refresh", "now", "latest" | `--force` | Re-run even if today's digest exists |
-| "summary only" | `--summary` | Skip orchestrator, read existing latest.json |
-| "json only" | `--json` | Emit raw JSON, no chat summary |
+If the principal asks to summarize the existing digest without refreshing, do not
+run the orchestrator. Read `<LOCAL_INTELLIGENCE_DIR>/latest.json`; if absent,
+explain that no digest exists yet.
 
-```bash
-bun run ~/.claude/skills/LocalIntelligence/Tools/Refresh.ts [--force] [--summary] [--json]
-```
+`Refresh.ts` has no `--force`, `--summary`, or `--json` flags. Do not advertise or
+pass unsupported arguments.
 
-## Output
+## Output evidence
 
-- File: `~/.claude/LIFEOS/MEMORY/DATA/LocalIntelligence/<YYYY-MM-DD>_<city>_<state>_digest.json`
-- Symlink: `~/.claude/LIFEOS/MEMORY/DATA/LocalIntelligence/latest.json`
-- Chat: top-3 items per section + `meta.errors` listed if any.
+- `<LOCAL_INTELLIGENCE_DIR>/<YYYY-MM-DD>_<city>_<state>_digest.json`
+- `<LOCAL_INTELLIGENCE_DIR>/latest.json` (a copy, not a symlink)
+- Chat summary with source statuses, item count, errors, and cited links

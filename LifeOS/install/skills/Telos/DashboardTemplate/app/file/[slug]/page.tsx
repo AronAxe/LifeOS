@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useParams, notFound } from "next/navigation"
+import { useParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { FileText, Table as TableIcon, Edit2, Save, X } from "lucide-react"
@@ -16,13 +16,16 @@ export default function FilePage() {
   const [editedContent, setEditedContent] = useState("")
   const [isSaving, setIsSaving] = useState(false)
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle")
+  const [writesEnabled, setWritesEnabled] = useState(false)
+  const [statusMessage, setStatusMessage] = useState("")
 
   useEffect(() => {
     // Fetch file data
     fetch('/api/files/count')
       .then(res => res.json())
       .then(data => {
-        const matchingFile = data.files.find((f: string) => {
+        setWritesEnabled(Boolean(data.writesEnabled))
+        const matchingFile = (data.files || []).find((f: string) => {
           const fileSlug = f.replace('.md', '').replace('.csv', '').replace('data/', '')
           return fileSlug === slug
         })
@@ -66,17 +69,18 @@ export default function FilePage() {
         }),
       })
 
-      if (!response.ok) {
-        throw new Error('Save failed')
-      }
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Save failed')
 
       file.content = editedContent
       setIsEditing(false)
       setSaveStatus("success")
+      setStatusMessage(data.message || "File saved successfully")
       setTimeout(() => setSaveStatus("idle"), 3000)
     } catch (error) {
       console.error('Error saving file:', error)
       setSaveStatus("error")
+      setStatusMessage(error instanceof Error ? error.message : "Save failed")
     } finally {
       setIsSaving(false)
     }
@@ -102,6 +106,8 @@ export default function FilePage() {
           {!isEditing ? (
             <Button
               onClick={() => setIsEditing(true)}
+              disabled={!writesEnabled}
+              title={writesEnabled ? "Edit this file" : "Set TELOS_ALLOW_WRITES=true to enable editing"}
               className="bg-[#2e7de9] hover:bg-[#2e7de9]/90"
             >
               <Edit2 className="h-4 w-4 mr-2" />
@@ -135,13 +141,13 @@ export default function FilePage() {
 
       {saveStatus === "success" && (
         <div className="mb-4 p-4 bg-[#33b579]/10 text-[#33b579] rounded-lg">
-          File saved successfully!
+          {statusMessage || "File saved successfully"}
         </div>
       )}
 
       {saveStatus === "error" && (
         <div className="mb-4 p-4 bg-[#f52a65]/10 text-[#f52a65] rounded-lg">
-          Error saving file. Please try again.
+          {statusMessage || "Error saving file"}
         </div>
       )}
 

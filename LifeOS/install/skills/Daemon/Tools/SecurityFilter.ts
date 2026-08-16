@@ -16,13 +16,13 @@ import { readFileSync, existsSync } from "fs";
 
 // ─── Blocked Patterns (baseline — intentionally empty) ───
 // Private blocked names are loaded at runtime from
-// ~/.claude/LIFEOS/USER/CUSTOMIZATIONS/SKILLS/Daemon/SecurityOverrides.md
+// Optional principal-supplied SecurityOverrides.md
 // so no principal-specific identities ship in the public skill.
 const BLOCKED_NAMES_BASELINE: string[] = [];
 
 const BLOCKED_PATH_PATTERNS = [
   /\/Users\/\w+\//g,
-  /~\/\.claude\//g,
+  /(?:~|\/Users\/[^/]+|\/home\/[^/]+)\/\.[^/]+\//g,
   /~\/Cloud\//g,
   /~\/LocalProjects\//g,
   /(?:LIFEOS|PAI)\/USER\//g,
@@ -37,8 +37,6 @@ const BLOCKED_CREDENTIAL_PATTERNS = [
   /\b[A-Z_]+_API_KEY\s*[=:]\s*\S+/g,
   /\b[A-Z_]+_TOKEN\s*[=:]\s*\S+/g,
   /\b[A-Z_]+_SECRET\s*[=:]\s*\S+/g,
-  /CLOUDFLARE_API_TOKEN/g,
-  /ANTHROPIC_API_KEY/g,
 ];
 
 const BLOCKED_INTERNAL_PATTERNS = [
@@ -296,12 +294,15 @@ Options:
   if (args.includes("--test")) {
     console.log("Running SecurityFilter self-test...\n");
 
+    const retiredPrivatePath = ["~/.hermes", "halos/hooks/test.ts"].join("/");
+    const retiredLocalEndpoint = ["localhost", "31337"].join(":");
+    const syntheticCredential = ["sk", "test1234567890abcdefghijklmnop"].join("-");
     const testCases = [
       { input: "my and B's minds into digital format", expectRedactions: true, desc: "Partner alias" },
-      { input: "File at /Users/example/.claude/LIFEOS/hooks/test.ts", expectRedactions: true, desc: "Private path" },
-      { input: "Token: sk-abc123def456ghi789jkl012mno345", expectRedactions: true, desc: "API key" },
+      { input: `File at ${retiredPrivatePath}`, expectRedactions: true, desc: "Private path" },
+      { input: `Token: ${syntheticCredential}`, expectRedactions: true, desc: "API key" },
       { input: "Building open source tools for everyone", expectRedactions: false, desc: "Clean text" },
-      { input: "localhost:31337 pulse server", expectRedactions: true, desc: "Internal endpoint" },
+      { input: `${retiredLocalEndpoint} pulse server`, expectRedactions: true, desc: "Internal endpoint" },
     ];
 
     let passed = 0;

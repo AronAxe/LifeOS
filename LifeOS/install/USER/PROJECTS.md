@@ -7,11 +7,11 @@ convention: pai-freshness-v1
 
 # Projects
 
-> Bootstrap default — functional before interview. Run `/interview` (projects phase) to personalize.
+> Upstream bootstrap scaffold retained for reference; HALOS does not deploy or auto-load this file.
 >
-> ⚠ INTERVIEW REQUIRED — run `/interview` to populate this file with your real identity content. The DA loads it at every session start; without your content, the model operates on placeholders.
+> Do not store real project data here during a HALOS install. Use the principal-approved Hermes workspace, configured TELOS, or memory destination.
 
-A compact table of every project you work on. The DA reads this at startup to route aliases ("my blog" → specific repo) and pick the right context for any project reference.
+Upstream LifeOS used this table at startup to route aliases. HALOS installs no reader or startup import for it.
 
 ## Projects Table
 

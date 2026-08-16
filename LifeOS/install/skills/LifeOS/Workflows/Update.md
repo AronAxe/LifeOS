@@ -1,23 +1,62 @@
-# Update — idempotent re-overlay after a version bump
+# Update — idempotent re-overlay
 
-Brings an existing install up to the current LifeOS version without touching the user's data. Safe to run repeatedly.
+Brings an existing install up to the current HALOS version without touching the user's data. Safe to run repeatedly.
 
-## Voice notification (first action)
+*(Note: LifeOS is upstream doctrine and a legacy package/skill name only where an exact path or command demands it.)*
 
-```bash
-curl -s -X POST http://localhost:31337/notify -H "Content-Type: application/json" \
-  -d '{"message": "Running the Update workflow in the LifeOS skill to update your install"}' > /dev/null 2>&1 &
-```
+## Requirements
+
+- Hermes CLI
+- Bun
+- Filesystem and terminal access
 
 ## Steps
 
-1. **DetectEnv** — `bun Tools/DetectEnv.ts`. If `isDevTree` → STOP (the source repo updates itself via git, not this workflow).
-2. **Version diff** — the skill carries no version field and there is no plugin manifest; versioning lives at the distribution layer (the GitHub release tag + `LIFEOS_RELEASES/<version>/` + the `install.sh` fetch's `LIFEOS_VERSION`). Compare the release version being updated to against the user's current install marker. If equal, report "already current" and exit.
-3. **Re-overlay system** — re-copy the system templates (CLAUDE, system prompt, `settings.system.json` minus hooks). These are system-owned and safe to overwrite.
-4. **Re-merge hooks** — `bun Tools/InstallHooks.ts` (idempotent): adds new hook entries, leaves existing ones, never duplicates (normalized-command dedup). Backs up `settings.json` first.
-5. **Scaffold new USER templates only** — `bun Tools/ScaffoldUser.ts` copyMissing: adds any NEW template files introduced by the version, never overwrites the user's existing files.
-6. **Re-activate imports** — `bun Tools/ActivateImports.ts` for any newly-shipped identity import lines.
-7. **Verify** — two evidence classes (hooks fire + imports resolve), same as Setup step 9.
+### 1. Identify HERMES_HOME
 
-## Rule
-Update is **additive and non-destructive**. It never removes user customizations, never overwrites user data, never deletes hooks the user added. The only files it overwrites are system-owned templates.
+Inspect and choose the `HERMES_HOME` directory without changing it.
+
+### 2. Import Skills & Plugin (Dry-Run)
+
+Run the importer in dry-run mode:
+```bash
+bun LifeOS/Tools/ImportSkills.ts --dry-run
+```
+Show the plan and resolve any collisions. The importer detects collision without overwrite. Obtain explicit consent.
+
+### 3. Execute Importer
+
+```bash
+bun LifeOS/Tools/ImportSkills.ts
+```
+This is an additive importer apply. Import never overwrites files.
+
+### 4. Optional Plugin Status
+
+If the `lifeos` plugin is enabled, run:
+```bash
+hermes lifeos status
+```
+
+### 5. Settings Reclassification
+
+Run the settings installer:
+```bash
+bun LifeOS/install/skills/LifeOS/Tools/InstallSettings.ts --hermes-home <selected-dir> --dry-run
+```
+Review the classifications with the user. Request consent before running with `--apply` for the verified operations (`BASH_DEFAULT_TIMEOUT_MS` -> `terminal.timeout` and `fileCheckpointingEnabled` -> `checkpoints.enabled`).
+
+Never write a live config automatically. No env migration.
+
+---
+
+## ⚠️ Capability Boundary Warning
+
+Do not use legacy scripts (`DeployCore`, `DeployComponents`, `InstallHooks`, `ActivateImports`), user-tree/symlink operations, CLAUDE launchers, Claude `settings.json` mergers, or launchd/Pulse runtime. They are not Hermes adapters and must not be invoked.
+
+The native plugin covers exactly its public surface:
+- Tools: `lifeos_isa`, `lifeos_events`, `lifeos_public_profile`, `lifeos_status`
+- Passive evidence hooks: `on_session_start`, `on_session_end`, `post_tool_call`
+- Commands: `/lifeos status`, `hermes lifeos status`
+
+Passive plugin hooks do not inject a constitution, policy, identity or automatic agent control. `lifeos_isa` is explicit opt-in working state; it does not auto-advance phases. Ascent labels are not persisted/scheduled. Missing native equivalents are limitations.

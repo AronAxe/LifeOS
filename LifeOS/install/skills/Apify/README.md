@@ -7,7 +7,8 @@ Progressive disclosure interface for web scraping and automation via the Apify p
 ## Quick Start
 
 ```typescript
-import { Apify } from '~/.claude/filesystem-mcps/apify'
+// Run this snippet from the resolved installed Apify skill directory.
+import { Apify } from './index'
 
 const apify = new Apify(process.env.APIFY_TOKEN)
 
@@ -37,11 +38,11 @@ console.log(relevant) // Only 10 items vs 100+ unfiltered
 
 **Token Comparison:**
 
-**MCP Approach** (~57,000 tokens):
+**Tool-mediated approach** (~57,000 tokens):
 ```
-1. mcp__Apify__search-actors → 1,000 tokens result
-2. mcp__Apify__call-actor → 1,000 tokens result
-3. mcp__Apify__get-actor-output → 50,000 tokens unfiltered dataset
+1. Runtime-discovered actor search tool → 1,000 tokens result
+2. Runtime-discovered actor execution tool → 1,000 tokens result
+3. Runtime-discovered dataset retrieval tool → 50,000 tokens unfiltered dataset
 ```
 
 **Code-First** (~1,000 tokens - 98.2% reduction):
@@ -290,7 +291,7 @@ Get your token from: https://console.apify.com/account/integrations
 All types are exported from the main module:
 
 ```typescript
-import { Actor, ActorRun, DatasetOptions } from '~/.claude/filesystem-mcps/apify'
+import type { Actor, ActorRun, DatasetOptions } from './index'
 ```
 
 ## Error Handling
@@ -316,8 +317,8 @@ try {
 ## Running Examples
 
 ```bash
-# Run the Instagram scraper example
-cd ~/.claude/filesystem-mcps/apify
+# From the resolved installed Apify skill directory
+cd <APIFY_SKILL_DIR>
 bun run examples/instagram-scraper.ts
 
 # Or use bun directly
@@ -365,4 +366,4 @@ console.log('Code tokens:', estimateTokens(filtered)) // ~500
 - Apify Console: https://console.apify.com
 - Actor Store: https://apify.com/store
 - API Docs: https://docs.apify.com/api/v2
-- Parent README: `~/.claude/`
+- Portable integration contract: `INTEGRATION.md`

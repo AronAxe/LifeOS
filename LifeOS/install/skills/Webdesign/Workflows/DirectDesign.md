@@ -1,19 +1,6 @@
 # DirectDesign
 
-> **One of two paths in the Webdesign skill.** This workflow is **{{DA_NAME}} writes the design directly** with Anthropic's frontend-design philosophy loaded inline. The other path, `CreatePrototype`, drives `claude.ai/design` through Interceptor. See `SKILL.md` for the routing rule.
-
-## Voice Notification
-
-```bash
-curl -s -X POST http://localhost:31337/notify \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Running DirectDesign in Webdesign", "voice_enabled": true}' > /dev/null 2>&1 &
-```
-
-Then output:
-```
-Running **DirectDesign** in **Webdesign**…
-```
+> **Hermes-native default.** This workflow has the agent implement the design directly with the packaged frontend-design philosophy. Optional Claude Design adapters exist only for explicit interoperability requests; see `SKILL.md`.
 
 ## When to Choose This Workflow
 
@@ -24,15 +11,17 @@ Choose DirectDesign when:
 - Network round-trip / claude.ai access is friction (offline, sandboxed, or just slow)
 - One fast pass with clear aesthetic intent is the deliverable
 
-Otherwise → use `CreatePrototype` (the ClaudeDesign path).
+DirectDesign is the default. Use an optional external adapter only when the user explicitly requests it and confirms its prerequisites.
 
 ## Step 0 — Load the Aesthetic Doctrine
 
-**Before writing anything, read the philosophy reference:**
+**Before writing anything, load the packaged philosophy reference:**
 
+```text
+skill_view(name="webdesign", file_path="References/FrontendDesignPhilosophy.md")
 ```
-Read("~/.claude/skills/Webdesign/References/FrontendDesignPhilosophy.md")
-```
+
+Do not infer an installation path or mutate the packaged reference.
 
 That file is the load-bearing source. It contains:
 - The aesthetic register list (brutalist / editorial / retro / maximalist / luxury / etc.)
@@ -95,10 +84,13 @@ Write the code. Rules:
 
 ## Step 5 — Verify (mandatory before declaring done)
 
-Web output gets verified through the **Interceptor skill** — real Chrome, no CDP fingerprint, accurate rendering. This is non-negotiable; "code looks right" is not verification.
+Web output must be rendered and inspected before declaring completion. Use the available Hermes computer/browser capability; do not assume Interceptor, Claude Design, or any external profile.
 
-```
-Skill("Interceptor", "open <local URL or file> and screenshot the rendered page")
+```text
+1. Serve or open the implemented output through the project's normal command.
+2. Navigate an available browser to the local URL or artifact.
+3. Capture the rendered page with the configured Hermes computer/browser tool.
+4. Inspect the capture and exercise the project's relevant tests.
 ```
 
 Then read the screenshot and confirm:
@@ -123,12 +115,12 @@ That's it. Don't add narrative, don't add a "what I did" section, don't apologiz
 
 ## Customization (Optional)
 
-If `~/.claude/LIFEOS/USER/CUSTOMIZATIONS/SKILLS/Webdesign/PREFERENCES.md` exists, read it after Step 0. Use it to bias (not bind) the register choice in Step 1. Without preferences, choose freshly each session and rotate registers across runs to avoid convergence on a single house style.
+If `<LIFEOS_WORKSPACE>/skills/webdesign/PREFERENCES.md` exists and the user has approved that workspace source, read it after Step 0. Use it to bias—not bind—the register choice in Step 1. Without preferences, choose freshly each session and rotate registers across runs to avoid convergence on a single house style.
 
 ## Failure Modes
 
 - **Skipping Step 0** — losing the doctrine and reverting to AI defaults. Always read the philosophy file first.
 - **Skipping Step 1's explicit aesthetic declaration** — the model drifts into generic "modern clean" when the register isn't named on screen.
 - **Picking the same register every session** — convergence is the AI-slop signal. Vary deliberately.
-- **Saying `verified` without an Interceptor screenshot** — that is a doctrine violation in LifeOS. The screenshot is the verification.
+- **Saying `verified` without rendering and inspecting the output** — that is a doctrine violation. A real browser capture plus the relevant project tests are the evidence.
 - **Maximalism without commitment** — half-committed maximalism reads as cluttered. If you choose maximalist, *commit*: more layers, more motion, more density. Same for any register at any pole.

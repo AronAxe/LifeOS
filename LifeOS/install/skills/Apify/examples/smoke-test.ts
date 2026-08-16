@@ -13,8 +13,7 @@ async function main() {
 
   if (!process.env.APIFY_TOKEN && !process.env.APIFY_API_KEY) {
     console.error('❌ APIFY_TOKEN or APIFY_API_KEY not set in environment')
-    console.error('   Add to ${LIFEOS_DIR}/.env: APIFY_TOKEN=apify_api_xxxxx')
-    console.error('   Or: APIFY_API_KEY=apify_api_xxxxx\n')
+    console.error('   Set APIFY_TOKEN in the execution environment; do not store it in the installed skill directory.\n')
     process.exit(1)
   }
 

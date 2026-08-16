@@ -1,64 +1,36 @@
 # YouTube Extraction Workflow
 
-Extract content from YouTube videos using Fabric CLI. Automatically downloads, transcribes, and processes video content with optional pattern application for analysis and summarization.
+## 1. Resolve the media
 
-## When to Activate This Skill
-- Extract content from YouTube video
-- Get YouTube transcript
-- Analyze YouTube video
-- Summarize YouTube content
-- Process YouTube video text
+Confirm the canonical video/channel, URL or ID, title, channel, publication date, duration, and requested output. For playlists or channel batches, define the date/count boundary and persist an item manifest.
 
-## The Command
+## 2. Acquire transcript evidence
 
-Extract content from any YouTube video:
+Use an installed source-specific transcript tool when available; otherwise use a public caption/transcript route permitted by the source. Record:
 
-```bash
-fabric -y "YOUTUBE_URL"
+```text
+video_id, canonical_url, title, channel, published_at, duration,
+transcript_source, language, auto_or_human, timing_available, retrieved_at
 ```
 
-## With Pattern Processing
+If captions are unavailable, do not reconstruct a transcript from title, description, comments, or model memory.
 
-Process extracted content through Fabric pattern:
+## 3. Normalize without erasing evidence
 
-```bash
-fabric -y "YOUTUBE_URL" -p extract_wisdom
-```
+Preserve timestamps where possible. Mark inaudible/uncertain spans, language translation, auto-caption uncertainty, and speaker changes. Remove sponsor/repetition only when the user requested cleaned content, and keep a note of what was omitted.
 
-## Critical Facts
+## 4. Extract requested output
 
-- **NEVER** use yt-dlp or youtube-dl
-- **NEVER** use web scraping for YouTube
-- **NEVER** use transcription APIs directly
-- **Fabric handles everything**: Download, transcription, extraction automatically
-- **Output**: Clean text content from video
+For summaries or research notes:
 
-## Common Patterns
+- separate speaker claims from researcher conclusions;
+- attach timestamps to quotes, numbers, names, commands, and major claims;
+- verify consequential names/numbers against transcript and visible metadata;
+- preserve links or references mentioned by the speaker when recoverable;
+- flag edits, outdated claims, and unsupported assertions.
 
-- `extract_wisdom` - Extract key insights
-- `summarize` - Create concise summary
-- `extract_main_idea` - Get core message
-- `create_summary` - Detailed summary
+For multi-video synthesis, keep per-video provenance before comparing themes.
 
-## Example Usage
+## 5. Verify and deliver
 
-```bash
-# Extract raw content
-fabric -y "https://www.youtube.com/watch?v=VIDEO_ID"
-
-# Extract wisdom
-fabric -y "https://www.youtube.com/watch?v=VIDEO_ID" -p extract_wisdom
-
-# Summarize video
-fabric -y "https://www.youtube.com/watch?v=VIDEO_ID" -p summarize
-```
-
-## How It Works
-1. Fabric downloads video
-2. Fabric extracts audio
-3. Fabric transcribes audio
-4. Fabric returns clean text
-5. If pattern specified, processes through pattern
-
-## Supplementary Resources
-For Fabric patterns: `read ~/.claude/docs/fabric-patterns.md`
+Check metadata against the canonical page, spot-check transcript spans, verify quotes/timestamps, and report missing sections. Deliver the transcript or derived artifact with provenance and limitations. If retrieval fails, return only metadata actually obtained and the reason the transcript is unavailable.

@@ -26,13 +26,13 @@ OUT=~/Downloads/webdesign/redesign/$(date +%Y%m%d-%H%M%S)
 mkdir -p "$OUT"
 
 # Full-page screenshot — Interceptor has no Tools/ dir; use the skill API instead.
-# Skill("Interceptor", "open $URL and capture full-page screenshot to $OUT/original.png")
+# Use an available Hermes computer/browser tool to open $URL and capture the full page to $OUT/original.png.
 
 # HTML snapshot
 curl -sL "$URL" > "$OUT/original.html"
 
 # Extract tokens from the live site
-bun ~/.claude/skills/Webdesign/Tools/VerifyDesign.ts "$URL" "$OUT/original-verify"
+bun "$HERMES_HOME/skills/webdesign/Tools/VerifyDesign.ts" "$URL" "$OUT/original-verify"
 ```
 
 ### 2. Critique Pass
@@ -74,9 +74,9 @@ The one memorable element: $DIFFERENTIATOR
 ### 4. Submit to Claude Design
 
 ```bash
-bun ~/.claude/skills/Webdesign/Tools/DriveClaudeDesign.ts open
-bun ~/.claude/skills/Webdesign/Tools/DriveClaudeDesign.ts upload "$OUT/original.png"
-bun ~/.claude/skills/Webdesign/Tools/DriveClaudeDesign.ts prompt "$(cat $OUT/brief.md)"
+bun "$HERMES_HOME/skills/webdesign/Tools/DriveClaudeDesign.ts" open
+bun "$HERMES_HOME/skills/webdesign/Tools/DriveClaudeDesign.ts" upload "$OUT/original.png"
+bun "$HERMES_HOME/skills/webdesign/Tools/DriveClaudeDesign.ts" prompt "$(cat $OUT/brief.md)"
 ```
 
 ### 5. Iterate
@@ -93,8 +93,8 @@ Use `RefinePrototype.md` workflow for refinements. Common redesign iterations:
 Before export, capture the new design and compare:
 
 ```bash
-bun ~/.claude/skills/Webdesign/Tools/DriveClaudeDesign.ts screenshot "$OUT/redesigned.png"
-bun ~/.claude/skills/Webdesign/Tools/VerifyDesign.ts --compare "$OUT/original.png" "$OUT/redesigned.png" "$OUT/compare"
+bun "$HERMES_HOME/skills/webdesign/Tools/DriveClaudeDesign.ts" screenshot "$OUT/redesigned.png"
+bun "$HERMES_HOME/skills/webdesign/Tools/VerifyDesign.ts" --compare "$OUT/original.png" "$OUT/redesigned.png" "$OUT/compare"
 ```
 
 ### 7. Export + Integrate

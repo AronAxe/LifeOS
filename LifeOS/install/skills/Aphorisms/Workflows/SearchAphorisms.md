@@ -23,9 +23,9 @@ Running **SearchAphorisms** in **Aphorisms**...
 - Discovering what's available in database
 
 **Prerequisites:**
-- Aphorism database exists at `~/.claude/skills/Aphorisms/Database/aphorisms.md`
+- Resolve the quote library: use the absolute `APHORISMS_LIBRARY` when configured, otherwise load the packaged read-only seed with `skill_view(name="aphorisms", file_path="Database/aphorisms.md")`
 - Search query or theme provided
-- Database Read for comprehensive search
+- Load the resolved library completely before searching
 
 ---
 
@@ -79,8 +79,10 @@ User: "Short quotes about action"
 
 ### Step 2: Read Database
 
-```bash
-Read ~/.claude/skills/Aphorisms/Database/aphorisms.md
+```text
+read_file(path="<resolved APHORISMS_LIBRARY absolute path>")
+# If no mutable library is configured, read only the packaged seed:
+skill_view(name="aphorisms", file_path="Database/aphorisms.md")
 ```
 
 **Load full context:**

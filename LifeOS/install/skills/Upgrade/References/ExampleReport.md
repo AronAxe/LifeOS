@@ -1,107 +1,94 @@
 # Upgrade — Example Report
 
-Reference example only. NOT loaded into the workflow at runtime. Consult when uncertain about the canonical output shape.
+Reference example only. It demonstrates the portable report shape; it is not a live finding, approval, or implementation plan.
 
 ---
 
-```
-User: "check for upgrades"
+```text
+User: "evaluate whether HALOS should adopt a newly documented Hermes lifecycle capability"
 
-[Agents run in parallel...]
+# HALOS Upgrade Report
+Generated: <UTC timestamp>
+Decision boundary: recommendation only; no mutation authorized
+Sources processed: 3 canonical documents | 4 local files | 2 prior-decision searches
+Findings: 3 classified | 1 recommendation | 2 skipped
 
-# LifeOS Upgrade Report
-**Generated:** 2026-01-15 19:45:00 PST
-**Sources Processed:** 20 release notes parsed | 5 videos checked | 30 docs analyzed
-**Findings:** 3 techniques extracted | 4 content items skipped
+## Discoveries
 
----
+| # | Discovery | Source | Evidence | HALOS relevance | Classification |
+|---|---|---|---|---|---|
+| 1 | The Hermes plugin contract documents a lifecycle event relevant to the candidate | Official Hermes documentation, version/date recorded | Canonical URL plus quoted supporting passage | May permit native implementation without a private hook | NEW/UNVERIFIED |
+| 2 | The installed LifeOS plugin already registers an adjacent lifecycle callback | Local plugin entry point | `<plugin-file>:<line>` and registration test | Narrows the possible change to a bounded delta | PARTIAL |
+| 3 | A similar proposal was previously rejected because rollback was undefined | Hindsight/session evidence | `<memory-or-session-handle>` | The old rejection remains binding unless the new mechanism resolves it | REJECTED |
 
-## ✨ Discoveries
+## Recommendations
 
-Everything interesting we found, ranked by how cool it is.
+### HIGH — Evaluate a bounded compatibility delta
 
-| # | Discovery | Source | Why It's Interesting | LifeOS Relevance |
-|---|-----------|--------|---------------------|---------------|
-| 1 | PreToolUse hooks can inject reasoning context | claude-code v2.1.16 | Hooks can now return `additionalContext` that Claude reasons about before tool execution — this is a paradigm shift from binary block/allow to intelligent security | SecurityValidator could inject warnings instead of blocking, enabling context-aware security decisions |
-| 2 | Native ${CLAUDE_SESSION_ID} variable | claude-code v2.1.16 | Session IDs are now first-class environment variables everywhere — no more extraction hacks | Session documentation workflows can drop manual ID extraction code |
-| 3 | MCP auto mode enabled by default | claude-code v2.1.16 | MCP servers now auto-connect without explicit configuration | Already enabled — no action needed |
+| # | Recommendation | Prior Status | Evidence | Expected benefit | Risk / rollback | Effort | Files Affected |
+|---|---|---|---|---|---|---|---|
+| 1 | Add a focused compatibility test for the documented lifecycle event before proposing implementation | PARTIAL | Official contract plus existing adjacent registration at `<plugin-file>:<line>` | Determines whether a native Hermes route can replace unsupported upstream machinery | Test-only first; delete the test fixture if the contract is unavailable | Low | `<focused-test-file>` |
 
----
+### No immediate implementation
 
-## 🔥 Recommendations
+The external capability is documented, but local runtime behavior is not yet proven. Do not change plugin registration, configuration, or live services until the compatibility test succeeds and the principal approves the implementation delta.
 
-### 🔴 CRITICAL — Integrate immediately
+## Technique Details
 
-| # | Recommendation | Prior Status | Evidence | LifeOS Relevance | Effort | Files Affected |
-|---|---------------|-------------|----------|---------------|--------|----------------|
-| 1 | Add PreToolUse additionalContext to security hooks | 🆕 NEW | `hooks/SecurityPipeline.hook.ts:42` returns binary deny/allow only | SecurityValidator currently hard-blocks commands — additionalContext enables reasoning-based security that adapts to context | Low | `hooks/SecurityValidator.hook.ts` |
+### Lifecycle capability compatibility check
 
-### 🟠 HIGH — Integrate this week
+**Source:** `<canonical documentation URL>`
 
-| # | Recommendation | Prior Status | Evidence | LifeOS Relevance | Effort | Files Affected |
-|---|---------------|-------------|----------|---------------|--------|----------------|
-| 2 | Replace session ID hacks with native ${CLAUDE_SESSION_ID} | 🔶 PARTIAL | `skills/_LIFEOS/Workflows/DocumentSession.md:15` uses extraction hack | Session documentation workflows have manual extraction workarounds — native variable eliminates fragile code | Low | `skills/_LIFEOS/Workflows/DocumentSession.md` |
+**Version/date:** `<version or publication date>`
 
-(MEDIUM and LOW tiers omitted — no items.)
+**Supporting passage:** "<direct quotation>"
 
----
+**Locator:** `<heading, anchor, or line range>`
 
-## 🎯 Technique Details
+**Local baseline:**
 
-### From Release Notes
+- plugin registration: `<plugin-file>:<line>`;
+- current focused test: `<test-file>:<line>`;
+- runtime/config dependency: `<path or command evidence>`;
+- prior decision: `<memory or session handle>`.
 
-#### 1. PreToolUse Additional Context
-**Source:** GitHub claude-code v2.1.16
-**Priority:** 🔴 CRITICAL
+**Smallest experiment:**
 
-**What It Is:** PreToolUse hooks can now return an additionalContext field that gets injected into the model's context before tool execution, enabling reasoning-based security rather than hard blocks.
+1. Add a test fixture that invokes the documented lifecycle path in isolation.
+2. Assert registration, event shape, failure behavior, and absence of unintended persistence.
+3. Run the focused test and the complete repository gate.
+4. Report the result and stop for approval.
 
-**How It Helps LifeOS:** SecurityValidator.hook.ts currently blocks dangerous commands. With additionalContext, it can inject warnings Claude reasons about, enabling smarter security that adapts to context.
+**Falsification condition:** The documented event is unavailable in the supported Hermes version, changes an incompatible payload, or requires an unapproved runtime/configuration mutation.
 
-**The Technique:**
-```typescript
-return { decision: "allow", additionalContext: "WARNING: Protected file." };
-```
+**Rollback:** Remove the isolated fixture and test. No live configuration or installation state changes during evaluation.
 
-**Applies To:** `hooks/SecurityValidator.hook.ts`
+## Summary
 
----
+| # | Candidate | Prior Status | Confidence | Decision |
+|---|---|---|---|---|
+| 1 | Native lifecycle compatibility test | PARTIAL | Medium pending runtime proof | PROPOSE |
+| 2 | Immediate plugin implementation | UNVERIFIED | Low | DEFER |
+| 3 | Previously rejected private-hook design | REJECTED | High | SKIP |
 
-#### 2. Session ID Substitution
-**Source:** GitHub claude-code v2.1.16
-**Priority:** 🟠 HIGH
+Totals: 0 critical | 1 high | 1 deferred | 1 rejected
 
-**What It Is:** Native environment variable ${CLAUDE_SESSION_ID} is now available in all hooks and commands, eliminating the need for custom session ID extraction or workaround code.
-
-**How It Helps LifeOS:** Our session documentation workflows had manual session ID extraction hacks. Native substitution means cleaner code and reliable session tracking across all LifeOS workflows.
-
-**The Technique:**
-```bash
-echo "Session: ${CLAUDE_SESSION_ID}"
-```
-
-**Applies To:** `skills/_LIFEOS/Workflows/DocumentSession.md`
-
----
-
-## 📊 Summary
-
-| # | Technique | Source | Priority | LifeOS Component | Effort |
-|---|-----------|--------|----------|---------------|--------|
-| 1 | PreToolUse Additional Context | claude-code v2.1.16 | 🔴 | SecurityValidator hook | Low |
-| 2 | Session ID Substitution | claude-code v2.1.16 | 🟠 | DocumentSession workflow | Low |
-
-**Totals:** 1 Critical | 1 High | 0 Medium | 0 Low | 4 Skipped
-
-## ⏭️ Skipped Content
+## Skipped Content
 
 | Content | Source | Why Skipped | Evidence |
-|---------|--------|-------------|----------|
-| MCP auto mode | claude-code v2.1.16 | ✅ DONE — already enabled by default | `settings.json:18` |
-| Gemini 3 videos | YouTube | Not relevant to Claude-centric stack | — |
-| Agent Experts video | YouTube | No concrete technique identified | — |
-| SDK update v0.78 | GitHub | LifeOS uses CLI, not raw SDK | `CLAUDE.md:12` |
+|---|---|---|---|
+| Private upstream hook design | Retained legacy documentation | Unsupported by the Hermes installation contract | Capability ledger entry |
+| Unversioned community claim | Secondary discussion | No canonical contract or reproducible evidence | Source-quality review |
+| Automatic background activation | Candidate proposal | Requires separate consent and configuration approval | Installation safety policy |
 
-## 🔍 Sources Processed
-30 Anthropic sources, 5 YouTube videos, 0 custom → 2 relevant findings
+## Sources Processed
+
+- Official Hermes documentation: 1 canonical page, version/date recorded.
+- Repository evidence: plugin entry point, capability ledger, focused tests, package metadata.
+- Prior context: Hindsight recall and session/LCM search with evidence handles.
+- Excluded: mirrors, unsourced summaries, and inaccessible claims.
+
+## Human Decision Required
+
+Approve, reject, defer, or narrow the test-only recommendation. Approval of research does not authorize implementation, installation, plugin activation, configuration changes, scheduling, or publication.
 ```

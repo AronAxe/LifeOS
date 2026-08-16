@@ -1,0 +1,10 @@
+{
+  "name": "lifeos",
+  "label": "LifeOS",
+  "description": "LifeOS ISA progress and deterministic evidence rollups",
+  "icon": "Activity",
+  "version": "0.1.0",
+  "tab": { "path": "/lifeos", "position": "after:skills" },
+  "entry": "dist/index.js",
+  "api": "plugin_api.py"
+}

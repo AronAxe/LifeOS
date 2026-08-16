@@ -1,72 +1,44 @@
 # Template Integration
 
-## Available Templates
+## Runtime contract
 
-```
-~/.claude/Templates/Evals/
-├── Judge.hbs       # Configurable LLM-as-Judge prompts
-├── Rubric.hbs      # Evaluation criteria definitions
-├── TestCase.hbs    # Test case specifications
-├── Comparison.hbs  # A/B testing templates
-└── Report.hbs      # Statistical result reports
-```
+This Hermes port does not install the upstream global `Templates/` tree or its `RenderTemplate.ts` executable. Evaluation artifacts are project data, not skill content.
 
----
+Resolve these locations before using the workflows:
 
-## Creating Custom Judges
+- `<EVALS_SKILL_DIR>` — the installed Evals skill directory selected by Hermes.
+- `<EVAL_WORKSPACE>` — `LIFEOS_EVALS_WORKSPACE` when configured, otherwise `<PROJECT_DIR>/.lifeos-evals`.
 
-Use the JUDGE template for custom evaluation:
+The workspace layout is:
 
-```bash
-bun run ~/.claude/Templates/Tools/RenderTemplate.ts \
-  -t Evals/Judge.hbs \
-  -d ~/.claude/skills/Evals/UseCases/<name>/judge-config.yaml \
-  -o ~/.claude/skills/Evals/UseCases/<name>/judge-prompt.md
+```text
+<EVAL_WORKSPACE>/
+├── use-cases/
+├── suites/
+├── results/
+└── failures.jsonl
 ```
 
-### Judge Config Example
+## Creating custom judges
 
-```yaml
-judge:
-  name: Content Quality Judge
-  focus: accuracy
-  scale:
-    type: 1-5
-  criteria:
-    - name: Factual Accuracy
-      description: Information matches source material
-      weight: 0.4
-    - name: Completeness
-      description: Covers all key points
-      weight: 0.3
-    - name: Clarity
-      description: Easy to understand
-      weight: 0.3
-  reasoning_required: true
-  position_swap: true
-output:
-  format: json
-```
+Create `<EVAL_WORKSPACE>/use-cases/<name>/judge-config.yaml` using the schema in `Workflows/CreateJudge.md`. Then write the judge prompt directly to `judge-prompt.md`, preserving the declared criteria, weights, scale, reasoning requirement, and output format. Review the rendered prompt before wiring it into the use-case config.
 
----
+## Creating rubrics
 
-## Creating Rubrics
+Create rubric source and rendered Markdown under the relevant use-case directory. The rubric must state:
 
-Use the RUBRIC template for scoring criteria:
+1. the dimensions being scored;
+2. observable indicators for each score;
+3. criterion weights that sum to `1.0`;
+4. the required output schema; and
+5. whether position swapping is required.
 
-```bash
-bun run ~/.claude/Templates/Tools/RenderTemplate.ts \
-  -t Evals/Rubric.hbs \
-  -d ~/.claude/skills/Evals/UseCases/<name>/rubric.yaml \
-  -o ~/.claude/skills/Evals/UseCases/<name>/rubric.md
-```
+No implicit global template renderer is available. If a project chooses to add one, treat it as an explicit project dependency and record the command in that project's evaluation README.
 
----
+## LLM-as-judge best practices
 
-## LLM-as-Judge Best Practices
-
-1. **Reasoning before scoring**: Always require explanation first
-2. **Use 1-5 scale**: Most reliable, avoid 0-100
-3. **Different judge model**: Don't self-judge
-4. **Position swapping**: Average A-first and B-first results
-5. **Multi-judge panels**: 5-10 models, 7x cheaper than large single judge
+1. Require reasoning before scoring.
+2. Prefer a calibrated 1–5 scale over 0–100.
+3. Use a different judge model where practical.
+4. Use position swapping for pairwise comparison.
+5. Calibrate model judges against human ratings.

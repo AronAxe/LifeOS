@@ -4,9 +4,19 @@
 Reads file mtimes, applies staleness thresholds, outputs A-F grades.
 Zero dependencies beyond Python stdlib. No model, no network, no API.
 
+Configuration (both required to be explicit — this tool ships no default path
+to anyone's TELOS directory and will not guess one):
+
+    TELOS_DIR     absolute path to the principal's TELOS source directory.
+                  Must be set and must already exist.
+    HERMES_HOME   Hermes home; SOUL.md is read from <HERMES_HOME>/SOUL.md.
+                  Defaults to ~/.hermes, which is the Hermes convention.
+
 Usage:
-    python check.py              # JSON output
-    python check.py --text       # human-readable output
+    TELOS_DIR=/path/to/TELOS python check.py           # JSON output
+    TELOS_DIR=/path/to/TELOS python check.py --text    # human-readable output
+
+Exit codes: 0 ok · 2 configuration error (TELOS_DIR unset or missing).
 """
 
 import json
@@ -14,6 +24,10 @@ import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+
+
+class ConfigurationError(RuntimeError):
+    """Raised when required configuration is absent or points at nothing."""
 
 # ── Thresholds (days) ──
 # These mirror the LifeOS FreshnessSystem thresholds, adapted for Hermes.
@@ -94,11 +108,38 @@ def aggregate_grade(grades: list[str]) -> str:
     return "F"
 
 
+def resolve_telos_dir(env: dict | None = None) -> Path:
+    """Resolve TELOS_DIR from the environment, or fail loudly.
+
+    There is deliberately no fallback. A default here would mean the tool reads
+    whichever TELOS directory the person who wrote the default happened to own.
+    """
+    source = os.environ if env is None else env
+    raw = (source.get("TELOS_DIR") or "").strip()
+    if not raw:
+        raise ConfigurationError(
+            "TELOS_DIR is not set. Set it to the absolute path of your TELOS "
+            "source directory before running this check — for example:\n"
+            "    TELOS_DIR=/path/to/your/TELOS python check.py --text\n"
+            "This tool ships no default TELOS path."
+        )
+    path = Path(raw).expanduser()
+    if not path.is_dir():
+        raise ConfigurationError(
+            f"TELOS_DIR points at {raw!s}, which is not an existing directory. "
+            "Create it or correct TELOS_DIR."
+        )
+    return path
+
+
 def check_freshness(
-    telos_dir: str | None = None,
-    soul_path: str | None = None,
+    telos_dir: str | Path,
+    soul_path: str | Path | None = None,
 ) -> dict:
-    """Scan TELOS files and SOUL.md, return freshness report."""
+    """Scan TELOS files and SOUL.md, return freshness report.
+
+    `telos_dir` must already be resolved and existing (see `resolve_telos_dir`).
+    """
     now = datetime.now(timezone.utc)
     files: list[dict] = []
 
@@ -164,11 +205,16 @@ def check_freshness(
 def main() -> None:
     text_mode = "--text" in sys.argv
 
-    telos_dir = os.environ.get("TELOS_DIR", "E:/Dropbox/ARON BIJL MSC/TELOS")
-    hermes_home = os.environ.get("HERMES_HOME", os.path.expanduser("~/.hermes"))
+    try:
+        telos_dir = resolve_telos_dir()
+    except ConfigurationError as err:
+        print(f"freshness: {err}", file=sys.stderr)
+        raise SystemExit(2)
+
+    hermes_home = os.environ.get("HERMES_HOME") or os.path.expanduser("~/.hermes")
     soul_path = os.path.join(hermes_home, "SOUL.md")
 
-    report = check_freshness(telos_dir=telos_dir, soul_path=soul_path)
+    report = check_freshness(telos_dir, soul_path=soul_path)
 
     if text_mode:
         print(f"Freshness: {report['overall_grade']} ({report['overall_pct']:.0f}%)")

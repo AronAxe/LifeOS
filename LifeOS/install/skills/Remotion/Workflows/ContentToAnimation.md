@@ -547,4 +547,4 @@ User: animate this content: "The three pillars of AI safety are..."
 This workflow inherits visual theming from Art preferences:
 - Load: `~/.claude/LIFEOS/USER/CUSTOMIZATIONS/SKILLS/Art/PREFERENCES.md`
 - Apply: Charcoal aesthetic, purple accents, organic animations
-- Reference: `~/.claude/`
+- Reference: the user-supplied source/project root

@@ -1,51 +1,66 @@
 ---
 name: Trim
-version: 1.0.1
-description: "Reduces an always-on LifeOS context file that is over its byte budget via a human-gated pass — deterministic GC of stale entries first, then semantic merges and relocations — never dropping a directive and committing every change reversibly. USE WHEN /trim, trim the context, trim OPERATIONAL_RULES, this file is too big, reduce a doctrine file, context file over budget, file is NN% full, statusline file went red, prune an always-loaded file, shrink CLAUDE.md or DA_IDENTITY. NOT FOR general code refactoring, trimming video/audio (use Video/AudioEditor), or removing AI writing patterns from prose (use _WRITING)."
+version: 1.1.0
+description: "Reduces an explicitly selected always-on context or doctrine file to a supplied byte budget without dropping directives. Uses deterministic redundancy removal first, then human-approved relocation, tightening, and merging with rollback and byte-count verification. USE WHEN /trim, trim context, doctrine file over budget, shrink an always-loaded file. NOT FOR general refactoring, media trimming, or stylistic humanization."
 ---
 
 # Trim
 
-Reduce an always-on context file back under its byte budget. This is what you DO when the statusline shows a file at `NN% FULL` in red: `/trim <file>` walks the reduction, safest cuts first, never dropping a rule.
+Reduce one explicitly selected context or doctrine file beneath an explicit byte
+budget without weakening its directives. This is a conservative editing workflow,
+not a background garbage collector.
 
-## Workflow Routing
+## Required inputs
+
+- **target** — an absolute path or a path resolved inside the active project.
+- **cap_bytes** — the maximum accepted byte count. If the caller does not supply
+  one, inspect project documentation for a declared budget; otherwise ask rather
+  than inventing a threshold.
+- **approval scope** — which semantic proposals, if any, the principal approves.
+
+Hermes installs no global `context-budgets.json`, `BudgetCheck.ts`, or
+`ProposalGC.ts`. Do not claim those services exist.
+
+## Workflow routing
 
 | Trigger | Workflow |
-|---------|----------|
-| `/trim <file>`, "trim OPERATIONAL_RULES", "this file is too big", "file went red", "reduce a doctrine file" | `Workflows/Trim.md` |
+|---|---|
+| `/trim <file>`, "trim this context file", "this doctrine is over budget" | `Workflows/Trim.md` |
 
-## Quick Reference
+## Reduction order
 
-- **Target resolution:** a bare name (`OPERATIONAL_RULES`) resolves against `LIFEOS/TOOLS/context-budgets.json`. No arg → trim whichever file is worst (`bun LIFEOS/TOOLS/BudgetCheck.ts --json` → highest %).
-- **Order is safest-first:** (1) show state, (2) deterministic GC (zero-risk), (3) semantic trims (human-gated), (4) safety gate, (5) re-check budget. Full steps: `Workflows/Trim.md`.
-- **Two tools it orchestrates — never reimplement:** `LIFEOS/TOOLS/BudgetCheck.ts` (bytes/cap/%), `LIFEOS/TOOLS/ProposalGC.ts` (removes superseded/duplicate/absorbed entries).
-- **Three semantic moves:** MERGE overlapping rules, TIGHTEN verbose ones, RELOCATE rarely-used detail to an on-demand reference (leave a stub + pointer).
-- **The invariant:** a trim never drops a distinct directive. If a merge would, keep the original.
+1. Read the complete target and measure its encoded byte size.
+2. Identify deterministic removals: exact duplicates and entries explicitly marked
+   superseded or already absorbed.
+3. If still over budget, propose ranked semantic reductions for human approval:
+   - **RELOCATE** rarely needed detail to a project-approved reference, leaving a
+     precise pointer.
+   - **TIGHTEN** verbose wording while preserving every directive.
+   - **MERGE** overlapping rules while preserving every distinct condition.
+4. Capture rollback state before the first write, apply only approved edits, read
+   the complete file back, and remeasure bytes.
 
-## Gotchas
+## Invariant
 
-- **USER files commit to the USER_DATA repo, not `~/.claude`.** `LIFEOS/USER/**` (OPERATIONAL_RULES, PROJECTS, the identity files) is a symlink into a separate private repo. Commit with `git -C ~/.config/LIFEOS/USER …`. A `~/.claude` commit captures nothing under `LIFEOS/USER/` — a false safety net.
-- **The file can change mid-edit.** The autonomic memory loop appends proposals to these files while you work. If a Write/Edit reports "modified since read", RE-READ before writing — a concurrent correction may have landed (this is how a real deploy-command fix was nearly reverted). Never write from a stale read.
-- **Semantic merges must never drop a directive.** Before applying any merge/tighten, confirm every proper noun, path, tool name, and imperative from the originals survives in the result. If one is missing, the merge is wrong — keep the original. Deterministic GC (superseded/dup/absorbed) is always safe; semantic edits are the risky class.
-- **`bun`/`bunx` only, never `npm`/`npx`.**
-- **Deterministic first, always.** Run ProposalGC before proposing any semantic edit — the free, zero-risk removals often clear enough that no judgment-call edit is needed.
+A trim never drops a distinct directive. Before every semantic edit, enumerate the
+proper nouns, paths, tool names, environment names, conditions, prohibitions, and
+imperative verbs in the source text. Every one must survive in the replacement or
+in the referenced relocated material. If one does not, reject that edit.
 
-## Examples
+## Safety boundaries
 
-```
-/trim OPERATIONAL_RULES
-# → shows 53.8K/54K (99% FULL) → ProposalGC dry-run (0 removable) → ranks semantic
-#   trims (merge 3 overlapping ship-it rules, relocate CF-token doctrine to a reference)
-#   → applies approved ones behind the safety gate → commits to USER_DATA → re-checks: 47K/54K (87%)
+- Never trim a file you have not read completely.
+- Re-read immediately before writing if the file may have changed concurrently.
+- Do not edit HAL/Hermes operating files without the self-configuration safety
+  gate, dependency check, rollback path, and post-change verification.
+- Do not commit, push, publish, or delete a backup without explicit approval.
+- Stage no unrelated file. A clean byte count is not permission to broaden scope.
+- Installed skill directories are read-only; relocation targets belong to the
+  active project or another principal-approved documentation root.
 
-/trim
-# → no arg: BudgetCheck picks the worst file, then the same walkthrough
-```
+## Completion evidence
 
-## Execution Log
-
-After completing the workflow, append a single JSONL entry:
-
-```bash
-echo '{"ts":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","skill":"Trim","workflow":"Trim","input":"8_WORD_SUMMARY","status":"ok|error","duration_s":SECONDS}' >> ~/.claude/LIFEOS/MEMORY/SKILLS/execution.jsonl
-```
+Lead with `before_bytes → after_bytes` and the declared cap. List each applied
+removal, merge, tightening, or relocation; provide the rollback path or repository
+diff; and name any candidate rejected by the coverage gate. Never claim success
+without a read-back byte count at or below the cap.

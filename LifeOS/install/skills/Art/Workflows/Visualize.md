@@ -98,7 +98,7 @@ TRANSPARENT: Use Images skill to remove background for overlay use
 **For transparent background** — use the **Images skill** for background removal:
 
 ```bash
-bun ~/.claude/LIFEOS/TOOLS/RemoveBg.ts /path/to/visualization.png
+rembg i /path/to/visualization.png /path/to/visualization-transparent.png
 ```
 
 

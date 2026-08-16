@@ -22,9 +22,9 @@ Running **AddAphorism** in **Aphorisms**...
 - After research-thinker.md discovers quotes worth adding
 
 **Prerequisites:**
-- Aphorism database exists at `~/.claude/skills/Aphorisms/Database/aphorisms.md`
+- `APHORISMS_LIBRARY` resolves to an approved absolute path outside the installed skill tree
 - Quote text and author provided (or discoverable through research)
-- Database is Read first to check for duplicates
+- Read the library first with `read_file` to check for duplicates; fail closed rather than editing the packaged seed
 
 ---
 
@@ -59,7 +59,7 @@ User: "Add Feynman's quote about doubt being essential to science"
 ### Step 2: Verify Quote Accuracy
 
 **If exact quote text provided:**
-- Use WebSearch to verify wording and attribution
+- Use Hermes `web_search` to verify wording and attribution
 - Check for common misattributions
 - Confirm author if "Unknown" or uncertain
 
@@ -69,15 +69,10 @@ User: "Add Feynman's quote about doubt being essential to science"
 - Get full quote if user only provided partial
 
 **Verification Steps:**
-```bash
-# Search for exact quote
-WebSearch("\"[quote text]\" [author name] quote")
-
-# Verify attribution
-WebSearch("[author name] quotes + [key words from quote]")
-
-# Check common misattributions
-WebSearch("misattributed quotes [author name]")
+```text
+web_search(query="\"[quote text]\" [author name] quote")
+web_search(query="[author name] quotes [key words from quote]")
+web_search(query="misattributed quotes [author name]")
 ```
 
 **Output:**
@@ -89,10 +84,12 @@ WebSearch("misattributed quotes [author name]")
 
 ### Step 3: Check for Duplicates
 
-**Read database:**
-```bash
-Read ~/.claude/skills/Aphorisms/Database/aphorisms.md
+**Read library:**
+```text
+read_file(path="<resolved APHORISMS_LIBRARY absolute path>")
 ```
+
+Do not use the packaged seed as a write target.
 
 **Check for:**
 1. **Exact duplicate** - Same quote already exists
@@ -165,10 +162,10 @@ Quote: "Walk away from anything or anyone who takes away from your joy."
    - Connection to TELOS philosophy
    - Practical wisdom it provides
 
-**If context not immediately known:**
-```bash
-WebSearch("[author name] '[quote snippet]' context source")
-WebSearch("[author name] biography + [time period/work]")
+**If context is not immediately known, use Hermes `web_search`:**
+```text
+web_search(query="[author name] '[quote snippet]' context source")
+web_search(query="[author name] biography [time period/work]")
 ```
 
 **Example Context:**
@@ -245,21 +242,20 @@ Add quote reference to appropriate theme(s) in Theme Index section:
 
 ---
 
-### Step 9: Write to Database
+### Step 9: Write to Library
 
-**Use Edit tool to add quote:**
+Resolve `APHORISMS_LIBRARY` to an approved absolute path outside `$HERMES_HOME/skills`. If it is missing, stop and request configuration rather than modifying the packaged seed.
 
-```bash
-# Find appropriate section
-Read ~/.claude/skills/Aphorisms/Database/aphorisms.md
-
-# Add to correct location
-Edit(
-  file_path=~/.claude/skills/Aphorisms/Database/aphorisms.md,
+```text
+read_file(path="<resolved APHORISMS_LIBRARY absolute path>")
+patch(
+  path="<resolved APHORISMS_LIBRARY absolute path>",
   old_string="[section where it should be inserted]",
   new_string="[section with new quote added]"
 )
 ```
+
+Read back the changed section and verify both the quote entry and theme-index update.
 
 **Update multiple sections:**
 1. Add formatted quote to main collection
@@ -469,8 +465,8 @@ When quote is used in newsletter:
 - Author: Albert Einstein
 
 ### Step 2: Verify
-```bash
-WebSearch("\"The important thing is not to stop questioning\" Einstein")
+```text
+web_search(query="\"The important thing is not to stop questioning\" Einstein")
 ```
 **Result:** Verified - from 1955 interview
 

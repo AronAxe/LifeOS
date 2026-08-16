@@ -1,59 +1,41 @@
 # Web Scraping Workflow
 
-Web scraping and crawling using WebFetch for simple pages, BrightData MCP for CAPTCHA/blocking, and Apify MCP for social media. Includes HTML parsing, rate limiting, and best practices for ethical scraping.
+Use the least invasive route that returns reliable, auditable evidence.
 
-## When to Activate This Skill
-- Scrape web pages
-- Extract data from websites
-- Crawl multiple pages
-- Collect web data
-- Extract links or content
-- Data extraction tasks
+## 1. Define the extraction contract
 
-## Decision Tree
+Record target URLs/domain, records and fields, pagination boundary, time window, maximum count, deduplication key, output format, access constraints, and stop condition. Inspect terms, robots/access controls, privacy implications, and expected paid-provider cost.
 
-1. **Simple pages?** → Use WebFetch first
-2. **CAPTCHA/blocking?** → Use BrightData MCP (`mcp__brightdata__*`)
-3. **Social media?** → Use Apify MCP
+## 2. Escalate progressively
 
-## Common Tasks
+1. `web_extract` for public static pages and PDFs.
+2. Exa `web_fetch_exa` or Jina Reader for a known public URL when ordinary extraction is incomplete. SearchProviders is for discovery, not proof that a page was retrieved.
+3. `browser_exec` for JavaScript rendering, pagination, or bounded interaction.
+4. A configured source-specific actor/adapter when the requested data shape requires it.
+5. Bright Data only as a specialist retrieval fallback for an explicitly approved proxy/crawl after prior routes fail. Discover an available deferred integration with `tool_search` → `tool_describe` → `tool_call`, or use `BrightData/Tools/BrightDataCrawl.ts` when its credential and dataset are configured.
 
-### Extract All Links from Page
-1. Use WebFetch to get HTML
-2. Parse HTML for <a> tags
-3. Extract href attributes
+Do not bypass login walls, CAPTCHA, paywalls, or access controls. A provider may solve ordinary rendering or blocking, but it does not authorize circumvention. Stop when credentials or unapproved cost are required.
 
-### Scrape Product Listings
-1. Use appropriate tool (WebFetch or BrightData)
-2. Parse HTML for product containers
-3. Extract data (title, price, image, etc.)
+## 3. Extract incrementally
 
-### Crawl Multiple Pages
-1. Start with index/listing page
-2. Extract links to detail pages
-3. Fetch each detail page
-4. Extract data from each
+For multi-page work, append each batch to workspace JSON/CSV rather than holding the corpus in conversation context. Every row should retain:
 
-## Best Practices
+```text
+source_url, retrieved_at, record_id, page_or_cursor, extraction_status,
+requested_fields..., validation_notes
+```
 
-### Do's
-✅ Check robots.txt first
-✅ Add delays between requests
-✅ Handle errors gracefully
-✅ Use appropriate tool for site
-✅ Cache results when possible
+Normalize types, preserve raw locators, deduplicate in code, and checkpoint counts after each batch.
 
-### Don'ts
-❌ Don't scrape too fast
-❌ Don't ignore rate limits
-❌ Don't scrape personal data without permission
-❌ Don't bypass security maliciously
+## 4. Validate
 
-## Rate Limiting
-- Add delays between requests (`sleep 1`)
-- Respect robots.txt
-- Don't overwhelm servers
+- inspect representative first/middle/last records;
+- verify pagination or cursor advancement;
+- compare requested versus collected count;
+- detect blocked/error pages masquerading as HTTP 200;
+- check duplicates, missing fields, impossible values, and schema drift;
+- re-open a sample of source pages.
 
-## Supplementary Resources
-For advanced scraping: `read ~/.claude/docs/web-scraping-advanced.md`
-For MCP tools: `read ~/.claude/docs/mcp-servers-reference.md`
+## 5. Deliver
+
+Return the verified artifact, row count, field schema, deduplication method, source coverage, failures, and access limitations. A parser returning success or an actor run ID is not completion when records and totals can be checked.

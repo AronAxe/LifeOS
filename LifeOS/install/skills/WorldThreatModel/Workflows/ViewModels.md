@@ -15,17 +15,13 @@ Read and display the current state of world threat models.
 
 ## Workflow Steps
 
-### Step 1: Voice Notification
+### Step 1: Resolve model state
 
-```bash
-curl -s -X POST http://localhost:31337/notify \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Checking current world model state", "voice_id": "fTtv3eikoepIosk8dTZ5"}'
-```
+Resolve `<WORLD_MODEL_DIR>`. This workflow is read-only.
 
 ### Step 2: Read INDEX
 
-Read `~/.claude/LIFEOS/MEMORY/RESEARCH/WorldModels/INDEX.md`.
+Read `<WORLD_MODEL_DIR>/INDEX.md`.
 If it doesn't exist: "No world models found. Run 'update world models' to create them."
 
 ### Step 3: Determine View Scope

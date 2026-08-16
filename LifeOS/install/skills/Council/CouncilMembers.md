@@ -1,58 +1,62 @@
 # Council Members
 
-Council members are custom agents you write inline, then launch with `subagent_type: "general-purpose"`. There is no composition tool and no trait matrix — you write each member's brief directly, tailored to the topic. A capable model writes a sharper, more topic-specific persona than any generic trait lookup, so this is both simpler and better.
+Council members are custom briefs executed through Hermes `delegate_task`. The brief—not a provider label—creates the persona and analytical friction.
 
-## Why inline briefs, not built-in types
+## 1. Analyze the topic
 
-A bare built-in agent type (or a generic `general-purpose` with no persona) has no stake in the topic and produces bland agreement. Council needs members who disagree on the merits. The friction comes from each member having a distinct role, expertise, and stance — which you supply in the brief. Write four different briefs; never launch four identical agents.
+Choose perspectives that expose the actual decision boundary.
 
-## How to Create Council Members
+For “Should we use WebSockets or SSE?” a useful roster might be:
 
-### Step 1: Analyze the Topic
+- real-time systems architect defending bidirectional transport;
+- frontend-DX advocate minimizing client complexity;
+- operations skeptic focused on long-lived connections and observability;
+- evidence analyst comparing production precedent and workload shape.
 
-Decide what perspectives would create the most productive friction for THIS specific debate. Design the roles around the topic, not from a generic list.
+For “Is AI overhyped?” a useful roster might be:
 
-**Example — "Should we use WebSockets or SSE?"**
-- Real-time systems architect who defends push-first bidirectional transport
-- Frontend-DX advocate who wants the simplest thing that ships
-- Ops/reliability skeptic who distrusts long-lived connections
-- Industry researcher who weighs precedent and adoption data
+- infrastructure builder with deployment evidence;
+- security practitioner focused on failure modes;
+- pragmatic engineer measuring total cost and substitution;
+- researcher demanding reliable adoption and outcome data.
 
-**Example — "Is AI overhyped?"**
-- AI infrastructure builder who ships with these tools daily
-- Security practitioner skeptic who has seen the failure modes
-- Pragmatic engineer focused on real-world trade-offs
-- Evidence-based researcher who wants the numbers
+## 2. Write each brief
 
-### Step 2: Write Each Member's Brief
+Use two to four sentences:
 
-For each member, write 2–4 sentences: a name, their role/expertise, the stance they hold, and what they'll push on and attack. That paragraph IS the persona.
+> **Mara — real-time systems architect.** Defends push-first bidirectional transport. She will challenge SSE's connection and reconnection behavior, but must concede cases where operational simplicity dominates. She cites protocol behavior rather than taste.
 
-Example brief:
-> **Mara — real-time systems architect.** Believes push-first. Will defend WebSocket bidirectionality and attack SSE's connection-count limits and reconnection story. Speaks precisely, cites protocol behavior.
+Each brief must contain a genuine criterion that could change the member's conclusion. A caricature that cannot update is theatre, not deliberation.
 
-### Step 3: Launch with general-purpose
+## 3. Build Hermes tasks
 
-Spawn each member with the brief you wrote as the system context, plus the round instructions and topic. Always `subagent_type: "general-purpose"`.
+For each member, create a `delegate_task` task:
 
-```typescript
-Agent({
-  description: "Council member 1 - systems architect",
-  prompt: <member brief> + <round instructions> + <topic context>,
-  subagent_type: "general-purpose",
-  model: "sonnet"
-})
+```text
+{
+  "goal": "Answer the assigned Council round as Mara, returning only the attributed contribution.",
+  "context": "MEMBER BRIEF: …\nTOPIC: …\nROUND INSTRUCTIONS: …\nPRIOR TRANSCRIPT: …",
+  "role": "leaf"
+}
 ```
 
-## Default Perspective Slots
+Submit independent members in the `tasks` array. Do not pin a provider model or use undeployed agent types. If the current batch cap is below the member count, use bounded batches and keep same-round prompts independent.
 
-When the user doesn't specify members, cover these four perspectives — but write each one tailored to the topic, not as a generic role:
+## Default perspective slots
 
 | Slot | Purpose |
-|------|---------|
-| **Builder** | Has built things in this domain; argues from what actually ships |
-| **Skeptic** | Challenges assumptions, finds the flaws and failure modes |
-| **Pragmatist** | Implementation reality, cost, and trade-offs |
-| **Analyst** | Data, precedent, and external evidence |
+|---|---|
+| Builder | What works in practice and what it takes to ship |
+| Skeptic | Hidden assumptions, failure modes, and downside |
+| Pragmatist | Cost, sequencing, reversibility, and operational trade-offs |
+| Analyst | External evidence, precedent, and uncertainty |
 
-The slots are a starting guide. Adjust the mix to the topic — a pure design question may want two builders and a user advocate instead.
+These are starting points, not mandatory characters. A design problem may need a user advocate; a policy question may need legal, ethical, and affected-party perspectives.
+
+## Quality checks
+
+- Briefs are materially different.
+- Each member has enough topic context to reason independently.
+- No child needs to ask the principal a question.
+- No secrets or irrelevant personal context enter the delegated prompt.
+- Every member has a falsifiable claim, trade-off, or decision criterion to contribute.

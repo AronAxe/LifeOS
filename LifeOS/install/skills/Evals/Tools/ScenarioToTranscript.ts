@@ -1,11 +1,11 @@
 #!/usr/bin/env bun
 /**
- * ScenarioToTranscript — converts a langwatch scenario.run() result into
+ * ScenarioToTranscript — converts a Hermes-native scenario result into
  * Evals' native Transcript + Trial + GraderResult shapes so scenario runs
  * flow through the existing pass@k aggregator and Results pipeline.
  */
 
-import type { ScenarioResult } from '@langwatch/scenario';
+import type { HermesScenarioResult } from './HermesScenario.ts';
 import type {
   Transcript,
   Turn,
@@ -18,11 +18,11 @@ import type {
 export interface BuildTrialArgs {
   taskId: string;
   trialNumber: number;
-  result: ScenarioResult;
+  result: HermesScenarioResult;
   error?: string;
 }
 
-export function scenarioResultToTranscript(taskId: string, trialId: string, r: ScenarioResult): Transcript {
+export function scenarioResultToTranscript(taskId: string, trialId: string, r: HermesScenarioResult): Transcript {
   const startedAt = new Date(Date.now() - Math.round((r.totalTime ?? 0) * 1000)).toISOString();
   const completedAt = new Date().toISOString();
 
@@ -54,7 +54,7 @@ export function scenarioResultToTranscript(taskId: string, trialId: string, r: S
   };
 }
 
-export function scenarioResultToGraderResult(r: ScenarioResult, wallTimeMs: number): GraderResult {
+export function scenarioResultToGraderResult(r: HermesScenarioResult, wallTimeMs: number): GraderResult {
   const metCount = r.metCriteria?.length ?? 0;
   const totalCriteria = metCount + (r.unmetCriteria?.length ?? 0);
   const score = totalCriteria > 0 ? metCount / totalCriteria : r.success ? 1 : 0;
@@ -69,7 +69,7 @@ export function scenarioResultToGraderResult(r: ScenarioResult, wallTimeMs: numb
       source: 'scenario_judge',
       met_criteria: r.metCriteria ?? [],
       unmet_criteria: r.unmetCriteria ?? [],
-      judge: 'scenario.JudgeAgent',
+      judge: 'HermesScenario judge',
       run_id: r.runId,
     },
     duration_ms: wallTimeMs,

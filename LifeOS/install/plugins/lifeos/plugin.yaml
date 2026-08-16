@@ -1,0 +1,12 @@
+name: lifeos
+version: "0.1.0"
+description: "LifeOS runtime for Hermes: ISA/Loop state, evidence rollups, public-profile previews, and capability status."
+provides_tools:
+  - lifeos_isa
+  - lifeos_events
+  - lifeos_public_profile
+  - lifeos_status
+provides_hooks:
+  - on_session_start
+  - on_session_end
+  - post_tool_call

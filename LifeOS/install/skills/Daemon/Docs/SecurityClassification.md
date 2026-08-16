@@ -38,20 +38,20 @@ Defines what data is public vs private for daemon aggregation. The aggregator us
 
 | Source | Reason |
 |--------|--------|
-| LIFEOS/USER/CONTACTS.md | Contains real names, emails, phones |
-| LIFEOS/USER/TELOS/FINANCES/ | Financial data |
-| LIFEOS/USER/TELOS/HEALTH/ | Health data |
-| LIFEOS/USER/TELOS/TELOS.md `## Traumas` | Deeply personal |
-| LIFEOS/USER/BUSINESS/ | Business confidential |
-| MEMORY/KNOWLEDGE/People/ | OSINT dossiers, consent not given |
-| MEMORY/KNOWLEDGE/Companies/ | May contain proprietary intel |
+| `<LIFEOS_DIR>/USER/CONTACTS.md` | Contains real names, emails, phones |
+| `<LIFEOS_DIR>/USER/FINANCES/` | Financial data |
+| `<LIFEOS_DIR>/USER/HEALTH/` | Health data |
+| `<LIFEOS_DIR>/USER/TELOS/TRAUMAS.md` | Deeply personal |
+| `<LIFEOS_DIR>/USER/BUSINESS/` | Business confidential |
+| `<LIFEOS_DIR>/MEMORY/KNOWLEDGE/People/` | OSINT dossiers, consent not given |
+| `<LIFEOS_DIR>/MEMORY/KNOWLEDGE/Companies/` | May contain proprietary intel |
 | Any .env, .key, .pem file | Credentials |
 
 ### PROJECTS PUBLIC/PRIVATE CLASSIFICATION
 
-The classification is config-driven, not hardcoded. The aggregator reads two user-zone config files in `LIFEOS/USER/DAEMON/`: a public-projects allowlist (one project name or repo URL per line; empty by default) and a private-projects blocklist (same format; empty by default).
+The classification is config-driven, not hardcoded. `LIFEOS_DAEMON_PUBLIC_PROJECTS` is a comma-separated allowlist of project identifiers or repository URLs and is empty by default. `LIFEOS_DAEMON_PUBLIC_MISSION_IDS`, `LIFEOS_DAEMON_PUBLIC_GOAL_IDS`, and `LIFEOS_DAEMON_PUBLIC_SECTIONS` provide equally explicit field-level promotion.
 
-If a project appears in neither list, the aggregator defaults to **exclude** (private by default). This file does not enumerate any specific project names — that data belongs in the user's own DAEMON config files, never in the public skill source.
+If a project does not appear in the allowlist, the aggregator defaults to **exclude** (private by default). This file does not enumerate any specific project names — those values remain in principal-controlled configuration, never in the public skill source.
 
 ## Entity Blocklist
 
@@ -59,9 +59,7 @@ These categories must never appear in public output. The SecurityFilter enforces
 
 ### Names
 
-The aggregator reads named blocklists from a free-form per-user file in `LIFEOS/USER/DAEMON/` (one name per line) AND from the user's contacts file in `LIFEOS/USER/`. Every name in the contacts file is automatically blocked from public output.
-
-Public users seed both files via `/interview` (contacts phase) or by editing directly. The default is **empty** — the filter runs against whatever names the user lists.
+The aggregator reads additional blocked names only from the principal-supplied `<LIFEOS_DIR>/USER/SKILLCUSTOMIZATIONS/Daemon/SecurityOverrides.md`. The default list is empty. The aggregator does not infer contacts or read a hidden profile.
 
 ### Aliases and Abbreviations
 
@@ -75,14 +73,14 @@ These pattern classes are baked into the filter. Specific names that match them 
 The aggregator strips any path that matches:
 
 - `/Users/<your-username>/` (or `/home/<your-username>/` on Linux) — strips your home dir from any output
-- `~/.claude/` — internal LifeOS paths
+- hidden assistant configuration directories — internal paths that must not enter public output
 - Common cloud-storage mount points and typical local-project root dirs
 
-User-specific additional path patterns can be added to a free-form per-user file in `LIFEOS/USER/DAEMON/` (one path or glob per line).
+User-specific additional path patterns can be added under `## Additional Excluded Paths` in the same explicit `SecurityOverrides.md` file.
 
 ### Credentials
 
-- Any string matching: `sk-*`, `ghp_*`, `CLOUDFLARE_API_TOKEN`, `ANTHROPIC_API_KEY`
+- Any string matching common secret-token shapes such as `sk-*` or `ghp_*`
 - Any string matching: `*_API_KEY`, `*_TOKEN`, `*_SECRET`
 
 ### Internal Architecture
@@ -93,14 +91,10 @@ User-specific additional path patterns can be added to a free-form per-user file
 
 ## Customization
 
-Users customize this classification by placing overrides in `LIFEOS/USER/DAEMON/`:
+Users customize deterministic name/path redaction in the configured source tree:
 
 ```
-LIFEOS/USER/DAEMON/public-projects.md     # opt-in projects
-LIFEOS/USER/DAEMON/private-projects.md    # opt-out projects
-LIFEOS/USER/DAEMON/blocked-names.md       # additional names to scrub
-LIFEOS/USER/DAEMON/blocked-paths.md       # additional paths to scrub
-LIFEOS/USER/DAEMON/SecurityOverrides.md   # free-form additional rules
+<LIFEOS_DIR>/USER/SKILLCUSTOMIZATIONS/Daemon/SecurityOverrides.md
 ```
 
 Override file format:
@@ -110,11 +104,10 @@ Override file format:
 - Name1
 - Name2
 
-## Additional Public Projects
-- ProjectName
-
 ## Additional Excluded Paths
 - /path/to/exclude
 ```
 
-Why config-driven, not hardcoded: if this file enumerated any specific user's contacts, projects, or paths, then *publishing this file* would itself leak that data — exactly what the filter is supposed to prevent. The filter's *categories* are public; the *specific values* live in private USER-zone config.
+Public projects and sections are promoted only through the `LIFEOS_DAEMON_PUBLIC_*` environment allowlists described above; they are not read from this override file.
+
+Why config-driven, not hardcoded: if this file enumerated any specific user's contacts, projects, or paths, then *publishing this file* would itself leak that data — exactly what the filter is supposed to prevent. The filter's *categories* are public; specific values remain in the explicitly configured principal source.

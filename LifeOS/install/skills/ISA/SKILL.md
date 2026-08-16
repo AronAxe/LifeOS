@@ -5,24 +5,16 @@ description: "Owns the Ideal State Artifact — the primitive holding a project 
 effort: medium
 ---
 
-## 🚨 MANDATORY: Voice Notification (REQUIRED BEFORE ANY ACTION)
+## Runtime boundaries
 
-**You MUST send this notification BEFORE doing anything else when this skill is invoked.**
-
-1. **Send voice notification**:
-   ```bash
-   curl -s -X POST http://localhost:31337/notify \
-     -H "Content-Type: application/json" \
-     -d '{"message": "Running the WORKFLOWNAME workflow in the ISA skill"}' \
-     > /dev/null 2>&1 &
-   ```
-
-2. **Output text notification**:
-   ```
-   Running the **WorkflowName** workflow in the **ISA** skill to ACTION...
-   ```
-
-**This is not optional. Execute this curl command immediately upon skill invocation.**
+- Project ISAs live at `<PROJECT_ROOT>/ISA.md`.
+- Task and derived feature ISAs live beneath `LIFEOS_ISA_WORKSPACE`, or
+  `<PROJECT_ROOT>/.lifeos-isa` when that variable is unset.
+- Resolve examples, workflows, `FormatReference.md`, and `Tools/render.py`
+  relative to the active installed skill directory. Do not assume a profile path.
+- Hermes does not install the retired voice daemon, automatic render hooks, or a
+  global filesystem-memory tree. Use configured Hermes notifications only when
+  the principal requests them.
 
 # ISA — Ideal State Artifact
 
@@ -61,7 +53,8 @@ Every ISA may have up to fourteen body sections. The tier completeness gate deci
 | 13 | `## Changelog` | Conjecture / refuted-by / learned / criterion-now entries — Deutsch error-correction trail | LEARN |
 | 14 | `## Verification` | Evidence that each ISC passed — quoted command output, file content, screenshot path | VERIFY |
 
-`## Dependencies` and `## Bridge Criteria` are **conditional-required**: mandatory when the ISA has any `parent:`/`children:`/cross-ISA relationship, omitted (like any empty section) for a standalone single-ISA task. Multi-ISA trees are rare (<4% of archived ISAs) — full mechanics in `LIFEOS/DOCUMENTATION/Isa/IsaHierarchy.md`.
+`## Dependencies` and `## Bridge Criteria` are **conditional-required**: mandatory when the ISA has any `parent:`/`children:`/cross-ISA relationship, omitted (like any empty section) for a standalone single-ISA task. Multi-ISA trees are rare (<4% of archived ISAs); the advanced mechanics are
+defined later in this file.
 
 ---
 
@@ -124,7 +117,7 @@ Running the **WorkflowName** workflow in the **ISA** skill to ACTION...
 The highest-information-density part of this skill. Each entry captures a non-obvious failure mode that has bitten real ISA work.
 
 - **ID-stability is the cornerstone of Reconcile — never re-number on edit.** When the Splitting Test produces a finer-grained version of `ISC-7`, preserve `ISC-7` as the parent and add `ISC-7.1`, `ISC-7.2`, etc. Even when an ISC is dropped, leave a tombstone (`- [ ] ISC-N: [DROPPED — see Decisions YYYY-MM-DD]`). Reconcile keys on stable IDs; renumbering breaks ephemeral feature-file merges silently and the failure mode looks like "the worker's checkmarks didn't land in master."
-- **Ephemeral files are derived views, never sources of truth.** Scaffold's `--ephemeral` mode produces a slice of the master ISA at `MEMORY/WORK/{slug}/_ephemeral/<feature>.md`. Workers operate against that slice; Reconcile merges back. Hand-editing master content from an ephemeral file is policy-forbidden — the master is what persists; the ephemeral is what gets archived.
+- **Ephemeral files are derived views, never sources of truth.** Scaffold's ephemeral mode produces a slice of the master ISA at `<ISA_WORKSPACE>/work/{slug}/_ephemeral/<feature>.md`. Workers operate against that slice; Reconcile merges back. Hand-editing master content from an ephemeral file is policy-forbidden — the master is what persists; the ephemeral is what gets archived.
 - **The Changelog format is non-negotiable.** Every entry needs all four pieces (`conjectured`, `refuted by`, `learned`, `criterion now`) in that order. Append refuses to write a partial C/R/L; if any of the four is missing, the entry is a Decision, not a Changelog. The format is what makes the Deutsch error-correction trail auditable across sessions.
 - **Project ISAs upgrade tier to `max(declared, E3)` regardless of the active task's tier.** A `<project>/ISA.md` is the long-lived system of record for a thing with persistent identity. One transient E1 task on the project must NOT downgrade the structural minimum. CheckCompleteness applies this override automatically.
 - **Empty sections never appear.** The fourteen-section body is a *capacity*, not a *requirement* at every tier. Sections required-but-empty for the tier are populated; sections not required and not yet written are simply absent from the file. CheckCompleteness distinguishes `present` / `missing` / `empty` and only `empty` is acceptable for `Verification` before VERIFY phase — section length is never graded; a one-sentence section can be exactly right.
@@ -201,7 +194,7 @@ When a feature is to be worked in an isolated context (Ralph Loop, Maestro, para
 Skill("ISA", "extract feature <name> as ephemeral file")
 ```
 
-`Scaffold` (with `--ephemeral` mode) produces a derived view at `MEMORY/WORK/{slug}/_ephemeral/<feature>.md` containing only the slice relevant to that feature: the Vision and Goal as read-only context, the relevant Constraints, the ISCs in the feature's `satisfies:` list with stable IDs, the matching Test Strategy entries, and an empty Verification section.
+`Scaffold` in ephemeral mode produces a derived view at `<ISA_WORKSPACE>/work/{slug}/_ephemeral/<feature>.md` containing only the slice relevant to that feature: the Vision and Goal as read-only context, the relevant Constraints, the ISCs in the feature's `satisfies:` list with stable IDs, the matching Test Strategy entries, and an empty Verification section.
 
 A fresh-context agent operates against the ephemeral file alone. At completion, `Reconcile` deterministically merges ISC checkmarks, Verification evidence, Decisions entries, and any new Changelog entries back to master, then archives the ephemeral file under `_ephemeral/.archive/`.
 
@@ -220,7 +213,8 @@ Almost every ISA is a single file. Split into a tree **only** for genuinely larg
 - **Blast-radius detection.** Before BUILD, a change to any linked ISA surfaces the downstream ISCs that need re-verification. Detection is automated; resolution stays human.
 - **When NOT to split.** Keep one file until it becomes illegible. Most things are one ISA; splitting early buys ceremony, not clarity.
 
-Frontmatter schema and full section spec: `LifeOS/install/LIFEOS/DOCUMENTATION/Isa/IsaFormat.md`; skimmable version in `FormatReference.md` (sibling).
+Frontmatter schema and section contract: `FormatReference.md` in this installed
+skill, supplemented by the rules in this file.
 
 ## Fog — Honest Incompleteness
 
@@ -247,12 +241,14 @@ The Algorithm at OBSERVE invokes this skill to scaffold or read an ISA. The skil
 - PLAN: `Skill("ISA", "extract feature <name> as ephemeral file")` → ephemeral excerpt.
 - LEARN: `Skill("ISA", "reconcile <ephemeral-path> → <master-path>")` → deterministic merge.
 
-The Algorithm doctrine spec at `~/.claude/LIFEOS/ALGORITHM/v7.0.0.md` (or LATEST) governs invocation cadence. This skill is invocation-agnostic — it works the same whether called by the Algorithm or directly by the user.
+The installed Algorithm skill governs invocation cadence through its manual
+seven-phase model. This skill is invocation-agnostic—it works the same whether
+called from that process or directly by the user.
 
 ---
 
 ## Format spec cross-reference
 
-The full ISA format spec lives at `~/.claude/LIFEOS/DOCUMENTATION/Isa/IsaFormat.md`. This skill implements that spec; if there is ever a contradiction, the format spec wins and this skill is updated to match.
-
-The system-architecture doc — five identities, three-guardrail taxonomy, fourteen-section body, six workflows, two homes, subsystem relationships — lives at `~/.claude/LIFEOS/DOCUMENTATION/Isa/IsaSystem.md`. Read that for the conceptual frame; read this file (and `IsaFormat.md`) for the operational contract.
+`FormatReference.md` is the shipped file-shape reference. This `SKILL.md` carries
+the complete operational contract; if the two drift, reconcile them before
+creating or modifying an ISA rather than consulting an undeployed source tree.

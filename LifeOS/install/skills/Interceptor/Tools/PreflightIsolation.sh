@@ -40,8 +40,9 @@ set -euo pipefail
 # Source per-machine USER customizations if present (Chrome profile dir name,
 # pinned context ID, working-profile deny-list). Lives outside the public skill
 # body so the skill stays generic.
-USER_PREFS="${HOME}/.claude/LIFEOS/USER/CUSTOMIZATIONS/SKILLS/Interceptor/preferences.env"
-if [ -f "$USER_PREFS" ]; then
+LIFEOS_WORKSPACE="${LIFEOS_WORKSPACE:-}"
+USER_PREFS="${LIFEOS_WORKSPACE:+${LIFEOS_WORKSPACE}/skills/interceptor/preferences.env}"
+if [ -n "$USER_PREFS" ] && [ -f "$USER_PREFS" ]; then
     # shellcheck disable=SC1090
     . "$USER_PREFS"
 fi
@@ -57,8 +58,9 @@ if [ -z "$REQUIRED_CONTEXT" ]; then
 [PreflightIsolation] FAIL: INTERCEPTOR_TEST_CONTEXT_ID is not set.
 
 REMEDIATION:
-  Set INTERCEPTOR_TEST_CONTEXT_ID in
-    ~/.claude/LIFEOS/USER/CUSTOMIZATIONS/SKILLS/Interceptor/preferences.env
+  Set LIFEOS_WORKSPACE to a writable external directory, then set
+  INTERCEPTOR_TEST_CONTEXT_ID in
+    \$LIFEOS_WORKSPACE/skills/interceptor/preferences.env
   to the pinned Interceptor test context (raw UUID today; durable fix is the
   friendly name "interceptor-test" set once in the extension popup). There is
   no default — running without an explicit pinned context could route a tab to
@@ -176,7 +178,7 @@ CURRENT CONTEXTS above is the NEW one.
 
 REMEDIATION (UUID rot — most common):
   1. Compare the UUID(s) above against INTERCEPTOR_TEST_CONTEXT_ID in
-       ~/.claude/LIFEOS/USER/CUSTOMIZATIONS/SKILLS/Interceptor/preferences.env
+       \$LIFEOS_WORKSPACE/skills/interceptor/preferences.env
   2. If the live UUID is the same test profile under a new value, copy it into
      preferences.env and re-run this preflight.
 

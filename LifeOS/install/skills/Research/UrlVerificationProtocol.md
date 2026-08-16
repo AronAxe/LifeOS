@@ -1,70 +1,51 @@
-# URL Verification Protocol
+# URL and Evidence Verification Protocol
 
-**MANDATORY for all research workflows in this skill.**
+Every material citation must resolve to evidence that supports the nearby claim. A plausible URL or successful status code is not enough.
 
-## Critical Warning
+## Verification sequence
 
-```
----------------------------------------------------------------
-  EVERY URL MUST BE VERIFIED BEFORE INCLUDING IN RESULTS
-  Research agents HALLUCINATE URLs - NEVER trust them blindly
-  A single broken link is a CATASTROPHIC FAILURE
----------------------------------------------------------------
-```
+1. Open the exact URL with `web_extract`.
+2. Confirm title, publisher or author, date, and the cited passage or record.
+3. Record a locator: heading, paragraph, page, table, timestamp, commit, issue, or dataset field.
+4. If direct extraction fails, use `browser_exec` and note that the page required interactive rendering.
+5. If the source moved, cite the canonical replacement and record the redirect or archival relationship.
+6. If the source is blocked, truncated, mismatched, deleted, or inaccessible, remove the unsupported claim or label it unresolved.
 
-## Why This Matters
+An HTTP `200` only proves that a server returned something. It does not prove that the content exists as described or supports the assertion.
 
-Research agents (Perplexity, Gemini, Claude, Grok) frequently HALLUCINATE URLs that look plausible but don't exist. This includes:
-- URLs with correct domain but wrong path
-- URLs with plausible article titles that were never published
-- URLs combining real domains with fabricated paths
-- URLs to articles that were deleted or moved
+## Verification record
 
-## Verification Workflow
-
-Before including ANY URL in research results:
-
-1. **Verify with WebFetch** - Actually fetch the URL and confirm it returns content (not 404, 403, or error)
-2. **Confirm content matches claim** - The fetched content must actually support what you're citing it for
-3. **Use curl as backup** - `curl -s -o /dev/null -w "%{http_code}" -L URL` to check HTTP status
-4. **NEVER include unverified URLs** - If you can't verify it, DON'T include it
-
-```bash
-# Step 1: Check HTTP status
-curl -s -o /dev/null -w "%{http_code}" -L "https://example.com/article"
-
-# Step 2: If 200, verify content with WebFetch
-WebFetch(url, "Confirm this article exists and summarize its main point")
-
-# Step 3: Only include if BOTH checks pass
+```json
+{
+  "url": "https://…",
+  "title": "…",
+  "publisher": "…",
+  "published_at": "date or unknown",
+  "retrieved_at": "ISO-8601",
+  "locator": "page/section/timestamp/record",
+  "supports": "claim identifier",
+  "status": "verified | partial | blocked | mismatched | missing",
+  "note": "limitation or conflict"
+}
 ```
 
-## Acceptable vs Unacceptable
+## Batch work
 
-| Acceptable | Unacceptable |
-|------------|--------------|
-| URL verified via WebFetch returns actual content | URL from research agent without verification |
-| URL returns 200 AND content matches citation | URL returns 403/404/500 |
-| URL content actually supports the claim | URL exists but content doesn't match |
+For many sources, verify in bounded parallel groups, deduplicate canonical URLs, and count requested versus verified sources. Do not silently drop failed URLs; preserve them in the evidence ledger with status and exclude them from affirmative support.
 
-**Broken links destroy credibility. Verify EVERY URL.**
+## Cross-checking
 
-## Parallel Verification (for multi-agent modes)
+Consequential quantitative, causal, legal, safety, or current-status claims need an independent source when one reasonably exists. Independence means a genuinely separate evidence chain, not several articles repeating the same press release.
 
-When verifying many URLs (Extensive mode can produce 10-20+), use parallel batch curl instead of sequential:
+## Confidence
 
-```bash
-# Parallel batch verification — all URLs checked simultaneously
-urls=("url1" "url2" "url3" ...)
-for url in "${urls[@]}"; do
-  curl -s -o /dev/null -w "%{http_code} $url\n" -L "$url" &
-done
-wait
-# Parse results: any non-200 → remove from output
-```
+- `HIGH`: strong recoverable evidence plus independent confirmation.
+- `MED`: credible evidence with limited independence or minor qualification.
+- `LOW`: weak, indirect, stale, or incomplete evidence.
+- `CONFLICT`: credible evidence disagrees.
 
-**Fallback:** If parallel verification fails (e.g., too many concurrent connections), fall back to sequential.
+A child agent's confidence label is a proposal. The parent must inspect the evidence before carrying it into the answer.
 
-## Agent Self-Verification
+## Completion
 
-As of v5.1, all researcher agents include a Self-Verification section that requires URL verification before returning results. This means most URLs should already be verified when the orchestrator receives them. The orchestrator's batch check is a safety net, not the primary verification layer.
+Verification is complete when every material citation has been opened and matched to its claim, failures are visible, and no removed or inaccessible URL has been restored during synthesis.

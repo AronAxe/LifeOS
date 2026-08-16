@@ -1,22 +1,27 @@
-# Uninstall — clean, manifest-keyed removal
+# Uninstall — review boundary
 
-Removes what LifeOS installed, and ONLY what LifeOS installed. Leaves the user's data and any foreign hooks untouched.
+No public automated HALOS uninstaller is implemented. Do not present this document as a deletion command, a manifest-driven cleaner, or a guarantee that locally imported files can be removed safely.
 
-## Voice notification (first action)
+## Before any removal
 
-```bash
-curl -s -X POST http://localhost:31337/notify -H "Content-Type: application/json" \
-  -d '{"message": "Running the Uninstall workflow in the LifeOS skill to remove LifeOS"}' > /dev/null 2>&1 &
-```
+1. Establish the selected `HERMES_HOME` without changing it.
+2. Inventory separately:
+   - imported `lifeos-*` skill directories and the `lifeos` plugin, if present;
+   - principal-owned TELOS sources, Hindsight records, documents, and other data;
+   - the original release/source checkout.
+3. Show the inventory and ask what the principal actually wants removed, retained, or archived. Default to retaining all principal-owned data and the source release.
+4. Confirm that no maintainer/source tree is being targeted.
 
-## Steps
+## Removal decision
 
-1. **DetectEnv** — `bun Tools/DetectEnv.ts`. If `isDevTree` → STOP. Uninstall never runs against the source repo.
-2. **Confirm intent** — show exactly what will be removed (hook entries, system files, the LifeOS skill) and what will be KEPT (the user's config tree, their TELOS, their data). Wait for explicit confirmation.
-3. **Manifest-keyed hook removal** — read `install/hooks/hooks.json`; remove ONLY settings.json entries whose command matches a shipped hook path. Leave every foreign entry in shared matcher buckets intact. Restore from the `settings.json` backup if one is present and the user prefers.
-4. **Remove system files** — the LifeOS-owned system templates and copied hook files. Never the user config tree.
-5. **Keep user data** — the config tree (identity, TELOS, memory) stays by default. Offer an explicit, separate, confirmed step to also remove it — opt-in only, never bundled.
-6. **Report** — list what was removed and what was kept, with the backup path.
+Use documented Hermes plugin and skill management only after the principal makes an explicit decision. Do not claim that a Hermes command removes a locally imported payload unless that command and its target have been verified for this installation.
 
-## Rule
-Default-keep on anything the user authored. Uninstall is reversible up to the point of data deletion, which is always a separate explicit choice.
+Do **not** delete broad `HERMES_HOME` directories, shared skill directories, configuration files, or Hindsight data. Never remove source material, TELOS, or any user-authored record as part of plugin/skill removal. Data deletion is a separate, explicit decision with its own reviewed target list.
+
+## Report
+
+After an approved and verified removal, report exactly what changed, what was retained, and any item that could not be safely classified. If there is uncertainty about ownership or effect, stop rather than guessing.
+
+## Capability boundary
+
+Legacy hook removal, `settings.json` restoration, Claude launch cleanup, Pulse shutdown, user-tree/symlink deletion, and manifest-keyed file removal are not Hermes adapters and must not be invoked through this workflow. The absence of an automated uninstaller is an explicit current limitation, not permission to improvise one.

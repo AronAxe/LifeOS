@@ -626,11 +626,11 @@ bun run ~/.claude/skills/Art/Tools/Generate.ts \
   --thumbnail \
   --output ~/Downloads/[descriptive-name].png
 
-# 2. INSPECT → MANDATORY visual gate via the Read tool
+# 2. INSPECT → MANDATORY visual gate via vision_analyze
 #    (see Step 8 — you literally cannot validate the image without this)
-#    Read("~/Downloads/[descriptive-name].png")
+#    vision_analyze(image_url="~/Downloads/[descriptive-name].png", question="Inspect composition, fidelity, artifacts, and text")
 #    nano-banana-pro often returns JPEG even for --output .png:
-#    Read("~/Downloads/[descriptive-name].jpg")
+#    vision_analyze(image_url="~/Downloads/[descriptive-name].jpg", question="Inspect composition, fidelity, artifacts, and text")
 
 # 3. OPTIMIZE → still in ~/Downloads/
 cwebp -q 78 ~/Downloads/[name].png -o ~/Downloads/[name].webp
@@ -719,11 +719,11 @@ thumbnail: https://example.com/images/my-header.png
 For non-blog images that only need transparency, or to remove backgrounds after generation:
 
 ```bash
-# Use the Images Skill for background removal
-bun ~/.claude/LIFEOS/TOOLS/RemoveBg.ts /path/to/output.png
+# Optional local adapter; see Workflows/RemoveBackground.md
+rembg i /path/to/output.png /path/to/output-transparent.png
 
 # Or batch process multiple images
-bun ~/.claude/LIFEOS/TOOLS/RemoveBg.ts image1.png image2.png image3.png
+for f in image1.png image2.png image3.png; do rembg i "$f" "${f%.*}-transparent.png"; done
 ```
 
 
@@ -814,7 +814,7 @@ Generated images at 2K resolution (2048x2048) are 6-8MB each - far too large for
 # Step 7.0 (above) has already trimmed the image to its bbox.
 
 # 7.0.5 — CUT TO TRUE ALPHA (mandatory; the model output is an opaque JPEG)
-bun ~/.claude/LIFEOS/TOOLS/RemoveBg.ts "~/Downloads/[name].jpg"   # → ~/Downloads/[name].png with real alpha
+rembg i "~/Downloads/[name].jpg" "~/Downloads/[name].png"   # real alpha; optional local adapter
 magick "~/Downloads/[name].png" -trim +repage -resize 1024x "~/Downloads/[name].png"
 
 # 7.1 — "{{DA_NAME}}" SIGNATURE (human handwriting, NOT calligraphy)
@@ -936,17 +936,17 @@ brew install webp
 
 **🚨🚨🚨 AI INSPECTION GATE — MANDATORY 🚨🚨🚨**
 
-`open` launches the macOS Preview app on the principal's machine. **You cannot see what `open` shows.** That is a verification for the principal, not for you. To verify the image yourself you MUST load it into your own context with the Read tool:
+`open` launches the macOS Preview app on the principal's machine. **You cannot see what `open` shows.** That is verification for the principal, not for you. To verify the image yourself, load the pixels with Hermes `vision_analyze`:
 
-```
-Read("/path/to/generated-image.png")
+```text
+vision_analyze(image_url="/path/to/generated-image.png", question="Inspect composition, concept fidelity, artifacts, and rendered text")
 # OR for the JPEG fallback when nano-banana-pro returns JPEG:
-Read("/path/to/generated-image.jpg")
+vision_analyze(image_url="/path/to/generated-image.jpg", question="Inspect composition, concept fidelity, artifacts, and rendered text")
 ```
 
-The Read tool renders the image inline and gives you actual vision of the pixels. Without this, the rest of this checklist is theatre — you will rubber-stamp a broken image because you literally cannot see it.
+`vision_analyze` loads the actual image into model context. Without this, the rest of the checklist is theatre: you would be approving pixels you have never seen.
 
-**Hard rule: if you have not called `Read` on the image file in this turn, you have not inspected the image. Do not proceed to the checklist. Do not write the post. Do not say "looks good." Call Read first.**
+**Hard rule: if you have not called `vision_analyze` on the image file in this turn, you have not inspected it. Do not proceed to the checklist, write the post, or say "looks good."**
 
 Optionally also run `open` for the principal:
 
@@ -963,7 +963,7 @@ This is the gate that catches "beautiful but wrong" images — where every visua
 **Procedure:**
 
 1. **Re-read the thesis brief** you used in Step 5 (the 2–4 sentences you fed both models). Hold it in mind.
-2. **Read the image** with the Read tool — actually load the pixels into your context, not just `open` it.
+2. **Inspect the image** with `vision_analyze` — actually load the pixels into your context, not merely `open` it.
 3. **Answer 4 questions in writing** for each candidate (and for the chosen winner before shipping):
 
 | # | Question | Pass criterion |
@@ -1134,7 +1134,7 @@ The cap exists because compute spent on 16+ failed generations is compute that s
 ```
 1. UNDERSTAND → Deeply read and comprehend the content
 2. CSE-24 → Run Create Story Explanation (24 items) to extract narrative arc
-3. EMOTION → Match to register in ~/.claude/LIFEOS/aesthetic.md
+3. EMOTION → Match to the configured or user-supplied aesthetic register
 4. COMPOSITION → Design what to DRAW (content-relevant, NOT defaulting to architecture)
 5. PROMPT → Build using charcoal sketch TECHNIQUE template
 6. GENERATE → Execute with nano-banana-pro + --thumbnail flag

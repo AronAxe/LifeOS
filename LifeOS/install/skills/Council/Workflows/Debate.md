@@ -1,156 +1,112 @@
 # Debate Workflow
 
-Full structured multi-agent debate with 3 rounds and visible transcript.
-
-## Voice Notification
-
-```bash
-curl -s -X POST http://localhost:31337/notify \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Running the Debate workflow in the Council skill to run multi-agent debate"}' \
-  > /dev/null 2>&1 &
-```
-
-Running the **Debate** workflow in the **Council** skill to run multi-agent debate...
+Full structured Council deliberation with three rounds and a visible transcript.
 
 ## Prerequisites
 
-- Topic or question to debate
-- Optional: Custom council member descriptions (otherwise auto-composed)
+- exact topic or decision;
+- relevant background and evidence;
+- optional principal-specified members;
+- any confidentiality or egress limits.
 
-## Members
+## 0. Compose the council
 
-Council members are custom agents you write inline, then launch with `subagent_type: "general-purpose"`. Write four different briefs tailored to the topic — a bare built-in type with no persona produces bland agreement. See `CouncilMembers.md`.
-
-## Execution
-
-### Step 0: Write the Council Members
-
-Before any debate rounds, analyze the topic, decide the 4 perspectives that create the most productive friction, and write a brief for each: a name, their role/expertise, the stance they hold, and what they'll push on. No tool call — you write these directly. See `CouncilMembers.md` for the slot guidance and an example brief.
-
-### Step 1: Announce the Council
-
-Output the debate header with the member names:
+Write four topic-specific member briefs following `CouncilMembers.md`. Announce the roster and the decision being examined.
 
 ```markdown
 ## Council Debate: [Topic]
 
-**Council Members:** [List member names with their one-line role descriptions]
-**Rounds:** 3 (Positions -> Responses -> Synthesis)
+**Decision:** [what must be decided]
+**Council:** [name — one-line role] …
+**Rounds:** Positions → Challenges → Final judgments
 ```
 
-### Step 2: Round 1 - Initial Positions
+## 1. Round 1 — Initial positions
 
-Launch 4 parallel Agent calls (one per composed council member).
+Call `delegate_task` with one independent task per member, batched within the active concurrency limit. Every task receives the member brief, full topic context, evidence supplied by the principal, and these instructions:
 
-**CRITICAL: Use `subagent_type: "general-purpose"` for ALL agents. NEVER use built-in types.**
-
-**Each agent prompt includes the member's brief PLUS:**
-```
-COUNCIL DEBATE - ROUND 1: INITIAL POSITIONS
-
-Topic: [The topic being debated]
-
-[Full topic context — include relevant background, data, quotes, etc. that the agent needs to form an informed opinion]
-
-Give your initial position on this topic from your specialized perspective.
-- Speak in first person as your character
-- Be specific and substantive (100-150 words)
-- State your key concern, recommendation, or insight
-- You'll respond to other council members in Round 2
+```text
+ROUND 1 — INITIAL POSITION
+State your position from your assigned perspective.
+- Give the key claim, evidence or reasoning, and decision criterion.
+- Name the most important risk or uncertainty.
+- State what evidence could change your view.
+- Be specific; do not imitate consensus.
 ```
 
-**Output each response as it completes:**
-```markdown
-### Round 1: Initial Positions
+Render all successful responses under attributed headings. Mark failed or missing members; do not invent their contribution.
 
-**[Agent 1 Name] ([trait description]):**
-[Response]
+## 2. Round 2 — Responses and challenges
 
-**[Agent 2 Name] ([trait description]):**
-[Response]
+After Round 1 is complete, create a fresh `delegate_task` task for every member. Include:
 
-**[Agent 3 Name] ([trait description]):**
-[Response]
+- the original brief;
+- topic and decision;
+- complete Round 1 transcript;
+- instruction to cite at least one named member's actual point.
 
-**[Agent 4 Name] ([trait description]):**
-[Response]
+```text
+ROUND 2 — RESPOND AND CHALLENGE
+Address the strongest opposing or complementary argument.
+- Quote or identify the exact point being answered.
+- Challenge assumptions, evidence, feasibility, or framing.
+- Concede valid points and update where warranted.
+- Preserve your distinct decision criterion.
 ```
 
-### Step 3: Round 2 - Responses & Challenges
+Render the attributed Round 2 transcript.
 
-Launch 4 parallel Agent calls with Round 1 transcript included.
+## 3. Round 3 — Final judgments
 
-**Each agent prompt includes the member's brief PLUS:**
-```
-COUNCIL DEBATE - ROUND 2: RESPONSES & CHALLENGES
+Run another bounded `delegate_task` batch. Each task receives the brief plus Rounds 1 and 2.
 
-Topic: [The topic being debated]
-
-Here's what the council said in Round 1:
-[Full Round 1 transcript]
-
-Now respond to the other council members:
-- Reference specific points they made ("I disagree with [Name]'s point about X...")
-- Challenge assumptions or add nuance
-- Build on points you agree with
-- Maintain your specialized perspective
-- 100-150 words
-
-The value is in genuine intellectual friction -- engage with their actual arguments.
+```text
+ROUND 3 — FINAL JUDGMENT
+Given the full debate:
+- state your final recommendation;
+- identify what changed, if anything;
+- name remaining disagreement and the decisive trade-off;
+- propose the smallest next evidence or reversible action.
+Do not force consensus.
 ```
 
-### Step 4: Round 3 - Synthesis
+Render the attributed Round 3 transcript.
 
-Launch 4 parallel Agent calls with Round 1 + Round 2 transcripts.
+## 4. Parent synthesis
 
-**Each agent prompt includes the member's brief PLUS:**
-```
-COUNCIL DEBATE - ROUND 3: SYNTHESIS
-
-Topic: [The topic being debated]
-
-Full debate transcript so far:
-[Round 1 + Round 2 transcripts]
-
-Final synthesis from your perspective:
-- Where does the council agree?
-- Where do you still disagree with others?
-- What's your final recommendation given the full discussion?
-- 100-150 words
-
-Be honest about remaining disagreements -- forced consensus is worse than acknowledged tension.
-```
-
-### Step 5: Council Synthesis
-
-After all rounds complete, synthesize the debate:
+The parent—not another unverified child—produces:
 
 ```markdown
 ### Council Synthesis
 
-**Areas of Convergence:**
-- [Points where 3+ agents agreed]
-- [Shared concerns or recommendations]
+**Convergence**
+- …
 
-**Remaining Disagreements:**
-- [Points still contested between agents]
-- [Trade-offs that couldn't be resolved]
+**Remaining disagreements**
+- [who disagrees, on what, and why]
 
-**Recommended Path:**
-[Based on convergence and weight of arguments, the recommended approach is...]
+**Decision criteria and assumptions**
+- …
+
+**Recommended path**
+- …
+
+**Risks and reversibility**
+- …
+
+**Next evidence or action**
+- …
 ```
 
-## Timing
+Do not count votes as truth. Weight arguments by evidence, relevance, and the principal's stated criteria.
 
-- Writing member briefs: inline (orchestrator writes 4 briefs)
-- Round 1: ~10-20 seconds (parallel)
-- Round 2: ~10-20 seconds (parallel)
-- Round 3: ~10-20 seconds (parallel)
-- Synthesis: ~5 seconds
+## Failure handling
 
-**Total: 40-90 seconds for full debate**
+- Continue with partial results when at least two distinct perspectives returned; disclose missing members.
+- Retry only when a failure is transient and a retry does not exceed approved cost.
+- If all members converge immediately, test whether briefs were genuinely distinct before declaring consensus.
+- If the topic lacks enough context, stop before delegation and request the decisive missing input.
 
-## Done
+## Completion
 
-Debate complete. The transcript shows the full intellectual journey from initial positions through challenges to synthesis.
+The debate passes when the visible transcript includes actual cross-response, all failures are disclosed, and the synthesis preserves both convergence and unresolved tension.

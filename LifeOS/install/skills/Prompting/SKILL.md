@@ -115,7 +115,7 @@ const brief = renderTemplate('Primitives/Briefing.hbs', {
   agent: { name: 'Skeptical Security Reviewer', role: 'auth bypass and input validation' },
   task: { description: 'Review the auth flow', questions: [...] },
 });
-// Pass `brief` as the prompt to Agent(subagent_type="general-purpose")
+// Pass `brief` to `delegate_task` as `{ goal: brief }`.
 ```
 
 ## Integration with Other Skills

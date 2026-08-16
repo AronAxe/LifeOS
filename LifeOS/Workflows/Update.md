@@ -1,23 +1,39 @@
-# Update — idempotent re-overlay after a version bump
+# Update — HALOS on Hermes
 
-Brings an existing install up to the current LifeOS version without touching the user's data. Safe to run repeatedly.
+Brings an existing HALOS install up to the current version without touching the user's data.
 
-## Voice notification (first action)
+## Update Flow
 
+### 1. Dry-Run Import
+Run `ImportSkills` in dry-run mode to check for changes and collisions:
 ```bash
-curl -s -X POST http://localhost:31337/notify -H "Content-Type: application/json" \
-  -d '{"message": "Running the Update workflow in the LifeOS skill to update your install"}' > /dev/null 2>&1 &
+bun LifeOS/Tools/ImportSkills.ts --dry-run
+```
+### 2. Resolve Collisions
+Resolve any collisions manually. Do not overwrite destructively.
+
+### 3. Non-Destructive Apply
+Apply the import non-destructively:
+```bash
+bun LifeOS/Tools/ImportSkills.ts
 ```
 
-## Steps
+### 4. Optional Plugin Status
+If the native plugin is enabled, verify it with:
+```bash
+hermes plugins list --enabled
+hermes lifeos status
+```
 
-1. **DetectEnv** — `bun Tools/DetectEnv.ts`. If `isDevTree` → STOP (the source repo updates itself via git, not this workflow).
-2. **Version diff** — the skill carries no version field and there is no plugin manifest; versioning lives at the distribution layer (the GitHub release tag + `LIFEOS_RELEASES/<version>/` + the `install.sh` fetch's `LIFEOS_VERSION`). Compare the release version being updated to against the user's current install marker. If equal, report "already current" and exit.
-3. **Re-overlay system** — re-copy the system templates (CLAUDE, system prompt, `settings.system.json` minus hooks). These are system-owned and safe to overwrite.
-4. **Re-merge hooks** — `bun Tools/InstallHooks.ts` (idempotent): adds new hook entries, leaves existing ones, never duplicates (normalized-command dedup). Backs up `settings.json` first.
-5. **Scaffold new USER templates only** — `bun Tools/ScaffoldUser.ts` copyMissing: adds any NEW template files introduced by the version, never overwrites the user's existing files.
-6. **Re-activate imports** — `bun Tools/ActivateImports.ts` for any newly-shipped identity import lines.
-7. **Verify** — two evidence classes (hooks fire + imports resolve), same as Setup step 9.
+### 5. Settings Reclassification
+Run the deployed settings adapter to view its classifications:
+```bash
+bun LifeOS/install/skills/LifeOS/Tools/InstallSettings.ts --hermes-home <selected-dir> --dry-run
+```
+Apply only the reviewed, verified operations with explicit principal consent.
 
-## Rule
-Update is **additive and non-destructive**. It never removes user customizations, never overwrites user data, never deletes hooks the user added. The only files it overwrites are system-owned templates.
+## Boundaries & Limitations
+- **Do not claim hooks/imports/launch aliases.** The old legacy integrations are not part of the Hermes update flow.
+- Ensure the TELOS source remains a principal-supplied configured path.
+- Treat lifecycle plugin hooks as passive operational evidence. No automatic phase advancing.
+- Update is additive and non-destructive. Never removes user customizations or overwrites user data.

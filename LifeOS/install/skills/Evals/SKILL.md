@@ -6,32 +6,16 @@ effort: high
 context: fork
 ---
 
-## Customization
+## Runtime boundaries
 
-**Before executing, check for user customizations at:**
-`~/.claude/LIFEOS/USER/CUSTOMIZATIONS/SKILLS/Evals/`
-
-If this directory exists, load and apply any PREFERENCES.md, configurations, or resources found there. These override default behavior. If the directory does not exist, proceed with skill defaults.
-
-
-## 🚨 MANDATORY: Voice Notification (REQUIRED BEFORE ANY ACTION)
-
-**You MUST send this notification BEFORE doing anything else when this skill is invoked.**
-
-1. **Send voice notification**:
-   ```bash
-   curl -s -X POST http://localhost:31337/notify \
-     -H "Content-Type: application/json" \
-     -d '{"message": "Running the WORKFLOWNAME workflow in the Evals skill to ACTION"}' \
-     > /dev/null 2>&1 &
-   ```
-
-2. **Output text notification**:
-   ```
-   Running the **WorkflowName** workflow in the **Evals** skill to ACTION...
-   ```
-
-**This is not optional. Execute this curl command immediately upon skill invocation.**
+- Resolve the active installed directory as `<EVALS_SKILL_DIR>`; do not assume a
+  fixed profile path because collision-safe installs may be namespaced.
+- Store mutable suites, use cases, failures, transcripts, and results beneath
+  `LIFEOS_EVALS_WORKSPACE`, or `<PROJECT_DIR>/.lifeos-evals` when it is unset.
+- Treat the installed skill directory as read-only. Shipped suites and use cases
+  are examples and baselines; project overrides live in the workspace.
+- Use Hermes-configured notifications only when the user asks for them. The
+  retired localhost voice daemon is not part of this installation.
 
 # Evals - AI Agent Evaluation Framework
 
@@ -45,7 +29,7 @@ You can't tell if an agent got better or worse by eyeballing a few runs. A chang
 
 ## How It Works
 
-Agent evaluation system based on Anthropic's "Demystifying Evals for AI Agents" (Jan 2026). It evaluates agent *workflows* (transcripts, tool calls, multi-turn conversations), not just single outputs.
+Hermes-native agent evaluation system. It evaluates agent *workflows* (transcripts, tool calls, multi-turn conversations), not just single outputs, while keeping model choice behind the configured inference boundary.
 
 ## When to Activate
 
@@ -116,19 +100,19 @@ Agent evaluation system based on Anthropic's "Demystifying Evals for AI Agents" 
 
 ```bash
 # Run an eval suite
-bun run ${LIFEOS_SKILL_DIR}/Tools/AlgorithmBridge.ts -s <suite>
+bun run ${EVALS_SKILL_DIR}/Tools/AlgorithmBridge.ts -s <suite>
 
 # Log a failure for later conversion
-bun run ${LIFEOS_SKILL_DIR}/Tools/FailureToTask.ts log "description" -c category -s severity
+bun run ${EVALS_SKILL_DIR}/Tools/FailureToTask.ts log "description" -c category -s severity
 
 # Convert failures to test tasks
-bun run ${LIFEOS_SKILL_DIR}/Tools/FailureToTask.ts convert-all
+bun run ${EVALS_SKILL_DIR}/Tools/FailureToTask.ts convert-all
 
 # Manage suites
-bun run ${LIFEOS_SKILL_DIR}/Tools/SuiteManager.ts create <name> -t capability -d "description"
-bun run ${LIFEOS_SKILL_DIR}/Tools/SuiteManager.ts list
-bun run ${LIFEOS_SKILL_DIR}/Tools/SuiteManager.ts check-saturation <name>
-bun run ${LIFEOS_SKILL_DIR}/Tools/SuiteManager.ts graduate <name>
+bun run ${EVALS_SKILL_DIR}/Tools/SuiteManager.ts create <name> -t capability -d "description"
+bun run ${EVALS_SKILL_DIR}/Tools/SuiteManager.ts list
+bun run ${EVALS_SKILL_DIR}/Tools/SuiteManager.ts check-saturation <name>
+bun run ${EVALS_SKILL_DIR}/Tools/SuiteManager.ts graduate <name>
 ```
 
 ### ALGORITHM Integration
@@ -137,7 +121,7 @@ Evals is a verification method for THE ALGORITHM ISC rows:
 
 ```bash
 # Run eval and update ISC row
-bun run ${LIFEOS_SKILL_DIR}/Tools/AlgorithmBridge.ts -s regression-core -r 3 -u
+bun run ${EVALS_SKILL_DIR}/Tools/AlgorithmBridge.ts -s regression-core -r 3
 ```
 
 ISC rows can specify eval verification:
@@ -230,15 +214,16 @@ task:
 | `Tools/SuiteManager.ts` | Suite management and saturation |
 | `Tools/FailureToTask.ts` | Convert failures to test tasks |
 | `Tools/AlgorithmBridge.ts` | ALGORITHM integration |
-| `Tools/ScenarioRunner.ts` | Multi-turn scenario runner (langwatch/scenario) |
-| `Tools/LifeosAgentAdapter.ts` | Wraps LifeOS Inference.ts as scenario AgentAdapter |
+| `Tools/HermesScenario.ts` | Provider-agnostic simulator, agent, and judge contract |
+| `Tools/ScenarioRunner.ts` | Consent-gated multi-turn scenario runner |
+| `Tools/LifeosAgentAdapter.ts` | Compatibility wrapper over Hermes inference |
 | `Tools/ScenarioToTranscript.ts` | Scenario result → Evals Transcript/Trial/GraderResult |
 | `Scenarios/` | Authored multi-turn scenarios (`.scenario.ts`) |
 | `Data/DomainPatterns.yaml` | Domain-specific grader configs |
 
 ---
 
-## Key Principles (from Anthropic)
+## Key Evaluation Principles
 
 1. **Start with 20-50 real failures** - Don't overthink, capture what actually broke
 2. **Unambiguous tasks** - Two experts should reach identical verdicts
@@ -284,12 +269,9 @@ User: "run evals on the Research skill after the update"
 → Reports any quality regressions
 ```
 
-## Execution Log
+## Evidence
 
-After completing any workflow, append a single JSONL entry:
-
-```bash
-echo '{"ts":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","skill":"Evals","workflow":"WORKFLOW_USED","input":"8_WORD_SUMMARY","status":"ok|error","duration_s":SECONDS}' >> ~/.claude/LIFEOS/MEMORY/SKILLS/execution.jsonl
-```
-
-Replace `WORKFLOW_USED` with the workflow executed, `8_WORD_SUMMARY` with a brief input description, and `SECONDS` with approximate wall-clock time. Log `status: "error"` if the workflow failed.
+Keep reproducible eval artifacts in `<EVAL_WORKSPACE>/results`. If a result must
+be retained beyond the project, summarize it through the configured Hermes
+memory provider only with the principal's approval; do not maintain a parallel
+global execution ledger.

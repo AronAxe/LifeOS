@@ -22,9 +22,10 @@
 set -uo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PREFS="${HOME}/.claude/LIFEOS/USER/CUSTOMIZATIONS/SKILLS/Interceptor/preferences.env"
+LIFEOS_WORKSPACE="${LIFEOS_WORKSPACE:-}"
+PREFS="${LIFEOS_WORKSPACE:+${LIFEOS_WORKSPACE}/skills/interceptor/preferences.env}"
 # shellcheck disable=SC1090
-[ -f "$PREFS" ] && . "$PREFS"
+[ -n "$PREFS" ] && [ -f "$PREFS" ] && . "$PREFS"
 
 PREFLIGHT="$DIR/PreflightIsolation.sh"
 LAUNCH="$DIR/LaunchTestProfile.sh"
@@ -54,7 +55,8 @@ fi
 PROFILE="${INTERCEPTOR_TEST_CHROME_PROFILE:-}"
 if [ -z "$PROFILE" ]; then
     echo "[EnsureTestProfile] test context not connected (exit $rc) AND INTERCEPTOR_TEST_CHROME_PROFILE is unset —" >&2
-    echo "  cannot auto-launch. Set it in $PREFS to the test profile's on-disk dir (e.g. \"Profile 4\")." >&2
+    echo "  cannot auto-launch. Set LIFEOS_WORKSPACE, then define it in" >&2
+    echo "  \$LIFEOS_WORKSPACE/skills/interceptor/preferences.env (e.g. \"Profile 4\")." >&2
     cat "$TMP" >&2
     exit "$rc"
 fi
@@ -85,6 +87,6 @@ echo "  Most likely UUID rot: the Interceptor extension reloaded and the test pr
 echo "  Durable fix (do this once, it survives future reloads):" >&2
 echo "    1. In the test-profile window, click the Interceptor toolbar icon." >&2
 echo "    2. Set Context ID = \"interceptor-test\" → Save." >&2
-echo "    3. Set INTERCEPTOR_TEST_CONTEXT_ID=\"interceptor-test\" in $PREFS." >&2
+echo "    3. Set INTERCEPTOR_TEST_CONTEXT_ID=\"interceptor-test\" in \$LIFEOS_WORKSPACE/skills/interceptor/preferences.env." >&2
 echo "  Not proceeding — never drive an unverified context (it could be the operator's window)." >&2
 exit 6

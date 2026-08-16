@@ -1,105 +1,53 @@
 # ViewResults Workflow
 
-Inspect evaluation results from completed runs.
+Inspect completed evaluation runs without mutating them.
 
-## Voice Notification
+## Result location
 
-```bash
-curl -s -X POST http://localhost:31337/notify \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Running the ViewResults workflow in the Evals skill to display eval results"}' \
-  > /dev/null 2>&1 &
+Resolve `LIFEOS_EVALS_WORKSPACE`, or `<PROJECT_DIR>/.lifeos-evals` when unset. Per-run evidence lives at:
+
+```text
+<EVAL_WORKSPACE>/results/<use-case>/<run-id>/results.json
+<EVAL_WORKSPACE>/results/<use-case>/<run-id>/transcripts/trial_N.json
 ```
 
-Running the **ViewResults** workflow in the **Evals** skill to display eval results...
-
----
-
-## Where Results Live
-
-Per-run output (source of truth):
-
-```
-~/.claude/LIFEOS/MEMORY/STATE/Evals-Results/<use-case>/<run-id>/results.json
-```
-
-Each `results.json` contains the run summary, per-trial scores, grader outputs, and failure details. The `LIFEOS/MEMORY/STATE/Evals-Results/` directory is the canonical store — query it with standard tools (`jq`, `rg`, `cat`).
-
----
+The installed skill directory is read-only and is not a result store.
 
 ## Execution
 
-### Step 1: List runs for a use case
+1. Use Hermes file discovery to list `<EVAL_WORKSPACE>/results/<use-case>/` by modification time. Do not infer the latest run from a name alone.
+2. Read the selected `results.json` and validate that its `task_id` matches the requested use case.
+3. Inspect:
+   - run ID and timestamps;
+   - trial count and trial status;
+   - pass rate, mean score, standard deviation, pass@k, and pass^k;
+   - grader scores, reasoning, and errors;
+   - failed-trial transcripts and unmet criteria.
+4. When a suite may be graduating from capability to regression, run:
 
-```bash
-# Show all runs for a use case (newest first)
-ls -1t ~/.claude/LIFEOS/MEMORY/STATE/Evals-Results/<use-case>/
+   ```bash
+   bun run <EVALS_SKILL_DIR>/Tools/SuiteManager.ts check-saturation <suite-name>
+   ```
 
-# Or via SuiteManager
-bun run ~/.claude/skills/Evals/Tools/SuiteManager.ts list
-```
+5. For comparisons, select explicit run IDs and compare like-for-like task, prompt, grader, model, and trial settings. State any mismatch rather than presenting it as a trend.
 
-### Step 2: View latest run summary
+## Report
 
-```bash
-# Latest run results.json
-LATEST=$(ls -1t ~/.claude/LIFEOS/MEMORY/STATE/Evals-Results/<use-case>/ | head -1)
-cat ~/.claude/LIFEOS/MEMORY/STATE/Evals-Results/<use-case>/$LATEST/results.json | jq '.summary'
+Report:
 
-# Or for a specific run
-cat ~/.claude/LIFEOS/MEMORY/STATE/Evals-Results/<use-case>/<run-id>/results.json | jq '.summary'
-```
+| Field | Value |
+|---|---|
+| Use case | `<use-case>` |
+| Run ID | `<run-id>` |
+| Completed | `<timestamp>` |
+| Trials | `<n>` |
+| Pass rate | `<percent>` |
+| Mean score | `<score>` |
+| pass@k / pass^k | `<value> / <value>` |
+| Result path | `<exact path>` |
 
-### Step 3: Check saturation (when a suite is graduating capability → regression)
+Then summarize the strongest failure evidence, unmet criteria, infrastructure errors, and the narrowest next action. If the run artifact is incomplete or malformed, say so; do not synthesize missing results.
 
-```bash
-bun run ~/.claude/skills/Evals/Tools/SuiteManager.ts check-saturation <suite-name>
-```
+## Trend boundary
 
-### Step 4: View per-trial scores or failure detail
-
-```bash
-# Per-trial summary
-cat .../results.json | jq '.trials[] | {trial: .trial_id, pass: .passed, score: .score}'
-
-# Failed trials only
-cat .../results.json | jq '.trials[] | select(.passed == false)'
-
-# All grader outputs for a specific trial
-cat .../results.json | jq '.trials[0].graders'
-```
-
-### Step 5: Report
-
-```markdown
-📋 SUMMARY: Evaluation results for <use-case>
-
-📊 STATUS:
-| Metric | Value |
-|--------|-------|
-| Run ID | <run-id> |
-| Date | <date> |
-| Model | <model> |
-| Pass Rate | X% |
-| Mean Score | X.XX |
-
-📖 STORY EXPLANATION:
-1. Retrieved evaluation run from <date>
-2. <N> trials evaluated against <use-case> criteria
-3. <Key finding>
-4. <Recommendation>
-
-🎯 COMPLETED: Results retrieved for <use-case>, <pass-rate>% pass rate.
-```
-
----
-
-## Comparison and Trend Analysis
-
-There is no built-in CLI for trend analysis, regression detection, or cross-run comparison in the current skill — these are intended use cases that would be authored against the `results.json` files using `jq` or a small ad-hoc script when needed. If you need recurring trend analysis, consider authoring a Tools/TrendReport.ts script (not yet on disk) and wiring it into the routing table.
-
----
-
-## Done
-
-Results inspected from `LIFEOS/MEMORY/STATE/Evals-Results/<use-case>/<run-id>/results.json` and (optionally) suite saturation surfaced via `SuiteManager.ts`.
+The current skill has no dedicated cross-run trend CLI. A one-off comparison may use a bounded project-local script over selected `results.json` files. Recurring analysis requires an implemented and tested tool before it is advertised as built-in capability.

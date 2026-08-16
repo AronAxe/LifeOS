@@ -1,31 +1,31 @@
-# Interview — life onboarding (phase 2)
+# Interview — principal onboarding
 
-The "meaning" half. Runs AFTER Setup. Captures who the user is and where they're going, then seeds Pulse with real data so the dashboard is alive on first open. This is the moment LifeOS becomes personal.
+This is a **user-led conversation**, not an installer and not an automatic context system. HALOS is the product; LifeOS is upstream doctrine retained only in legacy package paths.
 
-## Voice notification (first action)
+## Purpose
 
-```bash
-curl -s -X POST http://localhost:31337/notify -H "Content-Type: application/json" \
-  -d '{"message": "Running the Interview workflow in the LifeOS skill to onboard you into LifeOS"}' > /dev/null 2>&1 &
-```
+Establish a useful starting picture of the principal's current state and intended direction without inventing storage, identity, or runtime behavior.
 
-## Stance
+## Conversation
 
-Peer conversation, not a form. Ask one thing at a time, reflect it back, go deeper where there's signal. Every write is `existsSync`-guarded — never clobber answers the user already gave. The user can say `skip` to any item and `done` to stop early; partial onboarding is valid (Pulse shows what it has).
+1. Confirm that the principal wants to begin onboarding. They may skip any subject or end the conversation at any time.
+2. Ask for the **principal-supplied configured TELOS source**. Do not assume a local path, create a `USER` tree, or derive an identity namespace.
+3. Capture only what the principal elects to share:
+   - current state: mission, commitments, active projects, constraints, and what is materially true now;
+   - ideal state: goals, measures, time horizons, strategies, and unresolved trade-offs;
+   - external sources: notes, documents, exports, or URLs offered deliberately by the principal.
+4. Distinguish supplied evidence from interpretation. Confirm a concise synthesis before treating it as durable.
+5. If configured Hindsight is healthy, general knowledge and durable entity/relationship facts may be retained there with the principal's permission. Do not write private paths, credentials, personal identity records, or unaccepted conclusions into Hindsight.
+6. Keep unfinished synthesis in the active workspace/session. If the principal explicitly enabled the native plugin and selects it, `lifeos_isa` may hold bounded working state. It is opt-in and does not control, schedule, or advance a workflow.
 
-## Sequence
+## Writes and safety
 
-1. **DA naming + voice** — what do they want to call their assistant? Capture `da.name`, optional `da.full_name`/`display_name`/`color`, and a voice (`da.voices.main.voice_id` — offer the public default, let them paste an ElevenLabs id). Write to `CONFIG/LIFEOS_CONFIG.toml`. *(This is the step the old install wizard handled; it lives here now.)*
-2. **Principal identity** — name, pronunciation, timezone, hometown → `[principal]` in `LIFEOS_CONFIG.toml` and `PRINCIPAL/PRINCIPAL_IDENTITY.md`.
-3. **TELOS — current state** — mission, the people who matter, current projects, challenges, what's actually true right now. Write to `TELOS/`.
-4. **TELOS — ideal state** — goals (with metrics + dates where they have them), strategies, the destination. Current → ideal is the spine of LifeOS; get both halves.
-5. **External sources (optional)** — the user can hand over existing material: notes, an old config, exports, URLs, a prior LIFEOS/other-harness setup. Pull from each (read files, fetch URLs), extract identity / TELOS / project signal, and merge into the USER tree — `existsSync`-guarded, confirm before each write. This is the migration on-ramp: bring your context, don't retype it.
-6. **SeedPulse** — `bun Tools/SeedPulse.ts` → write `LIFEOS_STATE.json` and regenerate `PRINCIPAL_TELOS.md` from the captured TELOS so Pulse renders real rings + state on first open.
+This workflow does not install skills, configure Hermes, create directories, seed a dashboard, or contact external services.
 
-## Close
+Before creating or amending any principal-owned document, show the intended target and content, then obtain explicit consent. Keep source material and user-authored records by default. Confirmation is required for external communication, publication, finance, deletion, and configuration changes.
 
-Confirm what landed (DA name, identity, N goals, current/ideal captured), point them at Pulse (`localhost:31337`), and tell them the interview is re-runnable any time to go deeper.
+## Capability boundary
 
-## Notes
-- This workflow only WRITES the user's config tree — it never touches system files.
-- If `setup` ran immediately before, continue the same conversation; if invoked standalone (`lifeos interview`), confirm Setup already ran (config tree exists) before seeding.
+There is no automatic identity injection, constitution loading, Pulse seeding, local dashboard, symlinked user tree, or Claude-era `@` import here. Passive `lifeos` plugin hooks are operational evidence only; they do not establish policy, identity, or automatic agent control. Ascent labels are descriptive only and are neither persisted nor scheduled.
+
+A later conversation may deepen or revise the TELOS synthesis. Nothing in this workflow pretends that the system has learned more than the principal actually provided.

@@ -1,8 +1,8 @@
 {
-  "name": "@pai/filesystem-mcp-apify",
+  "name": "@halos/apify",
   "version": "1.0.0",
   "type": "module",
-  "description": "Code-first Apify interface for LifeOS - replaces token-heavy MCP calls",
+  "description": "Portable code-first Apify interface for HALOS actor workflows",
   "main": "index.ts",
   "scripts": {
     "example": "bun run examples/instagram-scraper.ts"

@@ -53,6 +53,10 @@ dist/
 build/
 out/
 
+# The HALOS dashboard bundle is source-controlled release payload, not a local build artifact.
+!LifeOS/install/plugins/lifeos/dashboard/dist/
+!LifeOS/install/plugins/lifeos/dashboard/dist/index.js
+
 # Cache
 .cache/
 *.cache

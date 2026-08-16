@@ -1,168 +1,80 @@
 # Extensive Research Workflow
 
-**Mode:** 7 explorers + 2 verifiers (9 total agents) | **Timeout:** 120 seconds
+Use for broad multi-domain research, market research, threat landscapes, or decisions where coverage and disconfirmation matter. Use `DeepInvestigation.md` instead when the work needs a persistent iterative model of entities and gaps; use `DeepVerifiedResearch.md` when claim adjudication is the dominant requirement.
 
-## Architecture: Explorer-Verifier Pattern
+## 1. Define the coverage contract
 
-Inspired by Nomad (arXiv:2603.29353). Instead of 9 undifferentiated explorers, we use **7 explorers** for breadth and **2 verifiers** for trustworthiness — same total agent count, dramatically better output quality.
+Specify:
 
-```
-All 9 agents launch simultaneously in one message.
-Verifier prompts are topic-level (not claim-level) so they work without explorer results.
-Synthesis cross-references explorer findings against verifier findings with confidence tags.
-```
+- primary question and decision;
+- domains, populations, entities, geography, and time range;
+- freshness and primary-source requirements;
+- required output profile, including `../Templates/MarketResearch.md` or `../Templates/ThreatLandscape.md` when applicable;
+- approved time, cost, storage, and egress boundaries.
 
-## CRITICAL: URL Verification
+Create an explicit coverage matrix so “comprehensive” has a testable meaning.
 
-Agents now self-verify URLs before returning (see agent Self-Verification sections). The post-hoc URL verification step is replaced by parallel batch verification during synthesis.
+## 2. Design explorer and verifier angles
 
-## When to Use
+Generate five to nine complementary angles. Typical explorer angles include official/primary, technical or academic, current developments, practitioner reality, commercial or adoption evidence, community sentiment, alternatives, and edge cases. Reserve at least two angles for verification:
 
-- User says "extensive research" or "do extensive research"
-- Deep-dive analysis needed
-- Comprehensive multi-domain coverage required
+- most important quantitative and current-status claims;
+- contradictions, debunked claims, and counter-evidence.
 
-## Workflow
+## 3. Execute bounded workstreams
 
-### Step 0a: Source Routing Check (MANDATORY)
+Use `delegate_task` for independent angles in batches that respect the current concurrency limit. Each task brief must include the question, its assigned angle, source and date requirements, evidence schema, output cap, and instruction to return URLs and quotations. Children cannot ask the principal questions, so resolve ambiguities first.
 
-**READ:** `../SourceRoutingProtocol.md` if not already loaded.
+The parent retains the coverage matrix and source ledger. A child summary is not proof that a URL was opened or an artifact was written.
 
-Scan the user's request for sentiment signals: "fans thought", "ratings of", "best | worst | favorite", "reactions to", "consensus on", event + recent date.
+## 4. Build the evidence ledger
 
-- **Signal fires → sentiment-mode routing.** Walk the API-first cascade in `../SourceRoutingProtocol.md`. Reallocate ≥2 of the 9 agent slots in Step 1 to community-API agents:
-  - **Slot A (Reddit, mandatory, Tier-1 API):** general-purpose subagent calls Reddit JSON API directly via Bash + `curl -A "LifeOS-Research/1.0"` against 2-4 relevant subreddits. Tier-2 (Apify reddit-scraper) only if JSON rate-limits or 403s. Brief: enumerate subs likely to host the conversation, pull `top.json?t=week`, identify megathreads + dedicated single-subject threads, extract verbatim fan quotes with thread URLs and upvote scores. Persist raw JSON to `MEMORY/RESEARCH/{date}_{slug}/` for reuse.
-  - **Slot B (X / Twitter, Tier-1 API):** call X API v2 recent-search directly via `curl -H "Authorization: Bearer $X_BEARER_TOKEN" "https://api.twitter.com/2/tweets/search/recent?query=<event>&max_results=50"` — credentials already in env (`TWITTER_API_KEY`, `X_BEARER_TOKEN`). LifeOS users with a private X-wrapper skill can invoke that wrapper instead. Tier-2 (Apify tweet-scraper) only if the API returns no usable results. Captures first-6-hour reaction cluster.
-  - **Slot C (YouTube, optional, Tier-1 conditional):** if `YOUTUBE_API_KEY` set, use Data API v3 `search.list` + `commentThreads.list` for top reactor videos. Otherwise Tier-2: general-purpose subagent runs `fabric -y` on top 3 reactor videos AND pulls comments via Apify `streamers/youtube-scraper` if budget allows.
-  - The remaining 5-6 slots stay as explorer/verifier web-search agents per Step 1 — these now do *context scaffolding* (lineup, dates, schedule), not sentiment.
-- **No signal → Step 0b + Step 1 unchanged.** Nine web-search agents as documented below.
+For each source retain:
 
-### Step 0b: Generate Creative Research Angles (deep thinking)
-
-Think deeply about the research topic:
-- Explore multiple unusual perspectives and domains
-- Question assumptions about what's relevant
-- Make unexpected connections across fields
-- Consider edge cases, controversies, emerging trends
-
-Generate **7 unique explorer angles** + **2 verification angles** (9 total).
-- Explorer angles: diverse research directions
-- Verification angles: "verify the most important claims about [topic]" and "find contradictory evidence about [topic]"
-
-### Step 1: Launch All 9 Agents in Parallel
-
-**Sentiment-mode variant (Step 0a signal fired):** Replace 2-3 of the explorer slots below with Slot A (Reddit JSON), Slot B (YouTube), and optionally Slot C (X) per Step 0a. Keep both verifiers — they still catch hallucinated URLs across the scraper agents.
-
-**SINGLE message launching all 9 agents:**
-
-```typescript
-// === EXPLORERS (7 agents) ===
-
-// Claude - 2 threads (academic depth, strategic analysis)
-Task({ subagent_type: "ClaudeResearcher", description: "[topic] angle 1", prompt: "Search for: [angle 1]. Tag each finding with confidence: [HIGH], [MED], or [LOW]. Return findings." })
-Task({ subagent_type: "ClaudeResearcher", description: "[topic] angle 2", prompt: "Search for: [angle 2]. Tag each finding with confidence: [HIGH], [MED], or [LOW]. Return findings." })
-
-// Gemini - 3 threads (multi-perspective, cross-domain)
-Task({ subagent_type: "GeminiResearcher", description: "[topic] angle 3", prompt: "Search for: [angle 3]. Tag each finding with confidence: [HIGH], [MED], or [LOW]. Return findings." })
-Task({ subagent_type: "GeminiResearcher", description: "[topic] angle 4", prompt: "Search for: [angle 4]. Tag each finding with confidence: [HIGH], [MED], or [LOW]. Return findings." })
-Task({ subagent_type: "GeminiResearcher", description: "[topic] angle 5", prompt: "Search for: [angle 5]. Tag each finding with confidence: [HIGH], [MED], or [LOW]. Return findings." })
-
-// Grok - 2 threads (contrarian, fact-based)
-Task({ subagent_type: "GrokResearcher", description: "[topic] angle 6", prompt: "Search for: [angle 6]. Tag each finding with confidence: [HIGH], [MED], or [LOW]. Return findings." })
-Task({ subagent_type: "GrokResearcher", description: "[topic] angle 7", prompt: "Search for: [angle 7]. Tag each finding with confidence: [HIGH], [MED], or [LOW]. Return findings." })
-
-// === VERIFIERS (2 agents) ===
-// These independently check the most important claims about the topic.
-// They have NO access to explorer reasoning — only the topic and their own research.
-
-Task({ subagent_type: "PerplexityResearcher", description: "verify [topic] claims", prompt: "Independently verify the most commonly cited facts, statistics, and claims about [topic]. For each claim you find, check if it's supported by primary sources. Tag each as [HIGH] (confirmed), [MED] (plausible), or [LOW] (unconfirmed). Focus on quantitative claims and dates — these are most likely to be wrong." })
-Task({ subagent_type: "ClaudeResearcher", description: "find contradictions about [topic]", prompt: "Search for contradictory evidence, debunked claims, and common misconceptions about [topic]. What do people get wrong? What's the contrarian view with evidence? Tag each finding with confidence: [HIGH], [MED], or [LOW]." })
+```json
+{
+  "angle": "…",
+  "claim": "…",
+  "quotation_or_field": "…",
+  "url": "https://…",
+  "title": "…",
+  "published_at": "date or unknown",
+  "retrieved_at": "ISO-8601",
+  "locator": "…",
+  "source_quality": "primary | secondary | practitioner | community | weak",
+  "limitations": []
+}
 ```
 
-**Each agent:**
-- Gets ONE focused angle
-- Self-verifies URLs before returning (per agent Self-Verification protocol)
-- Tags findings with confidence levels
-- Returns as soon as it has findings
+Deduplicate canonical URLs and proposition-equivalent claims. Preserve which angle and source produced each finding.
 
-### Step 2: Collect Results (120 SECOND TIMEOUT)
+## 5. Verify and challenge
 
-- All 9 agents run in parallel
-- Most return within 30-60 seconds
-- **HARD TIMEOUT: 120 seconds** — proceed with whatever has returned
-- Note non-responsive agents
+Open decisive sources directly. Cross-reference explorer findings against verifier evidence and independent sources. Upgrade, qualify, downgrade, or reject claims based on the evidence—not on how many summaries repeat them. Use `DeepVerifiedResearch.md` for any small set of claims that requires the three-lens vote.
 
-### Step 3: Verified Synthesis
+## 6. Fill gaps deliberately
 
-**This is where the explorer-verifier pattern pays off.** Cross-reference explorer findings against verifier results:
+Compare completed evidence against the coverage matrix. Run a second bounded wave only for material gaps, contradictions, or sparse primary evidence. Stop when:
 
-1. **Match claims:** For each explorer finding, check if verifiers confirmed, contradicted, or didn't cover it
-2. **Upgrade/downgrade confidence:** Explorer claim `[MED]` + verifier confirmed → `[HIGH]`. Explorer claim `[HIGH]` + verifier contradicted → `[CONFLICT]`
-3. **Detect conflicts:** When explorers disagree with each other OR with verifiers, flag both sides
-4. **Parallel URL batch check:** For any remaining unverified URLs, run batch curl:
-   ```bash
-   # Parallel URL verification (all at once, not sequential)
-   for url in "${urls[@]}"; do curl -s -o /dev/null -w "%{http_code} $url\n" -L "$url" & done; wait
-   ```
+- every required area is covered or explicitly unavailable;
+- additional searches repeat known sources without changing the decision;
+- the approved budget is exhausted.
 
-**Synthesis structure:**
-```markdown
-## Executive Summary
-[2-3 sentence overview]
+## 7. Deliver
 
-## Verified Findings
-### [Theme 1]
-- [HIGH] Finding (confirmed by: explorer + verifier)
-- [MED] Finding (single source, not independently verified)
+Produce:
 
-### [Theme 2]
-- [HIGH] Finding (multiple explorers agree)
-- [CONFLICT] Finding A vs Finding B (see Conflicts section)
+- executive answer;
+- methodology and actual coverage;
+- verified findings by theme;
+- market/threat/entity tables when requested;
+- conflicts, rejected claims, and uncertainty;
+- implications and recommendations;
+- open questions;
+- source ledger and counts: discovered, opened, verified, blocked, rejected.
 
-## Unique Insights by Source
-- **Claude**: [analytical depth]
-- **Gemini**: [cross-domain connections]
-- **Grok**: [contrarian perspectives]
-- **Verifiers**: [what was confirmed/refuted]
+Never claim full coverage when a required source class or region was inaccessible.
 
-## Conflicts & Low-Confidence Items
-⚠️ CONFLICT on [topic]:
-  Explorer (GrokResearcher): [claim] — [source]
-  Verifier (PerplexityResearcher): [contradicting claim] — [source]
-  Status: Unresolved
+## Optional durable artifacts
 
-📉 LOW CONFIDENCE:
-- [claim] — could not independently verify
-```
-
-### Step 4: Return Results
-
-```markdown
-📋 SUMMARY: Extensive research on [topic]
-🔍 ANALYSIS: [Comprehensive verified findings by theme]
-⚡ ACTIONS: 7 explorers + 2 verifiers = 9 parallel agents
-✅ RESULTS: [Full synthesized report with confidence tags]
-📊 STATUS: Extensive mode - explorer-verifier pattern
-📁 CAPTURE: [Key verified discoveries]
-➡️ NEXT: [Follow-up recommendations, especially for CONFLICT items]
-📖 STORY EXPLANATION: [8 numbered points]
-🎯 COMPLETED: Extensive research on [topic] complete
-
-📈 RESEARCH METRICS:
-- Total Agents: 9 (7 explorers + 2 verifiers)
-- Explorer Types: Claude(2), Gemini(3), Grok(2)
-- Verifier Types: Perplexity(1), Claude(1)
-- Findings: N HIGH | N MED | N LOW | N CONFLICT
-- URLs verified: N/N
-```
-
-## Speed Target
-
-~60-90 seconds for results (parallel execution, same as before)
-Verification adds 0 seconds — verifiers run in parallel with explorers.
-
-## Graceful Degradation
-
-- If verifier agents time out → all findings stay at explorer-assigned confidence (no downgrade)
-- If only 1 explorer returns → skip cross-check, use self-verification only
-- If URL batch check fails → fall back to sequential curl
+When requested, write `scope.md`, `coverage.json`, `source-ledger.json`, `findings.json`, and `report.md` to an approved workspace. Re-read each artifact and verify row and source counts before reporting completion.

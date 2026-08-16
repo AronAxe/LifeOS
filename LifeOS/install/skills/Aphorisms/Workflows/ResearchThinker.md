@@ -2,16 +2,9 @@
 
 **Purpose:** Deep research on specific philosopher/thinker to discover relevant aphorisms aligned with TELOS philosophy, then add to database.
 
-## Voice Notification
+## Portable boundary
 
-```bash
-curl -s -X POST http://localhost:31337/notify \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Running the ResearchThinker workflow in the Aphorisms skill to research quotes"}' \
-  > /dev/null 2>&1 &
-```
-
-Running **ResearchThinker** in **Aphorisms**...
+This workflow performs no automatic notification, scheduling, or hidden persistence. Research uses Hermes-native tools and the aphorism library is mutated only after the principal approves the proposed additions.
 
 ---
 
@@ -22,7 +15,7 @@ Running **ResearchThinker** in **Aphorisms**...
 - Building out thinker sections in database
 
 **Prerequisites:**
-- Aphorism database exists at `~/.claude/skills/Aphorisms/Database/aphorisms.md`
+- Resolve a mutable aphorism library from `APHORISMS_LIBRARY` or an explicitly approved project/workspace path. Treat the installed skill payload as read-only.
 - Clear understanding of which thinker to research
 - Optional: specific theme/topic to focus research on
 
@@ -73,17 +66,7 @@ Running **ResearchThinker** in **Aphorisms**...
 
 **Launch Parallel Research:**
 
-Use Research Skill with multiple researchers for comprehensive coverage:
-
-```bash
-# Launch 3-5 parallel research agents
-# Each focuses on different sources/angles
-research_skill.parallel_research(
-  query="[Thinker Name] most impactful quotes on [theme/general]",
-  agents=["ClaudeResearcher", "GeminiResearcher"],
-  depth="standard"
-)
-```
+Use the Research skill and Hermes `delegate_task` for independent source angles. A useful batch separates primary works, recorded speech/interviews, and scholarly authentication. Each task receives the thinker, theme, date constraints, quotation schema, and requirement to return exact locators and source URLs. Respect the active concurrency limit; provider-specific agent types are neither required nor implied.
 
 **Research Sources to Cover:**
 
@@ -103,7 +86,7 @@ research_skill.parallel_research(
    - Understanding thinker's philosophy
 
 4. **Interviews & Lectures**
-   - YouTube transcripts (use fabric -y)
+   - YouTube transcripts through the installed YouTube-content route, or the optional Fabric skill after inspecting its documented command
    - Podcast appearances
    - Public talks and debates
 
@@ -259,22 +242,16 @@ research_skill.parallel_research(
 ### Step 7: Add to Database
 
 **Read current database:**
-```bash
-Read ~/.claude/skills/Aphorisms/Database/aphorisms.md
-```
+- Resolve the approved mutable library path and read it with `read_file`.
 
 **Locate thinker's section:**
 - Find: `### [Thinker Name]`
 - Section should exist with placeholder: `*Quotes to be added from research*`
 
-**Use Edit to replace placeholder:**
-```bash
-Edit(
-  file_path=~/.claude/skills/Aphorisms/Database/aphorisms.md,
-  old_string="### [Thinker Name]\n*Quotes to be added from research*",
-  new_string="### [Thinker Name]\n\n[Organized quotes with themes and context]"
-)
-```
+**Apply the approved change:**
+- Present the exact proposed quotes, provenance, themes, and target section for review.
+- After approval, use a narrow `patch` against the mutable library; do not overwrite unrelated entries or write into the installed skill directory.
+- Read back the affected section and verify quote counts and source locators.
 
 **Update Theme Index:**
 - Add thinker's name to relevant theme categories

@@ -199,7 +199,7 @@ Claude Design emits framework-specific files depending on the `framework` field:
 Before feeding a bundle to Claude Code, validate structure:
 
 ```bash
-bun ~/.claude/skills/Webdesign/Tools/ProcessHandoffBundle.ts <bundle-dir>
+bun "$HERMES_HOME/skills/webdesign/Tools/ProcessHandoffBundle.ts" <bundle-dir>
 ```
 
 The tool checks:
@@ -216,7 +216,7 @@ Two paths:
 
 ### Path A — Full code generation (ExportToCode workflow)
 
-Feed the bundle to Claude Code. The `frontend-design` plugin auto-activates, reads PROMPT.md, applies tokens.json, and produces production code.
+If the user has independently installed and approved a compatible Claude Code `frontend-design` plugin, that optional external product may consume `PROMPT.md` and `tokens.json` to generate code. HALOS does not install it or assume that it activates. Otherwise, integrate the bundle directly through Path B.
 
 ### Path B — Integration into existing app (IntegrateIntoApp workflow)
 

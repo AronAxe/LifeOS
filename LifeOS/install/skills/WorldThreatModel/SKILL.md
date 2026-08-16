@@ -44,7 +44,9 @@ All workflows support three execution tiers:
 
 ## World Model Storage
 
-Models are stored at: `$LIFEOS_DIR/MEMORY/RESEARCH/WorldModels/`
+Models are stored beneath `LIFEOS_WORLD_MODELS_DIR`, or
+`<PROJECT_ROOT>/.lifeos-world-models` when it is unset. Call this resolved path
+`<WORLD_MODEL_DIR>` throughout the workflows.
 
 ### Horizon Models (base views)
 
@@ -65,7 +67,7 @@ Models are stored at: `$LIFEOS_DIR/MEMORY/RESEARCH/WorldModels/`
 
 ### Scenario Models (alternative futures)
 
-Stored at: `$LIFEOS_DIR/MEMORY/RESEARCH/WorldModels/Scenarios/`
+Stored at: `<WORLD_MODEL_DIR>/Scenarios/`
 
 | File | Scenario |
 |------|----------|
@@ -87,22 +89,16 @@ This skill orchestrates multiple LifeOS capabilities:
 - **Council** — Multi-perspective debate on idea viability across horizons
 - **Research** — Deep research for model creation and updates
 
-## Voice Notification
+## Runtime boundaries
 
-Before any workflow execution:
-```bash
-curl -s -X POST http://localhost:31337/notify \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Running the WORKFLOWNAME workflow in the WorldThreatModel skill to ACTION"}' \
-  > /dev/null 2>&1 &
-```
-
-Then output: `Running the **WorkflowName** workflow in the **WorldThreatModel** skill to ACTION...`
-
-## Customization Check
-
-Before execution, check for user customizations at:
-`~/.claude/LIFEOS/USER/CUSTOMIZATIONS/SKILLS/WorldThreatModel/`
+- Resolve model state through `<WORLD_MODEL_DIR>` and keep the installed skill
+  directory read-only.
+- Resolve `ModelTemplate.md` and `OutputFormat.md` relative to the active
+  installed skill directory.
+- Treat `<WORLD_MODEL_DIR>/PREFERENCES.md` as an optional project-scoped override.
+- Current-state claims require fresh web research and cited URLs. Models are
+  versioned analytical artifacts, not durable personal-memory facts.
+- Use configured Hermes notifications only when the principal asks for them.
 
 ## Gotchas
 
@@ -127,12 +123,7 @@ User: "what could go wrong with our newsletter business model?"
 → Returns prioritized risk register with mitigations
 ```
 
-## Execution Log
+## Evidence
 
-After completing any workflow, append a single JSONL entry:
-
-```bash
-echo '{"ts":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","skill":"WorldThreatModel","workflow":"WORKFLOW_USED","input":"8_WORD_SUMMARY","status":"ok|error","duration_s":SECONDS}' >> ~/.claude/LIFEOS/MEMORY/SKILLS/execution.jsonl
-```
-
-Replace `WORKFLOW_USED` with the workflow executed, `8_WORD_SUMMARY` with a brief input description, and `SECONDS` with approximate wall-clock time. Log `status: "error"` if the workflow failed.
+The versioned model files, cited source URLs, update history, and generated
+analysis are the evidence record. Do not append a parallel global execution log.

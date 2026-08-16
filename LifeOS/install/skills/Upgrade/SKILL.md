@@ -9,7 +9,19 @@ effort: high
 
 Evaluates and recommends system improvements through an evidence-first lifecycle: **observe → classify → recommend → human decision → implement → verify → learn**.
 
-## Workflow
+## Workflow routing
+
+| Intent | Workflow |
+|---|---|
+| General system-improvement review | `Workflows/Upgrade.md` |
+| Discover and rank candidate evidence sources | `Workflows/FindSources.md` |
+| Mine recurring improvement signals from memory, sessions, and project evidence | `Workflows/MineReflections.md` |
+| Research a proposed upgrade against current external and local evidence | `Workflows/ResearchUpgrade.md` |
+| Propose a change to the installed Algorithm or its governing doctrine | `Workflows/AlgorithmUpgrade.md` |
+
+When the request matches a specialized route, load that workflow and apply the shared lifecycle below. Ambiguous upgrade requests default to `Workflows/Upgrade.md`.
+
+## Core workflow
 
 1. **Observe**: Establish actual current state using repository/config/workspace evidence (`read_file`, `search_files`, `terminal`) and `hindsight_recall` of past decisions. For external facts, use `web_search`/`web_extract` to gather sources.
 2. **Classify**: Explicitly distinguish three candidate statuses before recommending:

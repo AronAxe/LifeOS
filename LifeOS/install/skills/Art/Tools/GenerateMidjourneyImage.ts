@@ -16,11 +16,11 @@ for (const __k of ["LIFEOS_DIR", "LIFEOS_CONFIG_DIR", "PROJECTS_DIR"]) {
  * Usage:
  *   generate-midjourney-image --prompt "..." --aspect-ratio 16:9 --output /tmp/image.png
  *
- * @see ~/.claude/skills/art/SKILL.md
+ * @see ../SKILL.md
  */
 
-import { DiscordBotClient } from '../lib/discord-bot.js';
-import { MidjourneyClient, MidjourneyError } from '../lib/midjourney-client.js';
+import { DiscordBotClient } from "../Lib/discord-bot.js";
+import { MidjourneyClient, MidjourneyError } from "../Lib/midjourney-client.js";
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
@@ -36,12 +36,13 @@ for (const k of ["LIFEOS_DIR", "LIFEOS_CONFIG_DIR", "PROJECTS_DIR"]) {
 // ============================================================================
 
 /**
- * Load environment variables from ${LIFEOS_DIR}/.env
- * This ensures API keys are available regardless of how the CLI is invoked
+ * Optionally load environment variables from an explicitly configured directory.
+ * Process-level variables always take precedence.
  */
 async function loadEnv(): Promise<void> {
-  const paiDir = process.env.LIFEOS_DIR || resolve(process.env.HOME!, '.claude');
-  const envPath = resolve(paiDir, '.env');
+  const configDir = process.env.LIFEOS_CONFIG_DIR?.trim();
+  if (!configDir) return;
+  const envPath = resolve(configDir, '.env');
   try {
     const envContent = await readFile(envPath, 'utf-8');
     for (const line of envContent.split('\n')) {
@@ -51,18 +52,14 @@ async function loadEnv(): Promise<void> {
       if (eqIndex === -1) continue;
       const key = trimmed.slice(0, eqIndex).trim();
       let value = trimmed.slice(eqIndex + 1).trim();
-      // Remove surrounding quotes if present
       if ((value.startsWith('"') && value.endsWith('"')) ||
           (value.startsWith("'") && value.endsWith("'"))) {
         value = value.slice(1, -1);
       }
-      // Only set if not already defined (allow overrides from shell)
-      if (!process.env[key]) {
-        process.env[key] = value;
-      }
+      if (!process.env[key]) process.env[key] = value;
     }
-  } catch (error) {
-    // Silently continue if .env doesn't exist - rely on shell env vars
+  } catch {
+    // Provider checks below remain fail-closed when credentials are unavailable.
   }
 }
 
@@ -283,7 +280,7 @@ function parseArgs(args: string[]): CLIArgs {
 
 async function main() {
   try {
-    // Load API keys from ${LIFEOS_DIR}/.env
+    // Load API keys from the process environment or explicit LIFEOS_CONFIG_DIR.
     await loadEnv();
 
     // Parse arguments
@@ -295,13 +292,13 @@ async function main() {
 
     if (!botToken) {
       throw new CLIError(
-        'Missing DISCORD_BOT_TOKEN environment variable. Add it to ${LIFEOS_DIR}/.env'
+        'Missing DISCORD_BOT_TOKEN environment variable.'
       );
     }
 
     if (!channelId) {
       throw new CLIError(
-        'Missing MIDJOURNEY_CHANNEL_ID environment variable. Add it to ${LIFEOS_DIR}/.env'
+        'Missing MIDJOURNEY_CHANNEL_ID environment variable.'
       );
     }
 

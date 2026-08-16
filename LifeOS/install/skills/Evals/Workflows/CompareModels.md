@@ -2,19 +2,6 @@
 
 Compare multiple models on the same prompt to determine the best performer.
 
-## Voice Notification
-
-```bash
-curl -s -X POST http://localhost:31337/notify \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Running the CompareModels workflow in the Evals skill to compare model performance"}' \
-  > /dev/null 2>&1 &
-```
-
-Running the **CompareModels** workflow in the **Evals** skill to compare model performance...
-
----
-
 ## Prerequisites
 
 - Existing use case with test cases and prompt
@@ -46,7 +33,7 @@ models:
 
 ### Step 3: Create Model Comparison Config
 
-Create `~/.claude/skills/Evals/UseCases/<name>/model-comparisons/<comparison-name>.yaml`:
+Create `<EVAL_WORKSPACE>/use-cases/<name>/model-comparisons/<comparison-name>.yaml`:
 
 ```yaml
 model_comparison:
@@ -98,36 +85,31 @@ Run the same suite once per model via `AlgorithmBridge.ts`, then collect the per
 
 ```bash
 # Sequential — three runs, one per model
-bun run ~/.claude/skills/Evals/Tools/AlgorithmBridge.ts -s <use-case>-claude
-bun run ~/.claude/skills/Evals/Tools/AlgorithmBridge.ts -s <use-case>-gpt
-bun run ~/.claude/skills/Evals/Tools/AlgorithmBridge.ts -s <use-case>-gemini
+bun run <EVALS_SKILL_DIR>/Tools/AlgorithmBridge.ts -s <use-case>-claude
+bun run <EVALS_SKILL_DIR>/Tools/AlgorithmBridge.ts -s <use-case>-gpt
+bun run <EVALS_SKILL_DIR>/Tools/AlgorithmBridge.ts -s <use-case>-gemini
 
 # Parallel — same three runs in the background
-bun run ~/.claude/skills/Evals/Tools/AlgorithmBridge.ts -s <use-case>-claude &
-bun run ~/.claude/skills/Evals/Tools/AlgorithmBridge.ts -s <use-case>-gpt &
-bun run ~/.claude/skills/Evals/Tools/AlgorithmBridge.ts -s <use-case>-gemini &
+bun run <EVALS_SKILL_DIR>/Tools/AlgorithmBridge.ts -s <use-case>-claude &
+bun run <EVALS_SKILL_DIR>/Tools/AlgorithmBridge.ts -s <use-case>-gpt &
+bun run <EVALS_SKILL_DIR>/Tools/AlgorithmBridge.ts -s <use-case>-gemini &
 wait
 ```
 
-Each run's `results.json` lands at `~/.claude/LIFEOS/MEMORY/STATE/Evals-Results/<use-case>-<model>/<run-id>/results.json`. Side-by-side comparison is done by reading those JSONs (`jq`) — there is no built-in cross-model comparison CLI in this skill.
+Each run's `results.json` lands at `<EVAL_WORKSPACE>/results/<use-case>-<model>/<run-id>/results.json`. Side-by-side comparison is done by reading those JSONs (`jq`) — there is no built-in cross-model comparison CLI in this skill.
 5. View side-by-side results
 
 ### Step 5: Collect Results
 
 Results stored in:
-- `LIFEOS/MEMORY/STATE/Evals-Results/<use-case>/models/<run-id>/`
-- `LIFEOS/MEMORY/STATE/Evals-Results/<use-case>/models/<run-id>/comparison.json`
+- `<EVAL_WORKSPACE>/results/<use-case>/models/<run-id>/`
+- `<EVAL_WORKSPACE>/results/<use-case>/models/<run-id>/comparison.json`
 
 ### Step 6: Generate Comparison Report
 
-Use Report template:
-
-```bash
-bun run ~/.claude/Templates/Tools/RenderTemplate.ts \
-  -t Evals/Report.hbs \
-  -d ~/.claude/LIFEOS/MEMORY/STATE/Evals-Results/<use-case>/models/<run-id>/summary.yaml \
-  -o ~/.claude/LIFEOS/MEMORY/STATE/Evals-Results/<use-case>/models/<run-id>/report.md
-```
+Write `<EVAL_WORKSPACE>/results/<use-case>/models/<run-id>/report.md`
+directly from the collected JSON. Use the output template below and cite the
+exact result files used. No global template renderer is installed by Hermes.
 
 ### Step 7: Analyze Results
 

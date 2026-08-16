@@ -174,7 +174,7 @@ Generated CLIs follow LifeOS standards:
 ### Repository Placement
 
 Generated CLIs go to:
-- `~/.claude/LIFEOS/TOOLS/[cli-name]/` - Personal CLIs (like llcli)
+- `<PROJECT_DIR>/[cli-name]/` - Personal CLIs (like llcli)
 - `~/Projects/[project-name]/` - Project-specific CLIs
 - `${PROJECTS_DIR}/LIFEOS/Examples/clis/` - Example CLIs (PUBLIC repo)
 
@@ -216,7 +216,7 @@ Every generated CLI follows:
 
 **Generated Structure:**
 ```
-~/.claude/LIFEOS/TOOLS/ghcli/
+<PROJECT_DIR>/ghcli/
 ├── ghcli.ts              # 350 lines, complete implementation
 ├── package.json          # Bun + TypeScript
 ├── tsconfig.json         # Strict mode
@@ -242,7 +242,7 @@ ghcli --help
 
 **Generated Structure:**
 ```
-~/.claude/LIFEOS/TOOLS/md2html/
+<PROJECT_DIR>/md2html/
 ├── md2html.ts
 ├── package.json
 ├── README.md
@@ -265,7 +265,7 @@ md2html extract-frontmatter post.md
 
 **Generated Structure:**
 ```
-~/.claude/LIFEOS/TOOLS/data-cli/
+<PROJECT_DIR>/data-cli/
 ├── data-cli.ts           # Commander.js with subcommands
 ├── package.json
 ├── README.md

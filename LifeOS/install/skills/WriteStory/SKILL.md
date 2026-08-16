@@ -5,25 +5,6 @@ description: "Scaffolding that helps a writer build a story they already want to
 effort: high
 ---
 
-## 🚨 MANDATORY: Voice Notification (REQUIRED BEFORE ANY ACTION)
-
-**You MUST send this notification BEFORE doing anything else when this skill is invoked.**
-
-1. **Send voice notification**:
-   ```bash
-   curl -s -X POST http://localhost:31337/notify \
-     -H "Content-Type: application/json" \
-     -d '{"message": "Running the WORKFLOWNAME workflow in the WriteStory skill to ACTION"}' \
-     > /dev/null 2>&1 &
-   ```
-
-2. **Output text notification**:
-   ```
-   Running the **WorkflowName** workflow in the **WriteStory** skill to ACTION...
-   ```
-
-**This is not optional. Execute this curl command immediately upon skill invocation.**
-
 # WriteStory
 
 ## What It Does
@@ -66,7 +47,7 @@ The usual path: **Interview** reads what you have and builds the spine with you 
 
 ## Projects and State
 
-Each book is a project under `LIFEOS/USER/CUSTOMIZATIONS/SKILLS/WriteStory/projects/<book-slug>/`:
+Set `LIFEOS_WRITING_WORKSPACE` to an explicitly approved writable directory outside the installed skill tree. Each book is a project under `<LIFEOS_WRITING_WORKSPACE>/projects/<book-slug>/`. If no workspace is configured, ask for a project location before writing; never invent or silently create a private state tree.
 
 - `interview.md` — the saved interview results (the spine, the layers, what's confirmed)
 - `ISA.md` — the Story Bible as a project ISA: the living plan that tracks what's done and what's left, growing across sessions
@@ -102,8 +83,8 @@ WriteStory augments a creator. It never substitutes for one. This is the rule th
 
 ## Customization
 
-**Before executing, check for user customizations at:**
-`~/.claude/LIFEOS/USER/CUSTOMIZATIONS/SKILLS/WriteStory/`
+**Before executing, check the explicitly configured workspace at:**
+`<LIFEOS_WRITING_WORKSPACE>/`
 
 If this directory exists, load and apply:
 - `PREFERENCES.md` — default genre, aesthetic, voice
@@ -148,13 +129,3 @@ User: "Write chapter 3 based on the story bible"
 - **Story bibles are the source of truth for series continuity.** Always read the project ISA before writing new content.
 - **Rhetorical figures are specific devices** — use them precisely at high-impact moments, not as decoration.
 - **Character arcs follow the flaw → crisis → transformation model** (Storr), not "character grows."
-
-## Execution Log
-
-After completing any workflow, append a single JSONL entry:
-
-```bash
-echo '{"ts":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","skill":"WriteStory","workflow":"WORKFLOW_USED","input":"8_WORD_SUMMARY","status":"ok|error","duration_s":SECONDS}' >> ~/.claude/LIFEOS/MEMORY/SKILLS/execution.jsonl
-```
-
-Replace `WORKFLOW_USED` with the workflow executed, `8_WORD_SUMMARY` with a brief input description, and `SECONDS` with approximate wall-clock time. Log `status: "error"` if the workflow failed.

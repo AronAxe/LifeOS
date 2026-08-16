@@ -69,11 +69,10 @@ export default function AddFilePage() {
           body: formData,
         })
 
-        if (!response.ok) {
-          throw new Error('Upload failed')
-        }
-
         const data = await response.json()
+        if (!response.ok) {
+          throw new Error(data.error || 'Upload failed')
+        }
 
         // Update status to success
         setUploadedFiles(prev => prev.map(f =>
@@ -88,7 +87,7 @@ export default function AddFilePage() {
         // Update status to error
         setUploadedFiles(prev => prev.map(f =>
           f.name === file.name && f.status === "uploading"
-            ? { ...f, status: "error" as const, message: "Upload failed" }
+            ? { ...f, status: "error" as const, message: error instanceof Error ? error.message : "Upload failed" }
             : f
         ))
       }
@@ -238,8 +237,8 @@ export default function AddFilePage() {
                   2
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">Automatic Analysis</p>
-                  <p>Files are automatically analyzed and their content is incorporated into the TELOS system</p>
+                  <p className="font-medium text-gray-900">Immediate Inventory</p>
+                  <p>Accepted files become available to the dashboard inventory; no background analysis or ingestion is implied</p>
                 </div>
               </div>
               <div className="flex gap-3">
@@ -248,7 +247,7 @@ export default function AddFilePage() {
                 </div>
                 <div>
                   <p className="font-medium text-gray-900">Dashboard Updates</p>
-                  <p>New data becomes immediately available in the dashboard and AI chat</p>
+                  <p>New data becomes available in the dashboard and, only when separately configured, the assistant adapter</p>
                 </div>
               </div>
               <div className="flex gap-3">
@@ -256,8 +255,8 @@ export default function AddFilePage() {
                   4
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">Persistent Storage</p>
-                  <p>Files are saved to your TELOS directory (~/.claude/skills/Telos/)</p>
+                  <p className="font-medium text-gray-900">Configured Source</p>
+                  <p>Files are saved only when TELOS_DIR is configured and TELOS_ALLOW_WRITES=true</p>
                 </div>
               </div>
             </div>

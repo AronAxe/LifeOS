@@ -4,19 +4,6 @@ A/B test two prompt versions to determine which performs better.
 
 **This workflow implements the Science Protocol for prompt experimentation.**
 
-## Voice Notification
-
-```bash
-curl -s -X POST http://localhost:31337/notify \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Running the ComparePrompts workflow in the Evals skill to A/B test prompts"}' \
-  > /dev/null 2>&1 &
-```
-
-Running the **ComparePrompts** workflow in the **Evals** skill to A/B test prompts...
-
----
-
 ## Science Protocol Alignment
 
 Before running any comparison, ensure you're following scientific rigor:
@@ -67,7 +54,7 @@ Ask the user:
 
 ```bash
 # Check prompts exist
-ls ~/.claude/skills/Evals/UseCases/<name>/prompts/
+ls <EVAL_WORKSPACE>/use-cases/<name>/prompts/
 
 # Should see both versions:
 # v1.0.0.md
@@ -76,7 +63,7 @@ ls ~/.claude/skills/Evals/UseCases/<name>/prompts/
 
 ### Step 3: Create Comparison Config
 
-Create `~/.claude/skills/Evals/UseCases/<name>/comparisons/<comparison-name>.yaml`:
+Create `<EVAL_WORKSPACE>/use-cases/<name>/comparisons/<comparison-name>.yaml`:
 
 ```yaml
 comparison:
@@ -120,8 +107,8 @@ Run the suite once per prompt version via `AlgorithmBridge.ts`. The use-case con
 
 ```bash
 # Run v1.0.0 first, then v1.1.0
-bun run ~/.claude/skills/Evals/Tools/AlgorithmBridge.ts -s <use-case>-v1.0.0
-bun run ~/.claude/skills/Evals/Tools/AlgorithmBridge.ts -s <use-case>-v1.1.0
+bun run <EVALS_SKILL_DIR>/Tools/AlgorithmBridge.ts -s <use-case>-v1.0.0
+bun run <EVALS_SKILL_DIR>/Tools/AlgorithmBridge.ts -s <use-case>-v1.1.0
 ```
 
 Position-swap protection (for pairwise judges that may favor the first/second option presented) is implemented inside the judge config — see the `position_swap: true` flag on `pairwise_comparison` graders in the use-case `config.yaml`. The grader handles randomization; the runner doesn't need a separate flag.
@@ -140,7 +127,7 @@ This addresses the known bias where LLMs favor the first option presented.
 ### Step 6: Collect Results
 
 Results stored in:
-- `LIFEOS/MEMORY/STATE/Evals-Results/<use-case>/comparisons/<comparison-name>/<run-id>.json`
+- `<EVAL_WORKSPACE>/results/<use-case>/comparisons/<comparison-name>/<run-id>.json`
 
 Results structure:
 ```json
@@ -289,17 +276,12 @@ variants:
 focus: "depth"
 ```
 
-## Render Comparison Template
+## Document Comparison Setup
 
-For detailed comparison setup, use the Comparison template:
-
-```bash
-bun run ~/.claude/Templates/Tools/RenderTemplate.ts \
-  -t Evals/Comparison.hbs \
-  -d ~/.claude/skills/Evals/UseCases/<name>/comparisons/<name>.yaml \
-  -o ~/.claude/skills/Evals/UseCases/<name>/comparisons/<name>-setup.md \
-  --preview
-```
+Write `<EVAL_WORKSPACE>/use-cases/<name>/comparisons/<name>-setup.md`
+directly from the comparison YAML and the pre-committed hypothesis, threshold,
+variants, judge configuration, and falsification condition. Hermes installs no
+global template renderer.
 
 ## Paradigm Check (When Iterations Stall)
 

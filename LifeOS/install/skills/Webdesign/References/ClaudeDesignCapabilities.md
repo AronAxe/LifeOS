@@ -67,7 +67,7 @@ Claude Design is an Anthropic Labs product accessed at **claude.ai/design** and 
 
 > "Claude packages everything into a handoff bundle that you can pass to Claude Code with a single instruction."
 
-This is the load-bearing integration point between Claude Design (concept/design) and Claude Code (production). The `frontend-design` plugin (installed via Anthropic's official plugins marketplace) auto-activates when the bundle lands in Claude Code.
+This is an optional external integration point between Claude Design and Claude Code. If the user independently installs and configures the `frontend-design` plugin through Anthropic's marketplace, that external product may consume a handoff bundle. HALOS neither installs the plugin nor assumes its activation.
 
 ## Access Tiers
 
@@ -116,6 +116,6 @@ These are two separate products that form a pipeline:
 | Layer | Product | Surface | Role |
 |-------|---------|---------|------|
 | Concept + design | **Claude Design** | claude.ai/design | Visual exploration, prototypes, design system |
-| Production code | **`frontend-design` plugin** | Claude Code (auto-activates) | Turns handoff bundles into production-grade code |
+| Production code | **Optional `frontend-design` plugin** | Separately managed Claude Code | May turn handoff bundles into production code when independently installed and configured |
 
-The Webdesign skill orchestrates both.
+The Webdesign skill supports DirectDesign on Hermes and documents this separate pipeline as optional interoperability material.

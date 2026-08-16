@@ -2,19 +2,6 @@
 
 Create a custom LLM-as-Judge using templates.
 
-## Voice Notification
-
-```bash
-curl -s -X POST http://localhost:31337/notify \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Running the CreateJudge workflow in the Evals skill to create LLM judge"}' \
-  > /dev/null 2>&1 &
-```
-
-Running the **CreateJudge** workflow in the **Evals** skill to create LLM judge...
-
----
-
 ## Prerequisites
 
 - Use case exists or being created
@@ -33,7 +20,7 @@ Ask the user:
 
 ### Step 2: Create Judge Config
 
-Create `~/.claude/skills/Evals/UseCases/<name>/judge-config.yaml`:
+Create `<EVAL_WORKSPACE>/use-cases/<name>/judge-config.yaml`:
 
 ```yaml
 judge:
@@ -64,13 +51,10 @@ output:
 
 ### Step 3: Render Judge Prompt
 
-```bash
-bun run ~/.claude/Templates/Tools/RenderTemplate.ts \
-  -t Evals/Judge.hbs \
-  -d ~/.claude/skills/Evals/UseCases/<name>/judge-config.yaml \
-  -o ~/.claude/skills/Evals/UseCases/<name>/judge-prompt.md \
-  --preview
-```
+Write `<EVAL_WORKSPACE>/use-cases/<name>/judge-prompt.md` directly from
+`judge-config.yaml`. Preserve every criterion, weight, scale, reasoning
+requirement, position-swap setting, and output field. Hermes installs no global
+template renderer, so review the resulting Markdown before use.
 
 ### Step 4: Review Generated Prompt
 
@@ -99,8 +83,8 @@ criteria:
 Run the suite (which contains the use case + judge) via `AlgorithmBridge.ts` and inspect the output:
 
 ```bash
-bun run ~/.claude/skills/Evals/Tools/AlgorithmBridge.ts -s <suite>
-cat ~/.claude/LIFEOS/MEMORY/STATE/Evals-Results/<use-case>/<run-id>/results.json | jq '.trials[0].graders'
+bun run <EVALS_SKILL_DIR>/Tools/AlgorithmBridge.ts -s <suite>
+cat <EVAL_WORKSPACE>/results/<use-case>/<run-id>/results.json | jq '.trials[0].graders'
 ```
 
 To exercise only a single test case while iterating on the judge, scope the suite config to one task in `UseCases/<name>/test-cases/` and re-run.

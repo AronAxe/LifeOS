@@ -1,234 +1,54 @@
 # Apify Integration Guide
 
-**Status:** Production Ready ✅
-**Token Savings:** 90-98% vs traditional MCP approach
-**Execution Time:** ~10 seconds typical
+## Installed contract
 
-## Integration with LifeOS Skills
+The skill ships a TypeScript Apify client (`index.ts`), actor wrappers (`actors/`), one X/Twitter helper (`skills/get-user-tweets.ts`), examples, and package metadata. It does not install a filesystem MCP or the historical `get-latest-tweet.ts`, `get-latest-thread.ts`, and debug scripts.
 
-### Social Skill Integration
+Resolve the loaded skill directory as `<APIFY_SKILL_DIR>` before executing commands. Do not assume the directory name because collision-safe installation may use a `lifeos-` prefix.
 
+## Local client
 
-**Updated Section:** "Fetching Tweet Content"
+From `<APIFY_SKILL_DIR>`:
 
-The social skill now uses code-based Apify scripts instead of `mcp__apify` MCP tool.
+```ts
+import { Apify } from "./index"
 
-**Trigger → Script Mapping:**
-
-| User Says | Script to Run |
-|-----------|---------------|
-| "my latest tweet" | `get-latest-tweet.ts` |
-| "my latest thread" | `get-latest-thread.ts` |
-| "get tweets from @user" | `get-user-tweets.ts user 5` |
-| "what has @user been talking about" | `get-user-tweets.ts user 10` |
-
-**Example Workflow:**
-
-1. User: "Turn my latest tweet into a LinkedIn post"
-2. System runs: `bun ~/.claude/filesystem-mcps/apify/get-latest-tweet.ts`
-3. Script returns: Tweet text + metadata (~500 tokens)
-4. System transforms tweet into LinkedIn format
-5. **Token savings: 98%** (vs fetching unfiltered profile data)
-
-### Research Skill Integration
-
-**Use Case:** Monitor influential developers' Twitter activity
-
-```bash
-# Research what ThePrimeagen is discussing
-bun ~/.claude/filesystem-mcps/apify/get-user-tweets.ts ThePrimeagen 10
-
-# Analyze Paul Graham's recent thoughts
-bun ~/.claude/filesystem-mcps/apify/get-user-tweets.ts paulg 20
-
-# Track Simon Willison's posts
-bun ~/.claude/filesystem-mcps/apify/get-user-tweets.ts simonw 15
+const apify = new Apify(process.env.APIFY_TOKEN)
+const actors = await apify.search("instagram scraper")
+const run = await apify.callActor(actors[0].id, {
+  profiles: ["target"],
+  resultsLimit: 100,
+})
+const dataset = await apify.getDataset(run.defaultDatasetId)
+const items = await dataset.listItems({ limit: 100 })
+const relevant = items
+  .filter((item) => item.likesCount > 1000)
+  .slice(0, 10)
+console.log(JSON.stringify(relevant))
 ```
 
-**Token Efficiency:**
-- 10 tweets unfiltered: ~80,000 tokens
-- 10 tweets filtered: ~8,000 tokens
-- **Savings: 90%**
+The exact actor input and result schema must be checked before use.
 
-### Writing Skill Integration
+## Shipped actor wrappers
 
-**Use Case:** Generate blog content from Twitter discussions
+Use exports under `actors/` for social media, Google Maps, Amazon, and web scraping. Inspect the selected wrapper, set strict input limits, and filter data in code. Keep large/intermediate datasets out of model context.
 
-```bash
-# Get user's thread about AI topic
-bun ~/.claude/filesystem-mcps/apify/get-latest-thread.ts
+The bundled user-tweet helper can be invoked only after inspecting its help/source and confirming required configuration:
 
-# Expand thread into blog post format
-# Token efficient: only thread content in context
+```text
+bun <APIFY_SKILL_DIR>/skills/get-user-tweets.ts <username> <limit>
 ```
 
-## Available Scripts Summary
+No account identity is bundled. Inputs such as “my latest post” require the principal to identify the account or provide configured context.
 
-### 1. get-latest-tweet.ts
-**Purpose:** User's most recent single tweet
-**Usage:** `bun get-latest-tweet.ts`
-**Returns:** Text, date, URL, engagement stats
-**Tokens:** ~500
+## Error handling
 
-### 2. get-latest-thread.ts
-**Purpose:** User's most recent Twitter thread
-**Usage:** `bun get-latest-thread.ts`
-**Returns:** All thread tweets chronologically
-**Tokens:** ~5,500 (for 5-tweet thread)
-**Savings:** 87-90% vs unfiltered
+- Missing `APIFY_TOKEN`: stop with setup guidance; never expose a token.
+- Actor failure/timeout: report actor/run identifiers and status.
+- Empty dataset: verify input/schema before concluding there are no records.
+- Changed actor schema: update the wrapper and tests through the skill-maintenance workflow.
+- Chargeable run: obtain approval when cost has not already been authorized.
 
-### 3. get-user-tweets.ts
-**Purpose:** Any user's recent tweets
-**Usage:** `bun get-user-tweets.ts <username> <limit>`
-**Returns:** Recent tweets with metadata
-**Tokens:** ~800 per tweet
-**Savings:** 90-95% vs unfiltered
+## Verification
 
-### 4. debug-tweet-structure.ts
-**Purpose:** Inspect raw API response
-**Usage:** `bun debug-tweet-structure.ts`
-**Returns:** Full JSON structure + available fields
-**Use:** Development/debugging only
-
-## Migration from MCP
-
-### Before (MCP Approach)
-
-```typescript
-// Step 1: Search for actors (~1,000 tokens)
-mcp__Apify__search-actors("twitter scraper")
-
-// Step 2: Call actor (~1,000 tokens)
-mcp__Apify__call-actor(actorId, input)
-
-// Step 3: Get output (~50,000 tokens unfiltered!)
-mcp__Apify__get-actor-output(runId)
-
-// Total: ~57,000 tokens
-```
-
-### After (Code-Based Approach)
-
-```typescript
-// All in one script, filtering in code
-bun ~/.claude/filesystem-mcps/apify/get-latest-tweet.ts
-
-// Returns only filtered result: ~500 tokens
-// Savings: 98.2%
-```
-
-## Best Practices
-
-### DO:
-✅ Use appropriate script for the task
-✅ Let script filter data before returning
-✅ Trust token savings calculations
-✅ Run from `~/.claude/filesystem-mcps/apify/` directory or use full path
-✅ Check execution time (~10 seconds expected)
-
-### DON'T:
-❌ Fall back to MCP tools for Twitter operations
-❌ Fetch unfiltered data into model context
-❌ Re-implement filtering logic (use existing scripts)
-❌ Skip error handling (scripts handle common errors)
-❌ Ignore token savings metrics in output
-
-## Performance Expectations
-
-**Execution Time:**
-- Actor search: Eliminated (hardcoded actor ID)
-- Actor execution: ~10 seconds (Apify platform time)
-- Data processing: <1 second (TypeScript filtering)
-- **Total: ~10 seconds**
-
-**Token Usage:**
-- Single tweet: 500 tokens (vs 57,000 MCP)
-- Thread (5 tweets): 5,500 tokens (vs 60,000 unfiltered)
-- User tweets (10): 8,000 tokens (vs 80,000 unfiltered)
-
-**Rate Limits:**
-- Apify free tier: 100 actor runs/day
-- Apify paid tier: Unlimited
-- Current usage: Well within limits
-
-## Error Handling
-
-Scripts handle common errors automatically:
-
-1. **Missing APIFY_TOKEN** → Clear error message with setup instructions
-2. **Actor failure** → Reports status and exits cleanly
-3. **No results** → Graceful message, no crash
-4. **Network timeout** → Configurable timeout (120s default)
-
-**Manual intervention rarely needed.**
-
-## Future Enhancements
-
-### Planned Features:
-
-1. **Search tweets by topic**
-   - `search-tweets.ts <username> <query> <limit>`
-   - Example: Search user's tweets about "AI" from last month
-
-2. **Thread detection improvements**
-   - Better handling of quote tweets
-   - Reply chain analysis
-   - Thread continuity verification
-
-3. **Engagement analytics**
-   - Filter by minimum engagement threshold
-   - Sort by engagement metrics
-   - Engagement trend analysis
-
-4. **Export formats**
-   - JSON output for programmatic use
-   - Markdown format for documentation
-   - CSV for spreadsheet analysis
-
-### Migration Candidates:
-
-Other Apify actors worth implementing:
-- Instagram scraping
-- LinkedIn scraping
-- YouTube data extraction
-- Generic web scraping
-
-**Same pattern applies:** Filter in code, 90%+ token savings expected.
-
-## Documentation
-
-**For Users:**
-- Quick reference: `~/.claude/`
-- Social skill: `~/.claude/`
-
-**For Developers:**
-- Implementation: `~/.claude/`
-- Standards: `~/.claude/`
-- Parent guide: `~/.claude/`
-
-## Support
-
-**Common Questions:**
-
-Q: Why not use MCP?
-A: 90-98% token savings, faster execution, better control.
-
-Q: What if script fails?
-A: Check `APIFY_TOKEN` in `${LIFEOS_DIR}/.env`, verify network, check Apify status.
-
-Q: Can I add new actors?
-A: Yes! Follow `STANDARDS.md` pattern, hardcode actor ID, filter in code.
-
-Q: How do I debug?
-A: Use `debug-tweet-structure.ts` to inspect raw data, check console output.
-
-## Success Metrics
-
-**Achieved:**
-- ✅ 90-98% token reduction vs MCP
-- ✅ ~10 second execution time
-- ✅ Production integration in social skill
-- ✅ 4 production-ready scripts
-- ✅ Comprehensive documentation
-
-**This is now the standard for all Twitter operations in LifeOS.**
+Check run completion, dataset item count, representative item fields, filter behavior, final output count, and any output artifact written. Claims about token savings are workload-dependent; measure actual serialized input/output when material.

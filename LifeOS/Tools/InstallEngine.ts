@@ -125,7 +125,7 @@ export function detectHarness(home: string): HarnessInfo {
   const candidates: Array<{ name: Harness; root: string; skills: string; bin: string }> = [
     { name: "claude-code", root: process.env.CLAUDE_CONFIG_DIR || join(home, ".claude"), skills: "skills", bin: "claude" },
     { name: "opencode", root: process.env.OPENCODE_CONFIG_DIR || join(home, ".config", "opencode"), skills: "skills", bin: "opencode" },
-    { name: "hermes", root: join(home, ".hermes"), skills: "skills", bin: "hermes" },
+    { name: "hermes", root: process.env.HERMES_HOME || join(home, ".hermes"), skills: "skills", bin: "hermes" },
     { name: "cursor", root: join(home, ".cursor"), skills: "skills", bin: "cursor" },
     { name: "openclaw", root: join(home, ".openclaw"), skills: "skills", bin: "openclaw" },
   ];

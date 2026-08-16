@@ -1,6 +1,6 @@
 # ExportToCode
 
-> **Prefer Path 2 first.** If `/design-sync` is available, use `Workflows/NativeDesignSync.md` to move the design into code — it's the first-party, deterministic path. This bundle-export workflow (Path 3) is the fallback for when you're working from the web canvas and is unproven (the `interceptor-test` profile isn't logged into claude.ai). See SKILL.md → Prerequisites.
+> **Optional external adapter.** This workflow applies only when the user explicitly selects the Claude Design web-canvas path and provides an approved authenticated browser profile. It is not preferred over DirectDesign or assumed available. See `SKILL.md` → Prerequisites.
 
 Claude Design handoff bundle → production code via the `frontend-design` plugin.
 
@@ -26,7 +26,7 @@ Optional:
 OUT=~/Downloads/webdesign/export/$(date +%Y%m%d-%H%M%S)
 mkdir -p "$OUT"
 
-bun ~/.claude/skills/Webdesign/Tools/DriveClaudeDesign.ts export bundle "$OUT/bundle"
+bun "$HERMES_HOME/skills/webdesign/Tools/DriveClaudeDesign.ts" export bundle "$OUT/bundle"
 ```
 
 The `bundle` format produces a directory containing:
@@ -39,19 +39,19 @@ The `bundle` format produces a directory containing:
 ### 2. Parse the Bundle
 
 ```bash
-bun ~/.claude/skills/Webdesign/Tools/ProcessHandoffBundle.ts "$OUT/bundle" > "$OUT/bundle.json"
-bun ~/.claude/skills/Webdesign/Tools/ProcessHandoffBundle.ts "$OUT/bundle" --brief > "$OUT/integration-brief.md"
+bun "$HERMES_HOME/skills/webdesign/Tools/ProcessHandoffBundle.ts" "$OUT/bundle" > "$OUT/bundle.json"
+bun "$HERMES_HOME/skills/webdesign/Tools/ProcessHandoffBundle.ts" "$OUT/bundle" --brief > "$OUT/integration-brief.md"
 ```
 
-The `--brief` flag emits a markdown summary ready to feed into the next agent (the `frontend-design` plugin).
+The `--brief` flag emits a markdown summary suitable for a direct Hermes integration pass or, when independently installed and approved, an optional external frontend-design plugin.
 
-### 3. Hand Off to the `frontend-design` Plugin
+### 3. Integrate the Bundle
 
-The Anthropic `frontend-design` plugin auto-activates in Claude Code whenever a frontend build request arrives. Feed it the bundle + brief:
+The supported route is to integrate the bundle in Hermes against the target project's real framework, components, and tokens. If the user independently maintains and explicitly requests a compatible Claude Code `frontend-design` plugin, the same bundle and brief may instead be handed to that optional external product:
 
 > "Build the frontend from this handoff bundle: $OUT/bundle. Follow the integration brief at $OUT/integration-brief.md. Target framework: $FRAMEWORK. Place output in $OUT/code/."
 
-The plugin does the actual code generation — bold aesthetic, distinctive typography, cohesive palette, production-grade — using the tokens and prompt the bundle carries.
+Do not assume the external plugin exists or activates. Whichever route is used must produce reviewable code in `$OUT/code/` before verification.
 
 ### 4. Verify the Generated Code
 
@@ -64,7 +64,7 @@ DEV_PID=$!
 sleep 3
 
 # Screenshot the running app
-bun ~/.claude/skills/Webdesign/Tools/VerifyDesign.ts http://localhost:5173 "$OUT/verify"
+bun "$HERMES_HOME/skills/webdesign/Tools/VerifyDesign.ts" http://localhost:5173 "$OUT/verify"
 
 kill $DEV_PID
 ```
@@ -74,7 +74,7 @@ Compare `$OUT/verify/screenshot.png` against `$OUT/bundle/preview.html` — fide
 ### 5. Accessibility Check
 
 ```bash
-bun ~/.claude/skills/Webdesign/Tools/VerifyDesign.ts --a11y http://localhost:5173 "$OUT/a11y"
+bun "$HERMES_HOME/skills/webdesign/Tools/VerifyDesign.ts" --a11y http://localhost:5173 "$OUT/a11y"
 ```
 
 Any critical or serious a11y violations block shipping. Fix in code before proceeding.

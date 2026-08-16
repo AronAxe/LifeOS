@@ -1,108 +1,67 @@
-# Verify Workflow
+# Research Verification Workflow
 
-Reusable verification layer for research outputs. Inspired by Nomad's explorer-verifier pattern (arXiv:2603.29353). Can be invoked standalone or embedded within other research workflows.
+Use to audit claims, citations, a draft report, or findings returned by another workflow.
 
-**Trigger:** Called by other workflows (ExtensiveResearch, DeepInvestigation) or standalone via "verify these findings"
+## 1. Normalize claims
 
----
+Split the material into falsifiable units. Assign each a stable ID and record:
 
-## Core Principle
-
-> The verifier operates independently from the explorer. It does not have access to the explorer's reasoning, and only receives the final claims for evaluation.
-> — Nomad, §3.7
-
-Verification decomposes findings into atomic sub-claims, then independently validates each. This catches errors that self-verification misses because the verifier has no confirmation bias from the exploration process.
-
----
-
-## Verification Priority
-
-Focus verification effort on the claims most likely to be wrong:
-
-1. **Quantitative claims** (numbers, percentages, dates) — most common hallucination target
-2. **Causal claims** ("X causes Y") — often asserted without evidence
-3. **Recency claims** ("as of 2026") — training data may be stale
-4. **Specificity claims** (exact product names, version numbers, API parameters) — easily fabricated
-
-Don't waste verification time on general statements or widely-known facts.
-
----
-
-## Confidence Scoring
-
-Every claim receives a confidence tag based on verification results:
-
-| Tag | Meaning | Criteria |
-|-----|---------|----------|
-| `[HIGH]` | Independently verified | Sub-claim confirmed via tool call (WebSearch, WebFetch, or document) |
-| `[MED]` | Partially verified | Some sub-claims confirmed, others unverifiable but plausible |
-| `[LOW]` | Unverified | No independent confirmation found, or contradicted by other sources |
-| `[CONFLICT]` | Agents disagree | Two or more agents made contradictory claims on this topic |
-
-**Default:** Missing confidence metadata = `[LOW]` (safe default).
-
----
-
-## Conflict Detection
-
-When multiple agents' results are available, scan for contradictions:
-
-1. **Extract claim pairs** — for each topic, collect claims from all agents
-2. **Detect contradictions** — claims that assert opposite conclusions on the same topic
-3. **Flag with both sides** — present both claims with their sources, don't resolve
-4. **Optional escalation** — for `[CONFLICT]` items, launch one targeted follow-up query
-
-**Conflict output format:**
-```
-⚠️ CONFLICT on [topic]:
-  Agent A (ClaudeResearcher): [claim] — [source]
-  Agent B (GrokResearcher): [claim] — [source]
-  Resolution: [Unresolved | Resolved by Agent C | Resolved by source priority]
+```json
+{
+  "id": "C-001",
+  "claim": "…",
+  "claim_type": "quantitative | causal | current-status | historical | interpretive",
+  "importance": "central | supporting",
+  "supplied_sources": ["https://…"]
+}
 ```
 
----
+Do not verify a paragraph as one unit when it contains several independently false statements.
 
-## Verification Methods
+## 2. Inspect supplied evidence
 
-**Tier 1: URL/Source Verification (fastest)**
-- Parallel batch curl for HTTP status
-- WebFetch for content matching
-- Cost: ~2-3s for batch of 5-10 URLs
+For every source:
 
-**Tier 2: Claim Spot-Check (medium)**
-- Pick highest-impact sub-claims (quantitative, causal)
-- WebSearch to independently confirm
-- Cost: ~5-10s per claim checked
+- open it with `web_extract` or `browser_exec`;
+- confirm authorship/publisher, date, exact passage, and locator;
+- assess whether the source supports the claim as worded;
+- note circular citations or sources that merely repeat the same origin.
 
-**Tier 3: Full Independent Verification (slowest)**
-- Spawn dedicated verifier agent with claims only (no reasoning)
-- Agent independently researches each sub-claim
-- Cost: ~15-30s (runs in parallel with other agents)
+Follow `../UrlVerificationProtocol.md`.
 
-**Mode-to-tier mapping:**
-| Research Mode | Verification Tier | Rationale |
-|---------------|-------------------|-----------|
-| Quick | None | Speed-first, single agent |
-| Standard | Tier 1 + synthesis cross-check | Lightweight, <5s added |
-| Extensive | Tier 1 + Tier 3 (2 verifier agents) | Full verification within 9-agent budget |
-| Deep | Tier 1 + Tier 2 + Tier 3 | Iterative, verification between rounds |
+## 3. Seek independent and disconfirming evidence
 
----
+For central, quantitative, causal, legal, safety, or current-status claims, search independently. Prefer primary evidence. Specifically seek contradictions, changed status, denominator errors, selection effects, and wording stronger than the evidence.
 
-## Integration Points
+For a small set of consequential disputed claims, route to `DeepVerifiedResearch.md` for quote-support, contradiction, and source-strength adjudication.
 
-This workflow is designed to be called by:
-- **ExtensiveResearch.md** — 2 of 9 agents run as Tier 3 verifiers
-- **DeepInvestigation.md** — Tier 2 verification between Investigate and Progress Check
-- **StandardResearch.md** — Tier 1 inline during synthesis
-- **Upgrade** — Can call Verify.md to validate upgrade recommendations
-- **Any skill** — Import verification by referencing this workflow
+## 4. Assign verdicts
 
----
+- `VERIFIED` — claim is supported as written by strong recoverable evidence.
+- `QUALIFIED` — core is supported but scope, date, causality, or certainty must be narrowed.
+- `CONFLICT` — credible evidence disagrees.
+- `UNSUPPORTED` — evidence is missing, inaccessible, mismatched, or too weak.
+- `FALSE` — strong evidence directly refutes it.
 
-## Graceful Degradation
+Map confidence separately as `HIGH | MED | LOW`; verdict and confidence are not the same field.
 
-- If verifier agent times out → treat all its claims as `[MED]` (not verified, not refuted)
-- If URL verification fails → fall back to sequential curl
-- If no conflicts detected → skip conflict section entirely (don't output empty sections)
-- If only 1 agent returned results → skip cross-check, rely on self-verification only
+## 5. Return an audit table
+
+| ID | Verdict | Corrected wording | Evidence | Counter-evidence | Notes |
+|---|---|---|---|---|---|
+
+Then provide:
+
+- corrected synthesis containing only supported wording;
+- claims removed and why;
+- unresolved conflicts;
+- source-verification counts;
+- remaining checks that require access, credentials, or expertise not available.
+
+## Failure rules
+
+- A missing verifier result is not confirmation.
+- A successful HTTP response is not content verification.
+- Several dependent sources do not constitute independent confirmation.
+- If only one research workstream returned, disclose that cross-checking did not occur.
+- Never restore a URL or claim discarded during verification merely to make the report look complete.

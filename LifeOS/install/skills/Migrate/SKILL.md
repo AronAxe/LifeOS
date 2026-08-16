@@ -1,190 +1,159 @@
 ---
-name: Migrate
-version: 1.0.10
-description: "Intakes external content, classifies chunks against LifeOS taxonomy, commits with provenance. Sources: .md/.txt, stdin, LifeOS dirs, CLAUDE.md/Cursor/OpenAI Custom Instructions, Obsidian/Notion/Apple Notes exports. MigrateScan classifies → routing table. MigrateApprove with --approve-all/--approve-target/--review/--dry-run. Confidence ≥70% auto, 40-70% confirm, <40% walk-through. USE WHEN /migrate, migrate content, import from other LifeOS, bring in old notes, import Cursor rules, import CLAUDE.md, bulk import, Obsidian/Notion/Apple Notes import. NOT FOR single-file edits, conversational interviews, identity edits."
-disable-model-invocation: true
+name: migrate
+version: 2.0.0
+category: LifeOS
+portable: true
+description: >
+  Use when importing existing notes, rules, exports, or another LifeOS/HALOS
+  corpus. Produces a read-only routing manifest first, then applies only the
+  principal-approved destinations with provenance and verification.
 ---
 
-# Migrate — external-content intake and classification
+# Migrate — Consent-Gated External Content Intake
 
-## 🚨 MANDATORY: Voice Notification
+## Contract
 
-```bash
-curl -s -X POST http://localhost:31337/notify \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Starting the migration. Scanning source and classifying chunks."}' \
-  > /dev/null 2>&1 &
-```
+Migrate reads existing material, segments it, proposes destinations, and records provenance. It does **not** infer permission to write from model confidence. The first pass is always read-only; mutations begin only after the principal approves specific routes or an explicitly presented batch.
 
-## What It Does
+HALOS does not ship `MigrateScan.ts` or `MigrateApprove.ts`. Use Hermes file, document, archive, and memory tools directly.
 
-Migrate intakes external content, classifies each chunk against the LifeOS taxonomy, and commits it to the right destination with provenance. Sources include `.md`/`.txt` files, stdin, other LifeOS installs, agent-harness rule files (CLAUDE.md, Cursor rules, OpenAI Custom Instructions), and Obsidian/Notion/Apple Notes exports. Classification confidence drives the flow: high-confidence chunks auto-approve, medium ones ask for confirmation, low ones get a walk-through.
+## Supported sources
 
-## The Problem
+- `.md`, `.markdown`, and `.txt` files;
+- directories of text files;
+- pasted content or stdin captured into a workspace artifact;
+- Obsidian, Notion, Apple Notes, and similar exports after format inspection;
+- rule files from another agent harness;
+- another LifeOS/HALOS TELOS or knowledge corpus;
+- structured documents supported by Hermes document skills.
 
-When you adopt LifeOS you usually arrive with years of accumulated notes — a CLAUDE.md, a vault of markdown, journal dumps, rules from another tool — and none of it maps cleanly onto LifeOS's structure. Sorting hundreds of chunks into TELOS sections, knowledge notes, and operational rules by hand is the kind of tedious work that never gets done, so the old material just sits there unused. Migrate does the sorting: it reads the content you already have, proposes a destination for every chunk with a confidence score, and lets you approve in bulk or review the uncertain ones, attaching provenance so nothing lands in TELOS without attribution.
+Binary, multimodal, database, or proprietary exports require the relevant extraction skill. Do not silently discard unreadable content.
 
-## How It Works
+## Destination classes
 
-Migrates content into the LifeOS structure from external sources. Unlike `/interview` (which asks the user questions to fill gaps), `/migrate` **already has the content** — it just needs to classify each chunk and route it to the right LifeOS destination. MigrateScan classifies into a routing table; MigrateApprove commits per the user's chosen path.
-
-### Sources supported in V1
-
-- **Files:** `.md`, `.markdown`, `.txt` (single file or directory recursion)
-- **Stdin:** piped content or pasted directly
-- **Other LifeOS installs:** point at their `USER/TELOS/` or `MEMORY/KNOWLEDGE/` directories
-- **Agent-harness rule files:** `CLAUDE.md`, `.cursorrules`, OpenAI Custom Instructions export
-- **Exports:** Obsidian vaults (markdown), Notion exports (markdown), Apple Notes exports (.txt), raw journal dumps
-
-### What it classifies chunks into
-
-| Category | Destinations |
+| Content | Proposed destination |
 |---|---|
-| **Foundational TELOS** | MISSION, GOALS, PROBLEMS, STRATEGIES, CHALLENGES, BELIEFS, WISDOM, MODELS, FRAMES, NARRATIVES, SPARKS |
-| **IDEAL_STATE dimensions** | HEALTH, MONEY, FREEDOM, RELATIONSHIPS, CREATIVE, RHYTHMS |
-| **Preference files** | BOOKS, AUTHORS, MOVIES, BANDS, RESTAURANTS, FOOD_PREFERENCES, LEARNING, MEETUPS, CIVIC |
-| **Identity** | USER/PRINCIPAL/PRINCIPAL_IDENTITY.md |
-| **Knowledge** | MEMORY/KNOWLEDGE/{Ideas,People,Companies,Research} |
-| **AI collaboration rules** | Walk-through to a constitutional surface — CLAUDE.md operational rules, a hook, `settings.json`, or the relevant skill's Gotchas ("always do X" / "never Y" patterns are system patches, never harness `memory/feedback_*.md` memos) |
-| **Unclear** | Flagged for the user's manual routing |
+| Mission, goals, problems, strategies, beliefs, wisdom, models, narratives | Configured `TELOS_DIR`, only with explicit section-level approval |
+| Stable facts, entities, relationships, accepted decisions | Hindsight |
+| Values, heuristics, tensions, assumptions, mental models, preferences | Optional reviewed cognitive graph, under its evidence policy |
+| General documents, research, media, timeline evidence | Principal-selected source archive/Second Brain surface |
+| Agent collaboration or operational rules | The governed repository/configuration/skill surface after its own safety review |
+| Temporary candidates and unresolved classifications | Workspace migration manifest |
+| Credentials and secrets | Excluded; route only through an approved secret store |
+| Unclear material | No destination until the principal decides |
 
-## Workflow Routing
+Do not recreate `MEMORY/KNOWLEDGE` or a hidden `USER` tree unless the installation explicitly defines those stores.
 
-No `Workflows/` directory — the single migration procedure runs inline through Phases 1–6 below, backed by two tools in `LIFEOS/TOOLS/`.
+## Phase 1 — Establish scope
 
-| Trigger | Workflow | File |
-|---------|----------|------|
-| /migrate, migrate content, bulk import, import from other LifeOS, import CLAUDE.md / Cursor rules / Obsidian / Notion / Apple Notes export, bring in old notes | Inline Phases 1–6 (identify → scan → route → approve → UNCLEAR → summary) | `LIFEOS/TOOLS/MigrateScan.ts` + `LIFEOS/TOOLS/MigrateApprove.ts` |
+Identify the exact source, allowed file types, desired destinations, privacy boundary, and whether external model calls are permitted. If the source was provided directly, inspect it before searching memory or asking the principal to repeat its contents.
 
-## Workflow
+For a directory, enumerate candidates and present counts before reading broadly. Exclude caches, dependencies, backups, generated output, credentials, and binary files by default.
 
-### Phase 1 — Identify the source
+## Phase 2 — Extract with receipts
 
-Ask the user what he wants to migrate:
+Read the source using the relevant Hermes tool. For every chunk preserve:
 
-- "Paste the content here and I'll work from stdin"
-- "Point me at a file path"
-- "Point me at a directory and I'll scan everything inside"
-- "I have a Cursor rules file at ~/Projects/X/.cursorrules"
-- "My old LifeOS install has TELOS at ~/old-claude/TELOS/"
+- stable chunk ID;
+- source path or source identifier;
+- source type;
+- line/page/time range when available;
+- content hash when deterministic hashing is appropriate;
+- verbatim excerpt or recoverable locator;
+- extraction warnings and confidence.
 
-Collect the source path. If content is pasted, write it to a temp file first.
+A summary is not a replacement for the receipt.
 
-### Phase 2 — Scan
+## Phase 3 — Build a read-only routing manifest
 
-Run the scanner:
+Create a workspace JSON or CSV artifact with one row per chunk:
 
-```bash
-bun ~/.claude/LIFEOS/TOOLS/MigrateScan.ts --source <path>
-# or
-echo "$CONTENT" | bun ~/.claude/LIFEOS/TOOLS/MigrateScan.ts --stdin
+```json
+{
+  "chunk_id": "source-hash:0001",
+  "source": "configured/source.md",
+  "locator": "lines 20-34",
+  "proposed_class": "telos:goals",
+  "proposed_destination": "${TELOS_DIR}/GOALS.md",
+  "confidence": 0.78,
+  "rationale": "Explicit long-term objective",
+  "status": "pending-principal-decision"
+}
 ```
 
-Scanner output includes:
-- Total chunks found
-- Proposed routing table (how many chunks per target)
-- Average classification confidence
-- Count of UNCLEAR chunks
-- Count of low-confidence (<40%) chunks
+Confidence governs review priority, not authorization:
 
-### Phase 3 — Present routing summary
+- high confidence: eligible for compact batch review;
+- medium confidence: show alternatives;
+- low confidence: require individual review;
+- unclear: leave unrouted.
 
-Show the user the routing proposal in a scannable format:
+No destination write occurs in this phase.
 
-```
-Found 47 chunks from 3 files. Proposed routing:
+## Phase 4 — Present the proposal
 
-  📂 TELOS/GOALS.md              12 chunks  (78% avg confidence)
-  📂 TELOS/WISDOM.md              8 chunks  (65% avg confidence)
-  📂 TELOS/BELIEFS.md             6 chunks  (71% avg confidence)
-  📂 MEMORY/KNOWLEDGE/Ideas      15 chunks  (52% avg confidence)
-  🧠 AI collaboration rules       4 chunks  (walk-through: CLAUDE.md / hook / skill)
-  ❓ UNCLEAR                      2 chunks  (needs your call)
+Summarize source coverage, unreadable items, proposed counts by destination, duplicates, conflicts, and unresolved chunks. Offer review modes without assuming one:
 
-Options:
-  - Approve everything trusted (confidence ≥60%)?
-  - Walk through the low-confidence and UNCLEAR chunks one by one?
-  - Review specific categories?
-  - Review everything?
-```
+- review every chunk;
+- review one destination class;
+- approve an explicitly enumerated batch;
+- reject or defer selected chunks.
 
-### Phase 4 — Approval loop
+A later “continue” does not select an unanswered option.
 
-Based on the user's preference:
+## Phase 5 — Apply approved routes
 
-**Fast path** (he says "approve all trusted"):
-```bash
-bun ~/.claude/LIFEOS/TOOLS/MigrateApprove.ts --approve-all
-```
-Commits everything non-UNCLEAR. Then walk through UNCLEAR chunks conversationally.
+Apply only decisions recorded as approved.
 
-**Category path** (he says "approve goals and wisdom, skip knowledge"):
-```bash
-bun ~/.claude/LIFEOS/TOOLS/MigrateApprove.ts --approve-target TELOS/GOALS.md
-bun ~/.claude/LIFEOS/TOOLS/MigrateApprove.ts --approve-target TELOS/WISDOM.md
-```
+### TELOS
 
-**Walk-through path** (he wants careful review):
-```bash
-bun ~/.claude/LIFEOS/TOOLS/MigrateApprove.ts --review
-```
-Show each pending chunk. For each:
-- Show preview + proposed target + confidence + alternatives
-- Ask: approve / modify target / reject
-- Commit decision
+Resolve the configured `TELOS_DIR`; never guess a path. Read the target before editing, preserve its format, append or patch narrowly, include the source receipt, and verify the resulting section. Identity-bearing or constitutional files always require explicit approval regardless of confidence.
 
-### Phase 5 — Handle UNCLEAR chunks
+### Hindsight
 
-UNCLEAR chunks are ones where no classification rule matched strongly. For each:
-- Display full content (not just preview)
-- Ask the user: "This one's unclear — what is it? Could be X, Y, Z, or maybe Knowledge/Ideas as a catch-all?"
-- the user chooses → commit via `--modify <id> --target <chosen>`
+Retain only stable, reusable facts or accepted decisions. Use compact declarative statements with provenance and uncertainty. Do not store task progress, raw documents, transient candidates, or secrets.
 
-### Phase 6 — Completion summary
+### Cognitive graph
 
-After approval pass:
-- Report total chunks committed, per-target count
-- Flag any remaining UNCLEAR
-- Recommend next step: run `/interview` to interview around anything the migration left sparse
+Use only when installed and only for governed cognitive-pattern types. Require the graph’s evidence threshold and correction policy. Do not promote ordinary facts or document chunks.
+
+### Repository, config, skills, hooks, or services
+
+These are operating-environment changes. Perform the applicable dependency/blast-radius review, use the governed authoring workflow, prepare rollback, and obtain the required approval. Never translate a foreign harness rule literally when Hermes semantics differ.
+
+### Source archive
+
+Write to the principal-selected archive through its native adapter. Keep filenames, timestamps, and receipts deterministic; never claim a source was imported when only a summary was retained.
+
+## Phase 6 — Verify and report
+
+For each applied destination:
+
+1. read back or query the result;
+2. confirm the approved content and provenance landed once;
+3. record duplicates, skips, and failures;
+4. leave unresolved chunks pending rather than guessing;
+5. provide a manifest with counts and evidence paths.
+
+The completion report separates `approved-and-written`, `approved-but-failed`, `rejected`, `deferred`, `duplicate`, and `unreadable`.
 
 ## Rules
 
-- **Every commit carries provenance.** The committed content includes an HTML comment noting source file + section + timestamp. Nothing gets dropped into TELOS without attribution.
-- **Never bulk-approve UNCLEAR.** Those require the user's explicit routing.
-- **Confidence thresholds:** ≥70% = trusted (auto-approve eligible). 40-70% = medium (show for confirmation). <40% = low (walk-through required).
-- **Ask before touching identity.** PRINCIPAL_IDENTITY.md commits always prompt — that file is load-bearing.
-- **Don't duplicate.** If the same content already exists in the target (substring match), flag it and ask before appending.
-- **Respect private paths.** Never migrate content into IDEAL_STATE/ without the user's per-dimension call (Decision #3: IDEAL_STATE is fully private and curated).
-- **Rules never go to harness memory.** AI collaboration rule chunks are always walked through one by one and routed to a constitutional surface: an operational rule in CLAUDE.md, a hook, a `settings.json` permission, or the relevant skill's Gotchas. Writing them to the harness `memory/feedback_*.md` directory is forbidden — every feedback memo is a missed system patch (see the system prompt's "Override of harness auto-memory").
-- **Knowledge gets new files too.** Each `MEMORY/KNOWLEDGE/*` chunk becomes a new typed note with source metadata.
+- Every promoted chunk carries a recoverable source receipt.
+- Confidence never substitutes for consent.
+- Do not bulk-approve `unclear` content.
+- Do not overwrite existing material without a diff and explicit authorization.
+- Preserve contradictory claims until evidence or the principal resolves them.
+- Deduplicate by normalized content plus source context; a substring check alone is insufficient.
+- Keep unaccepted recommendations and routing candidates ephemeral.
+- Never migrate credentials into general memory, TELOS, skill files, or logs.
+- Verify the final destination, not merely the write command.
 
-## Examples
+## Related skills
 
-### User: `/migrate ~/old-claude/TELOS/`
-
-the DA scans the old TELOS directory, classifies every chunk, presents the routing summary, offers fast-path vs. walk-through approval.
-
-### User: `/migrate` (then pastes CLAUDE.md content)
-
-the DA reads from stdin, classifies most chunks as AI collaboration rules (walked through to CLAUDE.md / hooks / skill Gotchas) plus maybe PRINCIPAL_IDENTITY (if identity lines are mixed in), walks through approval.
-
-### User: "migrate my Cursor rules at ~/.cursor/rules"
-
-the DA scans the rules dir, surfaces likely rule classifications, walks each through to its constitutional destination with extra care (Cursor rules often have tool-specific stuff that doesn't translate to LifeOS).
-
-### User: "import the stuff I dumped in /tmp/journal.md"
-
-the DA scans the journal, expects a lot of UNCLEAR + WISDOM, walks through each section.
-
-## Related
-
-- `/interview` — fills gaps by asking questions (not by intaking existing content)
-- `/Telos` Update workflow — edit a single TELOS file directly
-- `/Knowledge` — manage the Knowledge Archive
-- `/_PROFILE` — manage PRINCIPAL_IDENTITY
-
-## Gotchas
-
-- **Low average confidence (<40%):** the source is probably genre-mismatched (e.g., code comments, logs, raw data). Consider pre-filtering to remove non-prose chunks before scanning.
-- **Everything goes to UNCLEAR:** the source probably has no recognizable LifeOS-taxonomy patterns. Either add the content manually via `/Telos` or write it as general Knowledge notes.
-- **Duplicate content warnings:** the scanner doesn't dedupe against existing files yet. Run `--dry-run` first to preview before committing.
+- **Interview** — elicit missing context rather than import existing content
+- **Telos** — governed TELOS reads and updates
+- **Knowledge** and **Memory** — semantic-memory routing
+- **Containment** — private/public and source-boundary review
+- **CreateSkill** — governed skill changes
+- Document and archive skills — source-specific extraction

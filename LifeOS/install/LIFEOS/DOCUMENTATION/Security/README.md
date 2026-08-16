@@ -4,6 +4,8 @@ version: 1.7.4
 
 # LifeOS Security — Minimal v2
 
+> **Upstream archive:** Hook and session-loading statements below describe source LifeOS. HALOS installs no equivalent safety hook or constitution loader; see `PORT_SCHEMAS/hook_mapping.md`.
+
 > A Life OS holds a life — goals, health, finances, relationships, credentials (`LIFEOS/DOCUMENTATION/LifeOs/LifeOsThesis.md`). The security model below exists because an OS trusted to run your life must be harder to subvert than the chatbots it replaces: external content is data, dangerous shapes get gated, and the boundary holds even when the principal isn't watching.
 
 > **The model is the security boundary.** Three layers + one consolidated hook. The hook does two jobs but they live in one file with one shared catalog. Re-consolidated 2026-05-14: `SmartApprover.hook.ts` and `PromptInjection.hook.ts` merged into `Safety.hook.ts`.

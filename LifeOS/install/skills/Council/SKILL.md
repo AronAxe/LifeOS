@@ -1,139 +1,63 @@
 ---
 name: Council
-version: 1.1.18
-description: "Multi-agent collaborative debate producing visible round-by-round transcripts with real intellectual friction — members are topic-briefed custom agents, run as a 3-round DEBATE or a 1-round QUICK check, to find the best path. USE WHEN council, debate, multiple perspectives, weigh options, deliberate, get different views, what would experts say, pros and cons. NOT FOR pure adversarial attack (use RedTeam)."
+version: 1.2.0
+description: "Use for collaborative multi-perspective deliberation: custom topic-briefed members debate for three visible rounds or give a one-round quick check, preserving genuine disagreement and ending in a decision-oriented synthesis. Not for a pure adversarial attack; use RedTeam for that."
 effort: high
 context: fork
 ---
 
-## Customization
+# Council
 
-**Before executing, check for user customizations at:**
-`~/.claude/LIFEOS/USER/CUSTOMIZATIONS/SKILLS/Council/`
+Council convenes distinct topic-specific perspectives, makes them respond to one another's actual arguments, and returns the visible transcript plus a synthesis. It avoids the flat “pros and cons” failure mode by giving every member a real stance, domain lens, and burden of proof.
 
-If this directory exists, load and apply any PREFERENCES.md, configurations, or resources found there. These override default behavior. If the directory does not exist, proceed with skill defaults.
+## Routes
 
+| Request | Workflow |
+|---|---|
+| Full deliberation with positions, rebuttals, and final judgments | `Workflows/Debate.md` |
+| Fast single-round perspective check | `Workflows/Quick.md` |
+| Pure attack or exploit search | RedTeam skill |
 
-## MANDATORY: Voice Notification (REQUIRED BEFORE ANY ACTION)
+## Member construction
 
-**You MUST send this notification BEFORE doing anything else when this skill is invoked.**
+Write each member as a concise brief containing:
 
-1. **Send voice notification**:
-   ```bash
-   curl -s -X POST http://localhost:31337/notify \
-     -H "Content-Type: application/json" \
-     -d '{"message": "Running the WORKFLOWNAME workflow in the Council skill to ACTION"}' \
-     > /dev/null 2>&1 &
-   ```
+- name and relevant expertise;
+- initial stance or decision criterion;
+- what the member will defend, challenge, and demand evidence for;
+- voice constraints only when they improve analytical separation.
 
-2. **Output text notification**:
-   ```
-   Running the **WorkflowName** workflow in the **Council** skill to ACTION...
-   ```
+Use four members by default: builder, skeptic, pragmatist, and evidence analyst, each adapted to the topic. Replace these slots when another perspective would create more productive friction. See `CouncilMembers.md`.
 
-**This is not optional. Execute this curl command immediately upon skill invocation.**
+## Hermes execution
 
-# Council Skill
+Run members with the Hermes `delegate_task` tool. Use its `tasks` array for work that can proceed independently, passing each child a complete `goal`, `context`, and `role: "leaf"`. Respect the active concurrency limit; if four members exceed one batch, split the round into the smallest possible bounded batches without changing prompts or leaking earlier same-round answers.
 
-## What It Does
+Rounds are sequential because later rounds depend on the prior transcript. Members need not retain hidden state: every new task receives the original member brief, topic context, and the complete prior transcript.
 
-Runs a multi-agent debate. Custom-composed agents discuss a topic over rounds, respond to each other's actual points, and surface insights through real intellectual friction. You get a visible round-by-round transcript plus a synthesis. DEBATE runs three rounds; QUICK runs one for a fast perspective check.
+## Core guarantees
 
-## The Problem
+- Distinct briefs, not four copies of one generic role.
+- Parallel execution within each dependency-free round; sequential execution between rounds.
+- Visible attribution for each member's answer.
+- Explicit convergence, remaining disagreement, assumptions, and decision criteria.
+- No forced consensus. A stable unresolved trade-off is a valid result.
+- No provider-specific model or agent type is required.
 
-When you ask one model for an opinion, you get one frame and one set of blind spots. Asking for "pros and cons" gives you a flat list with no one actually pushing back. Real deliberation needs distinct experts who disagree on the merits and argue it out, so the weak parts of an idea get exposed before you commit. Generic built-in agents all sound the same and produce bland agreement; this skill composes topic-specific agents that create genuine friction.
+## Output
 
-## How It Works
+Use `OutputFormat.md` and `RoundStructure.md` where helpful. A complete full council contains:
 
-Custom-composed agents discuss topics in rounds, respond to each other's points, and surface insights through intellectual friction.
+1. topic and member roster;
+2. Round 1 positions;
+3. Round 2 responses to named arguments;
+4. Round 3 final judgments;
+5. parent synthesis with convergence, disagreement, recommended path, risks, and next evidence needed.
 
-## Members Are Custom Briefs
+## Boundaries
 
-Write each council member inline as a short brief — a name, a role, a stance, and what they'll push on — then launch it with `subagent_type: "general-purpose"`. A bare built-in type with no persona is topic-ignorant and produces bland agreement. The friction comes from four *different* briefs, each with real domain expertise and a distinct analytical angle.
+The skill does not automatically send voice notifications, write execution logs, read a hidden customization tree, persist transcripts, or choose a paid model. Use principal-supplied context and approved evidence only. Do not include secrets or unnecessary personal data in delegated briefs.
 
-See `CouncilMembers.md` for the slot guidance and an example brief.
+## Completion
 
-**Key Differentiator from RedTeam:** Council is collaborative-adversarial (debate to find best path), while RedTeam is purely adversarial (attack the idea). Council produces visible conversation transcripts; RedTeam produces steelman + counter-argument.
-
-
-## Workflow Routing
-
-Route to the appropriate workflow based on the request.
-
-| Trigger | Workflow |
-|---------|----------|
-| Full structured debate (3 rounds, visible transcript) | `Workflows/Debate.md` |
-| Quick consensus check (1 round, fast) | `Workflows/Quick.md` |
-
-Pure adversarial analysis is not a Council workflow — redirect to the RedTeam skill.
-
-## Quick Reference
-
-| Workflow | Purpose | Rounds | Output |
-|----------|---------|--------|--------|
-| **DEBATE** | Full structured discussion | 3 | Complete transcript + synthesis |
-| **QUICK** | Fast perspective check | 1 | Initial positions only |
-
-## Context Files
-
-| File | Content |
-|------|---------|
-| `CouncilMembers.md` | How to write council member briefs inline |
-| `RoundStructure.md` | Three-round debate structure and timing |
-| `OutputFormat.md` | Transcript format templates |
-
-## Core Philosophy
-
-**Origin:** Best decisions emerge from diverse perspectives challenging each other. Not just collecting opinions - genuine intellectual friction where domain-specific experts respond to each other's actual points.
-
-**Agents:** Every council member is a custom brief you write for the topic, launched with `general-purpose`. This gives each member a distinct role, stance, and domain expertise. Generic agents produce generic debate; topic-specific briefs produce sharp, informed debate.
-
-**Speed:** Parallel execution within rounds, sequential between rounds. A 3-round debate of 4 agents = 12 agent calls but only 3 sequential waits. Complete in 40-90 seconds.
-
-## Examples
-
-```
-"Council: Should we use WebSockets or SSE?"
--> Write 4 member briefs (real-time architect, frontend-DX, ops skeptic, researcher)
--> DEBATE workflow -> 3-round transcript
-
-"Quick council check: Is this API design reasonable?"
--> Write 4 member briefs with API-relevant roles
--> QUICK workflow -> Fast perspectives
-
-"Council: Is AI overhyped?"
--> Write briefs: AI builder, security skeptic, pragmatic engineer, evidence analyst
--> DEBATE workflow -> 3-round transcript
-```
-
-## Integration
-
-**Works well with:**
-- **RedTeam** - Pure adversarial attack after collaborative discussion
-- **Research** - Gather context before convening the council
-
-## Best Practices
-
-1. Use QUICK for sanity checks, DEBATE for important decisions
-2. Write each member's brief around the specific topic, not a generic role
-3. Give each member a distinct stance — four identical agents produce no friction
-
----
-
-**Last Updated:** 2026-03-18
-
-## Gotchas
-
-- **Council members are inline briefs launched with `general-purpose` — there is no composition tool.** Write four different topic-specific briefs; don't launch bare built-in types with no persona.
-- **Debates need genuine disagreement to be valuable.** If all agents agree, the topic may not warrant Council.
-- **More agents ≠ better debate.** 4-6 well-briefed agents outperform 12 generic ones.
-
-## Execution Log
-
-After completing any workflow, append a single JSONL entry:
-
-```bash
-echo '{"ts":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","skill":"Council","workflow":"WORKFLOW_USED","input":"8_WORD_SUMMARY","status":"ok|error","duration_s":SECONDS}' >> ~/.claude/LIFEOS/MEMORY/SKILLS/execution.jsonl
-```
-
-Replace `WORKFLOW_USED` with the workflow executed, `8_WORD_SUMMARY` with a brief input description, and `SECONDS` with approximate wall-clock time. Log `status: "error"` if the workflow failed.
+Council is complete when every requested perspective returned or is marked failed, later rounds demonstrably engage with prior arguments, the transcript is visible, and the synthesis distinguishes agreement from unresolved tension.

@@ -50,7 +50,7 @@ One JSONL line per captured signal — spans + metadata only, never keystrokes o
 
 ## Deterministic Rollup
 
-`rollup.py` is a **pure function**: input events → daily record, no side effects, no model. Each app-focus event contributes one poll interval to its app's time (a sleep gap never inflates time — no polls fire while the machine is off). The classifier splits apps into **creation / consumption / neutral** by a static, editable map. `narrative` and `telosTags` are reserved seams, null/empty in v1. It writes `$HERMES_HOME/conduit/daily/{date}.md` (human) and `{date}.json` (machine), idempotently, and retains the record to Hindsight (`cat:conduit`, `source:conduit_daily`, `document_id: user:aron:conduit:daily:{date}`).
+`build_daily_record()` is pure: input events → daily record, no model and no side effects. Each app-focus event contributes one poll interval to its app's time (a sleep gap never inflates time — no polls fire while the machine is off). The CLI writes `$HERMES_HOME/conduit/daily/{date}.md` (human) and `{date}.json` (machine), idempotently. With an explicitly configured `LIFEOS_PRINCIPAL_ID`, the CLI can additionally retain to Hindsight using `cat:conduit`, `source:conduit_daily`, and `document_id: user:{id}:conduit:daily:{date}`.
 
 ## Integration with TELOS (current → ideal)
 

@@ -19,12 +19,12 @@ A URL, a block of text, or a spoken/pasted note. Optionally: `source`, `content_
 
 2. **Compute the dedup identity** = hash(normalized `url` + content hash), falling back to hash(`source` + `external_id`). This is the `capture_id`.
 
-3. **Check idempotency.** `hindsight_recall` for `document_id: user:aron:amber:{capture_id}` (or the same capture_id in `cat:amber`). If it already exists, report "already preserved" and stop — a retry never duplicates.
+3. **Check idempotency.** `hindsight_recall` for `document_id: user:{id}:amber:{capture_id}` (or the same capture_id in `cat:amber`). The principal identifier is configured at installation time. If it already exists, report "already preserved" and stop — a retry never duplicates.
 
 4. **Preserve (the write-ahead).** `hindsight_retain`:
    - content: the full raw capture record (all fields) — retain the richest representation; do NOT pre-summarize.
    - tags: `cat:amber`, `source:amber_capture`, `content_kind:{kind}`, `privacy_class:{class}`.
-   - `document_id: user:aron:amber:{capture_id}` (stable per capture).
+   - `document_id: user:{id}:amber:{capture_id}` (stable per capture).
 
 5. **Verify the retain.** Confirm the provider returned success. Only then report "preserved". If the retain failed, say so — do not claim preservation from intent.
 

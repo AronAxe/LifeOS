@@ -1,60 +1,33 @@
 # Quick Research Workflow
 
-**Mode:** Single Perplexity researcher, 1 query | **Timeout:** 30 seconds
+Use for one current fact, a minor lookup, or an explicitly speed-first answer. This route optimizes for the shortest verified path, not for a fixed provider or a fabricated time target.
 
-## When to Use
+## 1. Define the lookup
 
-- User says "quick research" or "minor research"
-- Simple, straightforward queries
-- Time-sensitive requests
-- Just need a fast answer
+Capture the exact question, freshness and jurisdiction requirements, and the minimum evidence needed. If the request is sentiment-shaped, read `../SourceRoutingProtocol.md` and query the underlying community source rather than a press summary.
 
-## Workflow
+## 2. Discover and inspect
 
-### Step 0: Source Routing Check (MANDATORY)
+1. Run one focused `web_search` query, or use the appropriate installed source-specific skill.
+2. Open the strongest primary or direct source with `web_extract`.
+3. Use `browser_exec` only when the public source is dynamic or direct extraction fails.
 
-**READ:** `../SourceRoutingProtocol.md` if not already loaded.
+Do not delegate a single simple lookup merely to create ceremony.
 
-Scan the user's request for sentiment signals: "fans thought", "ratings of", "best | worst | favorite", "reactions to", "what people are saying", "consensus on", event + recent date.
+## 3. Verify
 
-- **Signal fires → sentiment-mode.** Skip Step 1 (Perplexity). Instead, single-call to Reddit JSON API at the most relevant subreddit + sort: `curl -A "LifeOS-Research/1.0" -s "https://www.reddit.com/r/{sub}/top.json?t=week&limit=25"` (or site-wide search if sub is unknown). Parse top 10 posts, pull comments on the highest-signal thread, return verbatim fan quotes with thread URLs and scores. Use Apify Reddit actor as fallback only if JSON fails.
-- **No signal → Step 1 (Perplexity).** Standard quick lookup.
+Confirm that the opened content supports the answer. For a consequential claim, obtain one independent corroborating source or explain why the quick mode cannot safely establish it.
 
-### Step 1: Launch Single Perplexity Agent
+## 4. Return
 
-**ONE Task call - Perplexity researcher with a single focused query:**
+Provide:
 
-```typescript
-Task({
-  subagent_type: "PerplexityResearcher",
-  description: "[topic] quick lookup",
-  prompt: "Do ONE web search for: [query]. Tag each finding with confidence: [HIGH], [MED], or [LOW]. Return the key findings immediately. Keep it brief and factual."
-})
-```
+- the direct answer;
+- one or two decisive sources with URLs;
+- the source date and retrieval date when freshness matters;
+- any material caveat or unresolved conflict;
+- an offer to escalate to Standard or Deep Verified research only when additional depth would change the decision.
 
-**Prompt requirements:**
-- Single, well-crafted query
-- Instruct to return immediately after first search
-- No multi-query exploration
+## Completion
 
-**Why Perplexity:** Fastest live-web retrieval with built-in citations; best single-agent default for "just tell me what's current."
-
-### Step 2: Return Results
-
-Report findings using standard format:
-
-```markdown
-📋 SUMMARY: Quick research on [topic]
-🔍 ANALYSIS: [Key findings from Perplexity]
-⚡ ACTIONS: 1 Perplexity query
-✅ RESULTS: [Answer]
-📊 STATUS: Quick mode - 1 agent, 1 query
-📁 CAPTURE: [Key facts]
-➡️ NEXT: [Suggest standard research if more depth needed]
-📖 STORY EXPLANATION: [3-5 numbered points - keep brief]
-🎯 COMPLETED: Quick answer on [topic]
-```
-
-## Speed Target
-
-~10-15 seconds for results
+The answer is not complete until the cited source was actually opened and matched to the claim. Search snippets alone do not pass.

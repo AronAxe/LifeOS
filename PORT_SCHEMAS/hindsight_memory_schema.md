@@ -1,5 +1,7 @@
 # Hindsight Memory Schema for LifeOS→Hermes Port
 
+> **Status:** portable design and migration guidance, not evidence that an instance has a healthy Hindsight provider, an enabled cron job, or automatically retained conversation data. Verify those claims against the target Hermes installation.
+
 ## Correction Log
 - **Fixed:** Do NOT pre-distill/pre-summarize sessions before `retain`. Hindsight best practices say pass the richest representation available (raw conversation JSON preferred). Hindsight extracts facts itself; raw content is not stored verbatim as memory.
 - **Fixed:** Session retain should send rich conversation/session content, not a lossy 3-bullet summary.
@@ -89,37 +91,24 @@ These belong in Hermes session/workspace/logging, not memory.
 
 ---
 
-## 6. Minimal Viable Implementation
+## 6. Portable Implementation Contract
 
-### Already built into Hermes
-- `MemoryManager` (`agent/memory_manager.py`):
-  - Turn start → `prefetch_all()` → `recall` → inject into system prompt
-  - Turn end → `sync_all()` → `retain` with raw conversation JSON (NOT pre-summarized)
-  - Background → `queue_prefetch_all()` → async prefetch for next turn
-- Hindsight plugin (`plugins/memory/hindsight/__init__.py`, 1979 lines):
-  - `auto_recall`, `auto_retain`, `retain_tags`, `recall_tags`, `observation_scopes`
-  - `bank_mission`, `bank_retain_mission` (extraction steering)
-  - `recall_prefetch_method: recall|reflect`
-  - `hindsight_recall` / `hindsight_retain` / `hindsight_reflect` tools
-  - Per-session `document_id` with append mode for continuity
-  - Session switch hook: flushes old buffer, mints fresh document_id on /reset, /new, /resume
+### Hermes capabilities to verify on the target profile
+- A configured Hindsight provider may expose `hindsight_recall`, `hindsight_retain`, and `hindsight_reflect`.
+- Hermes/LCM may provide transcript and session continuity independently of durable memory.
+- Provider auto-recall, auto-retain, extraction missions, tags, document modes, and session-switch behavior are version- and profile-specific. Inspect live configuration and read back real results before relying on them.
 
-### Configured (this port)
-1. `$HERMES_HOME/hindsight/config.json`:
-   - `bank_mission` — steers extraction toward durable facts, away from ephemeral state
-   - `bank_retain_mission` — explicit extraction directive (what to extract, what to ignore)
-   - `retain_tags: "source:hermes"` — provenance tag on all auto-retained memories
-   - `observation_scopes: "combined"` — single observation pass
-   - Backup at `config.json.bak`
-2. Cron job `lifeos-wisdom-synthesis` (every 6h, `deliver: local`):
-   - Calls `hindsight_reflect` to synthesize patterns/wisdom
-   - If substantive, calls `hindsight_retain` with `tags: ["cat:wisdom", "source:reflection"]` and stable `document_id: "user:aron:wisdom:synthesized"`
+### What this portable release configures
+- **Nothing in the principal's memory plane.** The importer does not edit `config.yaml`, create a Hindsight config, choose a bank, enable auto-retain, migrate document IDs, project TELOS, or create cron jobs.
+- The schema below supplies portable tag and `document_id` conventions using `user:{id}:...` placeholders.
+- `InstallSettings.ts` does not map memory-provider settings.
 
-### Still needed
-- `memory_enabled: false` in config.yaml — intentionally LEFT OFF. User confirmed: enabling it activates the built-in Hermes memory system (bolt-on), which they do NOT want. Hindsight runs independently via its own plugin + the hindsight_recall/retain/reflect tools + the cron job. Do NOT enable memory_enabled.
-- TELOS truth source: loaded from `E:/Dropbox/ARON BIJL MSC/TELOS/` and retained into Hindsight with `document_id: "user:aron:telos"` and tags `["cat:telos", "cat:identity", "durability:core", "source:dropbox_telos"]`. This is the canonical TELOS — not the empty template files from the LifeOS repo.
-- Optionally add a second cron for failure-pattern reflect (`cat:learning` + `domain:engineering`)
-- Optionally add a periodic TELOS-refresh cron that re-reads the Dropbox TELOS files and re-retains with the same document_id to pick up updates
+### Optional, separately consent-gated operations
+1. Select and verify the principal's memory provider and bank.
+2. Review provider extraction/retention settings against the current Hermes documentation and privacy requirements.
+3. Project configured TELOS only after approving the canonical source, target bank, tags, and principal identifier.
+4. Create a synthesis or TELOS-refresh cron only after approving schedule, model/provider cost, delivery, and write behavior.
+5. Migrate any pre-existing person-specific document IDs through an instance-local plan; never preserve a former principal's identifier as a portable default.
 
 ---
 
@@ -129,12 +118,12 @@ These belong in Hermes session/workspace/logging, not memory.
 LifeOS stores agent identity in `USER/DIGITAL_ASSISTANT/DA_IDENTITY.md` (loaded at session start via CLAUDE.md `@` import). The Hermes-native equivalent is `$HERMES_HOME/SOUL.md` — always loaded when present, independent of cwd, sets agent identity (not project rules).
 
 - **LifeOS source**: `LifeOS/install/USER/DIGITAL_ASSISTANT/DA_IDENTITY.md` (template — "INTERVIEW REQUIRED")
-- **Hermes target**: `$HERMES_HOME/SOUL.md` (updated with HAL's actual identity, personality, voice, relationship, autonomy, and writing rules)
-- **Status**: Done. SOUL.md rewritten from the minimal default to a full identity grounded in Aron's actual preferences and the LifeOS DA_IDENTITY template structure.
+- **Hermes target**: `$HERMES_HOME/SOUL.md` (principal-owned agent identity, personality, voice, relationship, autonomy, and working rules)
+- **Status**: installation-time configuration. Do not ship an identity-specific SOUL.md in a portable release.
 
 ### PRINCIPAL_IDENTITY.md → Hindsight
 LifeOS stores principal identity in `USER/PRINCIPAL/PRINCIPAL_IDENTITY.md` (template — "INTERVIEW REQUIRED"). The Hermes-native equivalent is Hindsight retain under `cat:identity` + `cat:telos`.
 
 - **LifeOS source**: `LifeOS/install/USER/PRINCIPAL/PRINCIPAL_IDENTITY.md` (template)
-- **Hermes target**: Hindsight, tags `["cat:telos", "cat:identity", "durability:core", "source:dropbox_telos"]`
-- **Status**: Done. Real identity (mission, goals, beliefs, frames, status) retained from Dropbox TELOS.
+- **Hermes target**: Hindsight, tags `["cat:telos", "cat:identity", "durability:core", "source:configured_telos"]`
+- **Status**: installation-time configuration. Retain only after the provider is healthy and the principal approves the source content and identifiers.

@@ -61,9 +61,9 @@ Serial retries pay the full latency of each failed attempt before you learn anyt
 # 1. six agents at the login regression, each free to pick its own theory
 bun ~/.claude/skills/CMUX/Tools/cmux.ts race \
   --feature login-lockout --agents 6 --cwd ~/Projects/App \
-  --cmd "claude 'Prod: all logins fail with 401 since the last deploy. Root-cause and patch.'"
+  --cmd "<agent-cli> 'Prod: all logins fail with 401 since the last deploy. Root-cause and patch.'"
 
-# 2. watch; voice fires on first done
+# 2. watch; JSON reports the first done transition
 bun ~/.claude/skills/CMUX/Tools/cmux.ts monitor --workspace workspace:9 --interval 2
 
 # 3. race-4 solved it first — grab the fix
